@@ -7,9 +7,10 @@ export const getLists = query({
   returns: v.array(
     v.object({
       _id: v.id("list"),
-
+      userId: v.id("users"),
       title: v.string(),
       description: v.string(),
+      _creationTime: v.number(),
       updatedAt: v.string(), // UTC string
       isCompleted: v.boolean(),
       isDeleted: v.boolean(),
