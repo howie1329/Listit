@@ -33,6 +33,43 @@ export const getLists = query({
   },
 });
 
+export const getList = query({
+  args: {
+    listId: v.id("list"),
+    userId: v.id("users"),
+  },
+  returns: v.object({
+    _id: v.id("list"),
+    userId: v.id("users"),
+    title: v.string(),
+    description: v.string(),
+    _creationTime: v.number(),
+    updatedAt: v.string(), // UTC string
+    isCompleted: v.boolean(),
+    isDeleted: v.boolean(),
+    isArchived: v.boolean(),
+    isPinned: v.boolean(),
+    isPublic: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not found");
+    }
+    if (args.userId && userId !== args.userId) {
+      throw new Error("You are not authorized to view this list");
+    }
+    const list = await ctx.db
+      .query("list")
+      .filter((q) => q.eq(q.field("_id"), args.listId))
+      .unique();
+    if (!list || list.userId !== args.userId) {
+      throw new Error("You are not authorized to view this list");
+    }
+    return list;
+  },
+});
+
 export const createList = mutation({
   args: {
     title: v.string(),

@@ -25,14 +25,16 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
+import { generateList } from "@/convex/aiactions";
 import {
   DeleteIcon,
+  MagicWandIcon,
   MoreHorizontalIcon,
   PencilIcon,
   PlusSignIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 
 export default function ListPage() {
@@ -221,9 +223,14 @@ const ListEditModal = ({
 const ListOptionsDropdown = ({ list }: { list: Doc<"list"> }) => {
   const [editOpen, setEditOpen] = useState(false);
   const softDeleteList = useMutation(api.listFunctions.softDeleteList);
+  const generateListAction = useAction(api.aiactions.generateList);
 
   const handleSoftDelete = async () => {
     await softDeleteList({ listId: list._id });
+  };
+
+  const handleGenerateList = async () => {
+    await generateListAction({ listId: list._id, userId: list.userId });
   };
   return (
     <DropdownMenu>
@@ -240,6 +247,10 @@ const ListOptionsDropdown = ({ list }: { list: Doc<"list"> }) => {
         <DropdownMenuItem onClick={handleSoftDelete}>
           <HugeiconsIcon icon={DeleteIcon} />
           Delete
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleGenerateList}>
+          <HugeiconsIcon icon={MagicWandIcon} />
+          Generate List
         </DropdownMenuItem>
       </DropdownMenuContent>
       <ListEditModal

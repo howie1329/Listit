@@ -109,3 +109,35 @@ export const toogleItemCompletion = mutation({
     });
   },
 });
+
+export const createItems = mutation({
+  args: {
+    listId: v.id("list"),
+    userId: v.id("users"),
+    items: v.array(
+      v.object({
+        title: v.string(),
+        description: v.optional(v.string()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const list = await ctx.db.get(args.listId);
+    if (!list || list.userId !== args.userId) {
+      throw new Error("You are not authorized to create items for this list");
+    }
+    for (const item of args.items) {
+      await ctx.db.insert("items", {
+        listId: args.listId,
+        userId: args.userId,
+        title: item.title,
+        description: item.description ?? "",
+        updatedAt: new Date().toISOString(),
+        isCompleted: false,
+        isDeleted: false,
+        isArchived: false,
+        priority: "low",
+      });
+    }
+  },
+});
