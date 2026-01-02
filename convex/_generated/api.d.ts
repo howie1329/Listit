@@ -13,6 +13,7 @@ import type * as http from "../http.js";
 import type * as itemFunctions from "../itemFunctions.js";
 import type * as listFunctions from "../listFunctions.js";
 import type * as myFunctions from "../myFunctions.js";
+import type * as userFunctions from "../userFunctions.js";
 
 import type {
   ApiFromModules,
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   itemFunctions: typeof itemFunctions;
   listFunctions: typeof listFunctions;
   myFunctions: typeof myFunctions;
+  userFunctions: typeof userFunctions;
 }>;
 
 /**

@@ -29,8 +29,6 @@ List It is a fast, AI-assisted list app that helps you create, share, and genera
 - Click into a list to see items
 - Fast, no clutter
 
-Judges love clarity.
-
 ### 3. Public vs Private Lists
 
 - Toggle a list as:

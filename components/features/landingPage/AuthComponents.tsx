@@ -104,8 +104,15 @@ export const AuthComponents = () => {
         : flow === "signUp"
           ? SignUpFlow()
           : null}
-      
-      {error && <Badge className="w-full text-center truncate text-sm line-clamp-1" variant="destructive">{error}</Badge>} 
+
+      {error && (
+        <Badge
+          className="w-full text-center truncate text-sm line-clamp-1"
+          variant="destructive"
+        >
+          {error}
+        </Badge>
+      )}
     </div>
   );
 };

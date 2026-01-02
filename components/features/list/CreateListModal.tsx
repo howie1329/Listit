@@ -14,6 +14,8 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Spinner } from "@/components/ui/spinner";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PlusSignIcon } from "@hugeicons/core-free-icons";
 
 export const CreateListModel = () => {
   const [title, setTitle] = useState("");
@@ -33,7 +35,10 @@ export const CreateListModel = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>
-        <Button>Create List</Button>
+        <Button>
+          <HugeiconsIcon icon={PlusSignIcon} />
+          List
+        </Button>
       </DialogTrigger>
       <DialogContent showCloseButton={false}>
         <DialogHeader>

@@ -34,4 +34,15 @@ export default defineSchema({
   })
     .index("by_listId", ["listId"])
     .index("by_listId_userId", ["listId", "userId"]),
+  userSettings: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    email: v.string(),
+    profilePicture: v.optional(v.string()),
+    theme: v.union(v.literal("light"), v.literal("dark")),
+    defaultModel: v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
+    updatedAt: v.string(), // UTC string
+    isAiEnabled: v.boolean(),
+    onboardingCompleted: v.boolean(),
+  }).index("by_userId", ["userId"]),
 });
