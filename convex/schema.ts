@@ -10,4 +10,16 @@ export default defineSchema({
   numbers: defineTable({
     value: v.number(),
   }),
+  list: defineTable({
+    userId: v.id('users'),
+    title: v.string(),
+    description: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    isCompleted: v.boolean(),
+    isDeleted: v.boolean(),
+    isArchived: v.boolean(),
+    isPinned: v.boolean(),
+    isPublic: v.boolean()
+  })
 });
