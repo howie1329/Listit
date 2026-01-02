@@ -87,7 +87,10 @@ export default function OnboardingPage() {
             </div>
             <div className="flex flex-row gap-2 items-center">
               <Label>AI Enabled? (Use AI to generate lists and items)</Label>
-              <Switch checked={isAiEnabled} onCheckedChange={setIsAiEnabled} />
+              <Switch
+                checked={isAiEnabled}
+                onCheckedChange={() => setIsAiEnabled(!isAiEnabled)}
+              />
             </div>
             <Button onClick={handleSave}>Save</Button>
           </div>

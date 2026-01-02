@@ -45,7 +45,6 @@ export const createUserSettings = mutation({
 export const fetchUserSettings = query({
   args: {},
   returns: v.union(
-    v.null(),
     v.object({
       _id: v.id("userSettings"),
       userId: v.id("users"),
@@ -71,7 +70,7 @@ export const fetchUserSettings = query({
       .first();
 
     if (!userSettings) {
-      return null;
+      throw new Error("User settings not found");
     }
     return userSettings;
   },
@@ -83,6 +82,7 @@ export const updateUserSettings = mutation({
     defaultModel: v.optional(
       v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
     ),
+    theme: v.optional(v.union(v.literal("light"), v.literal("dark"))),
     isAiEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
