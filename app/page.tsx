@@ -1,5 +1,4 @@
 "use client";
-
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import Link from "next/link";
@@ -7,7 +6,33 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
-export default function Home() {
+export default function Page() {
+  return (
+    <>
+      <header className="sticky h-10 top-0 z-50 border-slate-200 dark:border-slate-700">
+        <p>ListIt</p>
+      </header>
+      <main className="flex flex-col w-full h-[calc(100vh-2.5rem)]">
+        <MainContent />
+      </main>
+    </>
+  )
+}
+
+const MainContent = () => {
+  return (
+    <div className="flex flex-row w-full h-full">
+      <div className="flex flex-col w-3/5 h-full border items-center justify-center">
+        <p>Sidebar</p>
+      </div>
+      <div className="flex flex-col w-2/5 h-full border items-center justify-center">
+        <p>Main Content</p>
+      </div>
+    </div>
+  )
+}
+
+export function Home() {
   return (
     <>
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md p-4 border-b border-slate-200 dark:border-slate-700 flex flex-row justify-between items-center shadow-sm">
