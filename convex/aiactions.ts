@@ -42,9 +42,9 @@ export const generateList = action({
       apiKey: process.env.OPENROUTER_AI_KEY,
     });
     const { object }: { object: aiResult } = await generateObject({
-      model: openRouter("openai/gpt-oss-20b", {
+      model: openRouter("openai/gpt-oss-20b:free", {
         extraBody: {
-          models: ["openai/gpt-5-nano"], // testing for fallback model,
+          models: ["openai/gpt-oss-20b", "openai/gpt-5-nano"],
         },
       }),
       prompt: `Generate a list of 2 items for the list ${list.title} with the following description: ${list.description}`,
@@ -56,7 +56,7 @@ export const generateList = action({
           }),
         ),
       }),
-      maxRetries: 2,
+      maxRetries: 3,
     });
 
     await ctx.runMutation(api.itemFunctions.createItems, {

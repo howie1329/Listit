@@ -74,6 +74,7 @@ export const ListPageContent = () => {
 
 const ListCard = ({ list }: { list: Doc<"list"> }) => {
   const [open, setOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   return (
     <Collapsible
       open={open}
@@ -84,7 +85,16 @@ const ListCard = ({ list }: { list: Doc<"list"> }) => {
         <div className="flex flex-col items-start justify-start gap-0">
           <div className="flex items-center justify-between gap-2 w-full">
             <p className="text-sm font-medium line-clamp-1">{list.title}</p>
-            <ListOptionsDropdown list={list} />
+            {isGenerating ? (
+              <Badge variant="outline">
+                <Spinner />
+                <span>Generating...</span>
+              </Badge>
+            ) : null}
+            <ListOptionsDropdown
+              list={list}
+              setIsGenerating={setIsGenerating}
+            />
           </div>
           <div className="flex items-center justify-between gap-2 w-full">
             <p className="text-xs text-muted-foreground line-clamp-1">
@@ -220,7 +230,13 @@ const ListEditModal = ({
   );
 };
 
-const ListOptionsDropdown = ({ list }: { list: Doc<"list"> }) => {
+const ListOptionsDropdown = ({
+  list,
+  setIsGenerating,
+}: {
+  list: Doc<"list">;
+  setIsGenerating: (isGenerating: boolean) => void;
+}) => {
   const [editOpen, setEditOpen] = useState(false);
   const softDeleteList = useMutation(api.listFunctions.softDeleteList);
   const generateListAction = useAction(api.aiactions.generateList);
@@ -230,7 +246,16 @@ const ListOptionsDropdown = ({ list }: { list: Doc<"list"> }) => {
   };
 
   const handleGenerateList = async () => {
-    await generateListAction({ listId: list._id, userId: list.userId });
+    try {
+      setIsGenerating(true);
+      await generateListAction({ listId: list._id, userId: list.userId });
+      setIsGenerating(false);
+    } catch (error) {
+      console.error(error);
+      setIsGenerating(false);
+    } finally {
+      setIsGenerating(false);
+    }
   };
   return (
     <DropdownMenu>
