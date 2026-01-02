@@ -1,8 +1,10 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -37,7 +39,7 @@ export const ListPageContent = () => {
     );
   }
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full h-full gap-4 p-4">
       {lists.map((list) => (
         <ListCard key={list._id} list={list} />
       ))}
@@ -47,10 +49,16 @@ export const ListPageContent = () => {
 
 const ListCard = ({ list }: { list: Doc<"list"> }) => {
   return (
-    <Card>
-      <CardHeader>
+    <Card className=" h-fit">
+      <CardHeader className="flex flex-col justify-center h-16">
         <CardTitle>{list.title}</CardTitle>
         <CardDescription>{list.description}</CardDescription>
+        <CardFooter>
+          <div className="flex items-center gap-2">
+            <p>{new Date(list._creationTime).toLocaleString()}</p>
+          </div>
+          <Button variant="outline">View List</Button>
+        </CardFooter>
       </CardHeader>
     </Card>
   );
