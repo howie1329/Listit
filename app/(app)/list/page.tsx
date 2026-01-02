@@ -1,16 +1,13 @@
 "use client";
-
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
+import { useState } from "react";
 
 export default function ListPage() {
   return (
@@ -39,7 +36,7 @@ export const ListPageContent = () => {
     );
   }
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full h-full gap-4 p-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full h-full gap-2 p-4">
       {lists.map((list) => (
         <ListCard key={list._id} list={list} />
       ))}
@@ -48,18 +45,31 @@ export const ListPageContent = () => {
 };
 
 const ListCard = ({ list }: { list: Doc<"list"> }) => {
+  const [open, setOpen] = useState(false);
   return (
-    <Card className=" h-fit">
-      <CardHeader className="flex flex-col justify-center h-16">
-        <CardTitle>{list.title}</CardTitle>
-        <CardDescription>{list.description}</CardDescription>
-        <CardFooter>
-          <div className="flex items-center gap-2">
-            <p>{new Date(list._creationTime).toLocaleString()}</p>
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="bg-card border h-fit max-h-94 overflow-y-auto p-2"
+    >
+      <CollapsibleTrigger asChild className="flex items-center w-full">
+        <div className="flex flex-col items-start justify-start gap-0">
+          <p className="text-sm font-medium line-clamp-1">{list.title}</p>
+          <div className="flex items-center justify-between gap-2 w-full">
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {list.description}
+            </p>
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {new Date(list._creationTime).toLocaleString()}
+            </p>
           </div>
-          <Button variant="outline">View List</Button>
-        </CardFooter>
-      </CardHeader>
-    </Card>
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="flex flex-col gap-2 ">
+          <p>{list.description}</p>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
