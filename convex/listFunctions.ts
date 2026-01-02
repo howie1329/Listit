@@ -27,6 +27,7 @@ export const getLists = query({
     const lists = await ctx.db
       .query("list")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("isDeleted"), false))
       .collect();
     return lists;
   },
