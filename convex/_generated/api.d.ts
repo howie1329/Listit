@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as listFunctions from "../listFunctions.js";
 import type * as myFunctions from "../myFunctions.js";
 
 import type {
@@ -21,6 +22,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
+  listFunctions: typeof listFunctions;
   myFunctions: typeof myFunctions;
 }>;
 

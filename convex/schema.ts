@@ -11,15 +11,27 @@ export default defineSchema({
     value: v.number(),
   }),
   list: defineTable({
-    userId: v.id('users'),
+    userId: v.id("users"),
     title: v.string(),
     description: v.string(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    updatedAt: v.string(), // UTC string
     isCompleted: v.boolean(),
     isDeleted: v.boolean(),
     isArchived: v.boolean(),
     isPinned: v.boolean(),
-    isPublic: v.boolean()
+    isPublic: v.boolean(),
+  }).index("by_userId", ["userId"]),
+  items: defineTable({
+    listId: v.id("list"),
+    userId: v.id("users"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    updatedAt: v.string(), // UTC string
+    isCompleted: v.boolean(),
+    isDeleted: v.boolean(),
+    isArchived: v.boolean(),
+    priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
   })
+    .index("by_listId", ["listId"])
+    .index("by_listId_userId", ["listId", "userId"]),
 });
