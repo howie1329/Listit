@@ -5,18 +5,23 @@ import Link from "next/link";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 export default function Page() {
   return (
     <>
-      <header className="sticky h-10 top-0 z-50 border-slate-200 dark:border-slate-700">
+      <header className="flex sticky h-8 top-0 z-50 border-slate-200 dark:border-slate-700 items-center r">
         <p>ListIt</p>
       </header>
-      <main className="flex flex-col w-full h-[calc(100vh-2.5rem)]">
+      <main className="flex flex-col w-full h-[calc(100vh-2rem)]">
         <MainContent />
       </main>
     </>
-  )
+  );
 }
 
 const MainContent = () => {
@@ -26,11 +31,117 @@ const MainContent = () => {
         <p>Sidebar</p>
       </div>
       <div className="flex flex-col w-2/5 h-full border items-center justify-center">
-        <p>Main Content</p>
+        <SigninComponent />
       </div>
     </div>
-  )
-}
+  );
+};
+
+const SigninComponent = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
+  const router = useRouter();
+  const { signIn } = useAuthActions();
+
+  const handleSignIn = () => {
+    setLoading(true);
+    setError("");
+    void signIn("password", { email, password })
+      .then(() => {
+        router.push("/list");
+      })
+      .catch((error) => {
+        setError(error.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+  const toogleFlow = () => {
+    setFlow(flow === "signIn" ? "signUp" : "signIn");
+  };
+
+  const SignInFlow = () => {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Sign In To Your Account</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Input
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <Input
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <div className="flex flex-row gap-2">
+            <Button onClick={handleSignIn}>Sign In</Button>
+            <Button variant="outline" onClick={toogleFlow}>
+              Sign Up
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const SignUpFlow = () => {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Sign Up To Your Account</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Input
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <Input
+            placeholder="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Input
+            placeholder="Confirm Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          <div className="flex flex-row gap-2">
+            <Button onClick={handleSignIn}> Sign Up</Button>
+            <Button variant="outline" onClick={toogleFlow}>
+              Sign In
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  return (
+    <>
+      {flow === "signIn"
+        ? SignInFlow()
+        : flow === "signUp"
+          ? SignUpFlow()
+          : null}
+      {error && <Badge variant="destructive">{error}</Badge>}
+    </>
+  );
+};
 
 export function Home() {
   return (
