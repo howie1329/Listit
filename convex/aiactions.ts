@@ -64,6 +64,7 @@ export const generateList = action({
       listId: args.listId,
       items: object.items,
     });
+
     return object;
   },
 });
