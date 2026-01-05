@@ -25,7 +25,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
-import { generateList } from "@/convex/aiactions";
 import {
   DeleteIcon,
   MagicWandIcon,

@@ -10,6 +10,17 @@ export default defineSchema({
   numbers: defineTable({
     value: v.number(),
   }),
+  thread: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    updatedAt: v.string(),
+  }).index("by_userId", ["userId"]),
+  threadMessage: defineTable({
+    threadId: v.id("thread"),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    content: v.string(),
+    updatedAt: v.string(),
+  }).index("by_threadId", ["threadId"]),
   list: defineTable({
     userId: v.id("users"),
     title: v.string(),

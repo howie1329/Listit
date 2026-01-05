@@ -8,12 +8,17 @@
  * @module
  */
 
+import type * as ai_actions from "../ai/actions.js";
 import type * as aiactions from "../aiactions.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as itemFunctions from "../itemFunctions.js";
 import type * as listFunctions from "../listFunctions.js";
 import type * as myFunctions from "../myFunctions.js";
+import type * as thread_mutations from "../thread/mutations.js";
+import type * as thread_queries from "../thread/queries.js";
+import type * as threadMessages_mutations from "../threadMessages/mutations.js";
+import type * as threadMessages_queries from "../threadMessages/queries.js";
 import type * as userFunctions from "../userFunctions.js";
 
 import type {
@@ -23,12 +28,17 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "ai/actions": typeof ai_actions;
   aiactions: typeof aiactions;
   auth: typeof auth;
   http: typeof http;
   itemFunctions: typeof itemFunctions;
   listFunctions: typeof listFunctions;
   myFunctions: typeof myFunctions;
+  "thread/mutations": typeof thread_mutations;
+  "thread/queries": typeof thread_queries;
+  "threadMessages/mutations": typeof threadMessages_mutations;
+  "threadMessages/queries": typeof threadMessages_queries;
   userFunctions: typeof userFunctions;
 }>;
 
