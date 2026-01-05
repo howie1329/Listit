@@ -1,9 +1,11 @@
+"use node";
 import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
-import { Id } from "../_generated/dataModel";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { convertToModelMessages, generateText, ModelMessage } from "ai";
+import { generateText, ModelMessage, stepCountIs } from "ai";
+import { firecrawlTool } from "./tools/firecrawlAgent";
+import { Experimental_Agent as agent } from "ai";
 
 export const generateThreadResponse = action({
   args: {
@@ -44,16 +46,23 @@ export const generateThreadResponse = action({
 
     console.log("Model Messages", modelMessages);
 
-    const response = await generateText({
+    const chatAgent = new agent({
       model: openRouter("openai/gpt-5-nano", {
         extraBody: {
           models: ["openai/gpt-oss-20b"],
         },
       }),
       system:
-        "You are a helpful assistant that can answer questions and help with tasks.",
-      messages: modelMessages as ModelMessage[],
+        "You are a helpful assistant that can answer questions." +
+        "You can use the firecrawl tool to search the web for information." +
+        "Only run the firecrawl tool one time. Do not run it multiple times." +
+        "If you need to run firecrawl again, you must ask the user first.",
+      tools: { firecrawl: firecrawlTool },
+      stopWhen: stepCountIs(10),
+      temperature: 0.8,
     });
+
+    const response = await chatAgent.generate({ messages: modelMessages });
 
     console.log("Response", response.text);
 
