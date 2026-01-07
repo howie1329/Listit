@@ -17,11 +17,16 @@ import { Spinner } from "@/components/ui/spinner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 
-export const CreateListModel = () => {
+export const CreateListModel = ({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [open, setOpen] = useState(false);
   const createList = useMutation(api.listFunctions.createList);
 
   const handleCreateList = async () => {
@@ -34,12 +39,6 @@ export const CreateListModel = () => {
   };
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button>
-          <HugeiconsIcon icon={PlusSignIcon} />
-          List
-        </Button>
-      </DialogTrigger>
       <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Create List</DialogTitle>
