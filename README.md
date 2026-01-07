@@ -1,213 +1,163 @@
-# 📝 List It
+# 📝 Listit
 
-**List It** is a fast, AI-assisted list app that helps you create, share, and generate smart lists — including an AI-powered "Today's List."
+**Listit** is a blazing fast, AI-assisted list and bookmark manager enabling you to create, share, and organize smart lists — plus generate intelligent "Today's List" suggestions with AI. Includes clean UI, real-time sync, and extensible features for productivity.
+
+---
 
 ## 🎯 One-Line Pitch
 
-List It is a fast, AI-assisted list app that helps you create, share, and generate smart lists — including an AI-powered "Today's List."
+Smart, social lists and bookmarks with AI-generated suggestions, built for speed and collaboration.
+
+---
 
 ## 🚀 Tech Stack
 
-- **[Next.js](https://nextjs.org/)** - React framework for optimized web hosting and page routing
-- **[Convex](https://convex.dev/)** - Backend (database, server logic, real-time sync)
-- **[Convex Auth](https://labs.convex.dev/auth)** - Authentication
-- **[React](https://react.dev/)** - Frontend interactivity
-- **[Tailwind CSS](https://tailwindcss.com/)** - Styling and UI components
-- **[shadcn/ui](https://ui.shadcn.com/)** - UI component library
+- **Next.js** - React app framework for server components, routing, and performance
+- **Convex** - Backend/database, serverless logic, real-time sync
+- **Convex Auth** - Secure authentication flows
+- **React** - Interactive UI
+- **Tailwind CSS** - Styling and layout
+- **shadcn/ui** - Modular, accessible UI components
+- **TypeScript** - Static typing and safety
 
-## 🧠 Core MVP (Must-Have)
+---
 
-### 1. List & Item Management
+## ✨ Core Features
 
-- **List CRUD**: Create, view, rename, delete lists
-- **Item CRUD**: Add, edit, delete items
-- **Mark complete / incomplete**: Toggle item completion status
+- **List & Item Management:** Create, view, edit, delete lists/items; mark items complete/incomplete.
+- **Bookmark Collections:** Organize, tag, share bookmarks.
+- **Real-Time Collaboration:** Multiple users can edit together live.
+- **Public/Private Lists:** Toggle visibility, share unique URLs.
+- **AI "Today's List":** One-click button for personalized or popular task ideas, editable.
+- **Dashboard UI:** Minimal yet powerful list and bookmark management.
+- **Responsive Design:** Mobile-ready, desktop-friendly.
+- **Dark/Light Mode:** Visual theme toggle.
 
-### 2. Clean Dashboard UI
-
-- Show all lists in a minimal dashboard
-- Click into a list to see items
-- Fast, no clutter
-
-### 3. Public vs Private Lists
-
-- Toggle a list as:
-  - **Private** (only you)
-  - **Public** (shareable)
-
-### 4. Shareable Links
-
-- Unique URL for public lists
-- Anyone with the link can view
-
-### 5. 🤖 AI Feature (Signature Hackathon Moment)
-
-- **AI-Generated "Today's List"**
-- Button: "Generate Today's List"
-- AI creates a list based on:
-  - User's previous lists (if logged in)
-  - OR popular public lists / common tasks
-- Output is a real, editable list
-
-This is your wow feature.
-
-### 6. Responsive Design
-
-- Works cleanly on desktop & mobile
-- Simple layout > fancy animations
+---
 
 ## 🚀 Stretch Features
 
-### UX & Productivity
+- Inline editing, drag-and-drop, templates
+- Tags & categories, filter/search by tag
+- Collaboration, trending public lists, AI-powered list summaries/suggestions
+- Analytics, push notifications (WIP)
+- Offline support, advanced search
 
-- **Inline Editing**: Click list title or item to edit
-- **Drag-and-Drop Reordering**: Reorder items in a list
-- **List Templates**: Save a list as a reusable template
-
-### Organization
-
-- **Tags / Categories**: Work, Personal, Grocery, etc.
-- **Filter lists by tag**
-
-### Light Auth
-
-- Basic Authentication (Magic link or Convex auth)
-- Enables:
-  - Saved history
-  - Personalized AI lists
-
-### Extra AI
-
-- **AI "Summarize List"**: Turn a long list into 3–5 key tasks
-
-### Collaboration
-
-- **Real-time Collaborative Lists**: Multiple users editing together
-- Powered by Convex's realtime sync
-
-### Intelligence & Discovery
-
-- **Trending Public Lists**: "Most copied grocery lists"
-- **AI Suggestions**:
-  - "People often add milk to this list"
-  - Recurring task suggestions
-
-### Power Features
-
-- **Search Across Lists & Items**
-- **List Analytics**:
-  - Completion rate
-  - Daily/weekly streaks
-- **Offline Mode**: Cached lists with background sync
-- **Push Notifications**: Task reminders
-- **Dark Mode**
+---
 
 ## 🛠️ Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ installed
-- npm or yarn package manager
+- Node.js (v18+)
+- [Convex CLI](https://docs.convex.dev/cli/install)
+- npm or yarn
 
 ### Installation
 
-1. **Clone the repository** (if you haven't already):
-
+1. **Clone the repo:**
    ```bash
    git clone <your-repo-url>
    cd Listit
    ```
-
-2. **Install dependencies**:
-
+2. **Install dependencies:**
    ```bash
    npm install
+   # or
+   yarn install
    ```
-
-3. **Set up Convex**:
-   - If you haven't already, run:
+3. **Set up Convex:**
+   - Install Convex CLI (if not yet):
+     ```bash
+     npm install -g convex@latest
+     ```
+   - Init Convex and link your project:
      ```bash
      npx convex dev
      ```
-   - This will guide you through Convex setup and create your `.env.local` file
-
-4. **Run the development server**:
+   - Follow prompts to set up backend and `.env.local`
+4. **Run the development servers:**
 
    ```bash
    npm run dev
    ```
 
-   This will start:
-   - Next.js frontend on `http://localhost:3000`
-   - Convex backend (automatically via `convex dev`)
+   - Next.js client: [http://localhost:3000](http://localhost:3000)
+   - Convex backend is auto-loaded in parallel
 
-### First Time Setup
-
-If you just cloned this codebase and didn't use `npm create convex`, run:
-
-```bash
-npm install
-npm run dev
-```
+---
 
 ## 📁 Project Structure
 
 ```
 Listit/
-├── app/                    # Next.js app directory
-│   ├── (app)/             # Protected app routes
-│   │   ├── list/         # List view page
-│   │   └── settings/     # Settings page
-│   ├── signin/           # Sign in page
-│   ├── layout.tsx        # Root layout
-│   └── page.tsx          # Home page
-├── components/            # React components
-│   ├── ui/               # shadcn/ui components
-│   └── ConvexClientProvider.tsx
-├── convex/               # Convex backend
-│   ├── schema.ts         # Database schema
-│   ├── auth.ts           # Authentication setup
-│   └── myFunctions.ts    # Backend functions
-├── lib/                  # Utility functions
-└── public/               # Static assets
+├── app/                            # Next.js app pages/routes
+│   ├── (app)/                      # Authenticated/inner app pages
+│   │   ├── bookmarks/              # Bookmarks features
+│   │   ├── chat/                   # Chat features
+│   │   ├── list/                   # List management
+│   │   └── layout.tsx
+│   ├── globals.css                 # Global styling
+│   ├── layout.tsx                  # Root layout
+│   └── server/                     # Server-side pages/utilities
+├── components/
+│   ├── features/
+│   │   ├── layout/                 # Layout-related components
+│   │   ├── landingPage/            # Landing page UI
+│   │   ├── list/                   # List modals, etc.
+│   │   └── settings/               # Settings modals
+│   └── ui/                         # Button, card, sidebar, dialog, etc.
+├── convex/                         # Convex backend src
+│   ├── ai/                         # AI actions/tools
+│   ├── bookmarks/                  # Bookmark-related functions
+│   ├── thread/                     # Chat thread queries/mutations
+│   ├── threadMessages/             # Thread messages logic
+│   ├── schema.ts                   # Database schema
+│   ├── auth.ts, auth.config.ts     # Authentication config
+│   ├── itemFunctions.ts, listFunctions.ts, userFunctions.ts, myFunctions.ts
+│   └── http.ts                     # HTTP endpoints for Convex
+├── hooks/                          # Custom React hooks
+├── lib/                            # App utilities
+├── providers/                      # Settings/context providers
+├── public/                         # Static assets
+├── package.json                    # Project manifest
+└── README.md
 ```
 
-## 🔧 Development
+---
 
-### Available Scripts
+## 🔧 Available Scripts
 
-- `npm run dev` - Start both frontend and backend in development mode
-- `npm run build` - Build the Next.js app for production
-- `npm run start` - Start the production server
-- `npm run lint` - Run ESLint
+- `npm run dev` – Start frontend/backend in development mode
+- `npm run build` – Build Next.js app for production
+- `npm run start` – Run built production server
+- `npm run lint` – Lint using ESLint
 
-### Key Files to Edit
+---
 
-- **Backend**: `convex/myFunctions.ts` - Add your Convex queries and mutations
-- **Frontend**: `app/page.tsx` - Main page component
-- **Schema**: `convex/schema.ts` - Define your database schema
-- **Auth**: `convex/auth.ts` - Configure authentication
+## 🗂️ Key Files
 
-## 📚 Learn More
+- **Backend:** `convex/` (see above for organization)
+- **Frontend:** `app/(app)/list/page.tsx`, `app/(app)/bookmarks/page.tsx`, etc.
+- **UI Components:** `components/ui/`, `components/features/`
+- **Schema:** `convex/schema.ts`
+- **Auth:** `convex/auth.ts`, `convex/auth.config.ts`
 
-### Convex Resources
+---
 
-- [Tour of Convex](https://docs.convex.dev/get-started) - Thorough introduction to Convex principles
-- [Convex Documentation](https://docs.convex.dev/) - Complete feature documentation
-- [Stack](https://stack.convex.dev/) - In-depth articles on advanced topics
-- [Convex Auth Docs](https://labs.convex.dev/auth) - Authentication documentation
+## 📚 Resources
 
-### Next.js Resources
+- [Convex Docs](https://docs.convex.dev/)
+- [Convex Auth](https://labs.convex.dev/auth)
+- [Next.js Docs](https://nextjs.org/docs)
+- [shadcn/ui](https://ui.shadcn.com/)
 
-- [Next.js Documentation](https://nextjs.org/docs) - Learn about Next.js features and API
-- [Next.js Learn](https://nextjs.org/learn) - Interactive Next.js tutorial
-
-### Configuring Authentication
-
-To configure different authentication methods, see [Configuration](https://labs.convex.dev/auth/config) in the Convex Auth docs.
+---
 
 ## 📝 License
 
 This project is private and proprietary.
 
 ---
+
+**Questions or contributions?** Open an issue or pull request!
