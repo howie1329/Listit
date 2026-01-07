@@ -12,6 +12,8 @@ import type * as ai_actions from "../ai/actions.js";
 import type * as ai_tools_firecrawlAgent from "../ai/tools/firecrawlAgent.js";
 import type * as aiactions from "../aiactions.js";
 import type * as auth from "../auth.js";
+import type * as bookmarks_bookmarkCollectionFunctions from "../bookmarks/bookmarkCollectionFunctions.js";
+import type * as bookmarks_bookmarkFunctions from "../bookmarks/bookmarkFunctions.js";
 import type * as http from "../http.js";
 import type * as itemFunctions from "../itemFunctions.js";
 import type * as listFunctions from "../listFunctions.js";
@@ -33,6 +35,8 @@ declare const fullApi: ApiFromModules<{
   "ai/tools/firecrawlAgent": typeof ai_tools_firecrawlAgent;
   aiactions: typeof aiactions;
   auth: typeof auth;
+  "bookmarks/bookmarkCollectionFunctions": typeof bookmarks_bookmarkCollectionFunctions;
+  "bookmarks/bookmarkFunctions": typeof bookmarks_bookmarkFunctions;
   http: typeof http;
   itemFunctions: typeof itemFunctions;
   listFunctions: typeof listFunctions;
