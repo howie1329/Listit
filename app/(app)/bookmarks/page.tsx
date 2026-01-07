@@ -354,10 +354,13 @@ export default function BookmarkPage() {
     <>
       {bookmarks.length === 0 ? (
         <div className="flex flex-col w-full h-full p-4">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-3 md:gap-2 mb-4">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2">
+                <Button
+                  variant="outline"
+                  className="gap-2 h-11 px-4 text-base md:h-8 md:px-3 md:text-sm"
+                >
                   <HugeiconsIcon icon={FolderIcon} />
                   <span>
                     {selectedCollection
@@ -407,7 +410,7 @@ export default function BookmarkPage() {
             </Popover>
             <Input
               placeholder="Search bookmarks or paste URL to add..."
-              className="flex-1"
+              className="flex-1 h-11 text-base md:h-8 md:text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleInputKeyDown}
@@ -416,8 +419,8 @@ export default function BookmarkPage() {
             <Button
               onClick={handleCreateBookmark}
               disabled={isCreatingBookmark || !searchQuery.trim()}
-              className="md:hidden"
-              size="icon"
+              className="md:hidden h-11 w-11 md:h-8 md:w-8"
+              aria-label="Add bookmark"
             >
               {isCreatingBookmark ? (
                 <Spinner />
@@ -446,10 +449,13 @@ export default function BookmarkPage() {
         </div>
       ) : (
         <div className="flex flex-col w-full h-full p-4">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-3 md:gap-2 mb-4">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2">
+                <Button
+                  variant="outline"
+                  className="gap-2 h-11 px-4 text-base md:h-8 md:px-3 md:text-sm"
+                >
                   <HugeiconsIcon icon={FolderIcon} />
                   <span>
                     {selectedCollection
@@ -499,7 +505,7 @@ export default function BookmarkPage() {
             </Popover>
             <Input
               placeholder="Search bookmarks or paste URL to add..."
-              className="flex-1"
+              className="flex-1 h-11 text-base md:h-8 md:text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleInputKeyDown}
@@ -508,8 +514,8 @@ export default function BookmarkPage() {
             <Button
               onClick={handleCreateBookmark}
               disabled={isCreatingBookmark || !searchQuery.trim()}
-              className="md:hidden"
-              size="icon"
+              className="md:hidden h-11 w-11 md:h-8 md:w-8"
+              aria-label="Add bookmark"
             >
               {isCreatingBookmark ? (
                 <Spinner />
