@@ -18,13 +18,17 @@ import {
   PlusSignIcon,
   SettingsIcon,
   BookmarkIcon,
+  MoonIcon,
+  SunIcon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { UserSettingsModal } from "../settings/UsersSettingsModal";
+import { useTheme } from "next-themes";
 export const AppMainSidebar = () => {
   const [openCreateListModal, setOpenCreateListModal] = useState(false);
   const [openSettingsModal, setOpenSettingsModal] = useState(false);
+  const { theme, setTheme } = useTheme();
   const userSettings = useUserSettings();
   const items = [
     {
@@ -40,9 +44,7 @@ export const AppMainSidebar = () => {
   ];
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <h1>{userSettings?.name}&apos;s List It</h1>
-      </SidebarHeader>
+      <SidebarHeader className="flex flex-row items-center gap-2"></SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Main Actions</SidebarGroupLabel>
@@ -77,6 +79,13 @@ export const AppMainSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        <SidebarMenuButton
+          size="sm"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="flex flex-row justify-center items-center gap-2"
+        >
+          <HugeiconsIcon icon={theme === "dark" ? SunIcon : MoonIcon} />
+        </SidebarMenuButton>
         <SidebarMenuButton
           onClick={() => setOpenSettingsModal((prev) => !prev)}
         >

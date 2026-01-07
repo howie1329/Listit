@@ -3,8 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "ListIt",
@@ -21,12 +22,19 @@ export default function RootLayout({
 }>) {
   return (
     <ConvexAuthNextjsServerProvider>
-      <html lang="en" className={inter.variable}>
-        <body
-          className={`${inter.variable} antialiased w-svw h-svh overflow-hidden`}
+      <html lang="en" className={inter.variable} suppressHydrationWarning>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
-          <ConvexClientProvider>{children}</ConvexClientProvider>
-        </body>
+          <body
+            className={`${inter.variable} antialiased w-svw h-svh overflow-hidden bg-background`}
+          >
+            <ConvexClientProvider>{children}</ConvexClientProvider>
+          </body>
+        </ThemeProvider>
       </html>
     </ConvexAuthNextjsServerProvider>
   );
