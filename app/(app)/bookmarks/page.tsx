@@ -30,7 +30,7 @@ import {
   ArrowDown01Icon,
   PlusSignIcon,
 } from "@hugeicons/core-free-icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { Spinner } from "@/components/ui/spinner";
@@ -42,8 +42,14 @@ export default function BookmarkPage() {
   const [collectionName, setCollectionName] = useState("");
   const [collectionDescription, setCollectionDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [isCreatingBookmark, setIsCreatingBookmark] = useState(false);
   const createCollection = useMutation(
     api.bookmarks.bookmarkCollectionFunctions.createCollection,
+  );
+  const createBookmark = useMutation(
+    api.bookmarks.bookmarkFunctions.createBookmark,
   );
   const collections = useQuery(
     api.bookmarks.bookmarkCollectionFunctions.getCollections,
@@ -58,7 +64,36 @@ export default function BookmarkPage() {
     selectedCollectionId ? { collectionId: selectedCollectionId } : "skip",
   );
 
-  const bookmarks = selectedCollectionId ? collectionBookmarks : allBookmarks;
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const searchResults = useQuery(
+    api.bookmarks.bookmarkFunctions.searchBookmarks,
+    debouncedSearchQuery.trim()
+      ? { searchQuery: debouncedSearchQuery.trim(), includeArchived: false }
+      : "skip",
+  );
+
+  // Determine which bookmarks to display
+  let bookmarks = selectedCollectionId ? collectionBookmarks : allBookmarks;
+
+  // If there's a search query, use search results and filter by collection if needed
+  if (debouncedSearchQuery.trim() && searchResults) {
+    if (selectedCollectionId) {
+      // Filter search results by selected collection
+      bookmarks = searchResults.filter(
+        (bookmark) => bookmark.collectionId === selectedCollectionId,
+      );
+    } else {
+      bookmarks = searchResults;
+    }
+  }
 
   const selectedCollection = collections?.find(
     (c) => c._id === selectedCollectionId,
@@ -83,7 +118,35 @@ export default function BookmarkPage() {
     }
   };
 
-  if (bookmarks === undefined || collections === undefined) {
+  const handleCreateBookmark = async () => {
+    if (!searchQuery.trim()) return;
+    setIsCreatingBookmark(true);
+    try {
+      await createBookmark({
+        url: searchQuery.trim(),
+        title: searchQuery.trim(),
+        collectionId: selectedCollectionId || undefined,
+      });
+      setSearchQuery("");
+    } catch (error) {
+      console.error("Failed to create bookmark:", error);
+    } finally {
+      setIsCreatingBookmark(false);
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      e.preventDefault();
+      handleCreateBookmark();
+    }
+  };
+
+  if (
+    bookmarks === undefined ||
+    collections === undefined ||
+    (debouncedSearchQuery.trim() && searchResults === undefined)
+  ) {
     return (
       <div className="flex flex-col w-full h-full items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
@@ -146,18 +209,29 @@ export default function BookmarkPage() {
                 </div>
               </PopoverContent>
             </Popover>
-            <Input placeholder="Search Bookmarks" className="flex-1" />
+            <Input
+              placeholder="Search bookmarks or paste URL to add..."
+              className="flex-1"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleInputKeyDown}
+              disabled={isCreatingBookmark}
+            />
           </div>
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <HugeiconsIcon icon={BookmarkIcon} />
               </EmptyMedia>
-              <EmptyTitle>No bookmarks yet</EmptyTitle>
+              <EmptyTitle>
+                {searchQuery.trim() ? "No bookmarks found" : "No bookmarks yet"}
+              </EmptyTitle>
               <EmptyDescription>
-                {selectedCollection
-                  ? `No bookmarks in "${selectedCollection.name}" collection.`
-                  : "Start saving your favorite links and articles. Paste a URL in the search bar above to add your first bookmark."}
+                {searchQuery.trim()
+                  ? `No bookmarks match "${searchQuery}". Press Enter to add it as a new bookmark.`
+                  : selectedCollection
+                    ? `No bookmarks in "${selectedCollection.name}" collection.`
+                    : "Start saving your favorite links and articles. Type a URL and press Enter to add your first bookmark."}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -215,7 +289,14 @@ export default function BookmarkPage() {
                 </div>
               </PopoverContent>
             </Popover>
-            <Input placeholder="Search Bookmarks" className="flex-1" />
+            <Input
+              placeholder="Search bookmarks or paste URL to add..."
+              className="flex-1"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleInputKeyDown}
+              disabled={isCreatingBookmark}
+            />
           </div>
           <div className="flex flex-col gap-2">
             {bookmarks.map((bookmark: (typeof bookmarks)[0]) => (
