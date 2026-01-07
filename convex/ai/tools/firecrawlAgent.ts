@@ -5,7 +5,8 @@ import { tool } from "ai";
 
 const firecrawl = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
 
-export const firecrawlTool = new tool({
+// Need To test to see if this works... if not move to js file and and new Tool
+export const firecrawlTool = tool({
   name: "firecrawl",
   description: "Use this tool to search the web for information",
   inputSchema: z.object({
