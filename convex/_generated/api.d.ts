@@ -9,6 +9,7 @@
  */
 
 import type * as ai_actions from "../ai/actions.js";
+import type * as ai_bookmarks_actions from "../ai/bookmarks/actions.js";
 import type * as ai_tools_firecrawlAgent from "../ai/tools/firecrawlAgent.js";
 import type * as aiactions from "../aiactions.js";
 import type * as auth from "../auth.js";
@@ -32,6 +33,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "ai/actions": typeof ai_actions;
+  "ai/bookmarks/actions": typeof ai_bookmarks_actions;
   "ai/tools/firecrawlAgent": typeof ai_tools_firecrawlAgent;
   aiactions: typeof aiactions;
   auth: typeof auth;

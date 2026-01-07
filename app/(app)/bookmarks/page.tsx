@@ -1,7 +1,7 @@
 "use client";
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import {
   Empty,
   EmptyDescription,
@@ -244,9 +244,6 @@ export default function BookmarkPage() {
   const createCollection = useMutation(
     api.bookmarks.bookmarkCollectionFunctions.createCollection,
   );
-  const createBookmark = useMutation(
-    api.bookmarks.bookmarkFunctions.createBookmark,
-  );
   const collections = useQuery(
     api.bookmarks.bookmarkCollectionFunctions.getCollections,
     {},
@@ -258,6 +255,10 @@ export default function BookmarkPage() {
   const collectionBookmarks = useQuery(
     api.bookmarks.bookmarkFunctions.getBookmarksByCollection,
     selectedCollectionId ? { collectionId: selectedCollectionId } : "skip",
+  );
+
+  const createBookmarkAction = useAction(
+    api.ai.bookmarks.actions.createBookMark,
   );
 
   // Debounce search query
@@ -318,10 +319,8 @@ export default function BookmarkPage() {
     if (!searchQuery.trim()) return;
     setIsCreatingBookmark(true);
     try {
-      await createBookmark({
+      await createBookmarkAction({
         url: searchQuery.trim(),
-        title: searchQuery.trim(),
-        collectionId: selectedCollectionId || undefined,
       });
       setSearchQuery("");
     } catch (error) {

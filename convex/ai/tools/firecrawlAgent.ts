@@ -23,3 +23,64 @@ export const firecrawlTool = tool({
     return results;
   },
 });
+
+type firecrawlresponse = {
+  title: string;
+  description: string;
+  url: string;
+  summary: string;
+  favicon: string;
+};
+
+export const basicFirecrawlScraper = async (
+  url: string,
+): Promise<firecrawlresponse> => {
+  const results = await firecrawl.scrape(url, {
+    formats: [
+      { type: "json", schema: schema },
+      { type: "summary" },
+      { type: "screenshot" },
+    ],
+  });
+  if (!results) {
+    throw new Error("Failed to scrape website");
+  }
+
+  const response: firecrawlresponse = {
+    title: results.metadata?.title || results.metadata?.ogTitle || "",
+    description:
+      results.metadata?.description || results.metadata?.ogDescription || "",
+    url: results.metadata?.url || results.metadata?.ogUrl || url,
+    summary: results.summary || "",
+    favicon: results.metadata?.favicon || "",
+  };
+
+  console.log("Basic Firecrawl Scraper Results: ", response);
+  return response;
+};
+
+export const firecrawlScraperTool = tool({
+  name: "firecrawlScraper",
+  description: "Use this tool to scrape a website for information",
+  inputSchema: z.object({
+    url: z.string().describe("The URL of the website to scrape"),
+  }),
+  execute: async ({ url }) => {
+    console.log("Firecrawl Scraper URL: ", url);
+    const results = await firecrawl.scrape(url, {
+      formats: [
+        { type: "json", schema: schema },
+        { type: "summary" },
+        { type: "screenshot" },
+      ],
+    });
+    console.log("Firecrawl Scraper Results: ", results);
+    return results;
+  },
+});
+
+const schema = z.object({
+  title: z.string(),
+  description: z.string(),
+  url: z.string(),
+});
