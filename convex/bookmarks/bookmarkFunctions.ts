@@ -418,6 +418,7 @@ export const createBookmark = mutation({
 export const updateBookmark = mutation({
   args: {
     bookmarkId: v.id("bookmarks"),
+    url: v.optional(v.string()),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     favicon: v.optional(v.string()),
@@ -439,18 +440,20 @@ export const updateBookmark = mutation({
     if (!bookmark || bookmark.userId !== userId) {
       throw new Error("You are not authorized to update this bookmark");
     }
+    const updatedUrl = args.url ?? bookmark.url;
     const updatedTitle = args.title ?? bookmark.title;
     const updatedDescription = args.description ?? bookmark.description;
     const updatedTags = args.tags ?? bookmark.tags;
     const searchText = createSearchText(
       updatedTitle,
       updatedDescription,
-      bookmark.url,
+      updatedUrl,
       updatedTags,
     );
     const updateData: {
       updatedAt: string;
       searchText: string;
+      url?: string;
       title?: string;
       description?: string;
       favicon?: string;
@@ -466,6 +469,7 @@ export const updateBookmark = mutation({
       updatedAt: new Date().toISOString(),
       searchText: searchText,
     };
+    if (args.url !== undefined) updateData.url = args.url;
     if (args.title !== undefined) updateData.title = args.title;
     if (args.description !== undefined)
       updateData.description = args.description;

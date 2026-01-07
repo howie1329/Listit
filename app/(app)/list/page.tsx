@@ -78,7 +78,7 @@ const ListCard = ({ list }: { list: Doc<"list"> }) => {
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="bg-card border h-fit max-h-94 overflow-y-auto p-2 gap-2"
+      className="bg-card border rounded-lg h-fit max-h-94 overflow-y-auto p-2 gap-2"
     >
       <CollapsibleTrigger asChild className="flex items-center w-full">
         <div className="flex flex-col items-start justify-start gap-0">

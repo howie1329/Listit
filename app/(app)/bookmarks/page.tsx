@@ -23,17 +23,212 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   BookmarkIcon,
   FolderIcon,
   ArrowDown01Icon,
   PlusSignIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  DeleteIcon,
 } from "@hugeicons/core-free-icons";
+import { Doc } from "@/convex/_generated/dataModel";
 import { useState, useEffect } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { Spinner } from "@/components/ui/spinner";
+
+const BookmarkEditDialog = ({
+  bookmark,
+  open,
+  setOpen,
+}: {
+  bookmark: Doc<"bookmarks">;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) => {
+  const [url, setUrl] = useState(bookmark.url);
+  const [title, setTitle] = useState(bookmark.title);
+  const [description, setDescription] = useState(bookmark.description || "");
+  const [isSaving, setIsSaving] = useState(false);
+  const updateBookmark = useMutation(
+    api.bookmarks.bookmarkFunctions.updateBookmark,
+  );
+
+  useEffect(() => {
+    if (open) {
+      setUrl(bookmark.url);
+      setTitle(bookmark.title);
+      setDescription(bookmark.description || "");
+    }
+  }, [open, bookmark]);
+
+  const handleSave = async () => {
+    if (!url.trim() || !title.trim()) return;
+    setIsSaving(true);
+    try {
+      await updateBookmark({
+        bookmarkId: bookmark._id,
+        url: url.trim(),
+        title: title.trim(),
+        description: description.trim() || undefined,
+      });
+      setOpen(false);
+    } catch (error) {
+      console.error("Failed to update bookmark:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>Edit Bookmark</DialogTitle>
+          <DialogDescription>
+            Update the bookmark URL, title, and description
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-4">
+          <Input
+            placeholder="URL"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+          />
+          <Input
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <Textarea
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !url.trim() || !title.trim()}
+          >
+            {isSaving ? (
+              <>
+                <Spinner /> <span>Saving...</span>
+              </>
+            ) : (
+              "Save"
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const BookmarkOptionsDropdown = ({
+  bookmark,
+  collections,
+}: {
+  bookmark: Doc<"bookmarks">;
+  collections: Doc<"bookmarkCollections">[] | undefined;
+}) => {
+  const [editOpen, setEditOpen] = useState(false);
+  const softDeleteBookmark = useMutation(
+    api.bookmarks.bookmarkFunctions.softDeleteBookmark,
+  );
+  const updateCollection = useMutation(
+    api.bookmarks.bookmarkFunctions.updateCollection,
+  );
+
+  const handleDelete = async () => {
+    try {
+      await softDeleteBookmark({ bookmarkId: bookmark._id });
+    } catch (error) {
+      console.error("Failed to delete bookmark:", error);
+    }
+  };
+
+  const handleCollectionChange = async (
+    collectionId: Id<"bookmarkCollections"> | null,
+  ) => {
+    try {
+      await updateCollection({
+        bookmarkId: bookmark._id,
+        collectionId: collectionId || undefined,
+      });
+    } catch (error) {
+      console.error("Failed to update collection:", error);
+    }
+  };
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <HugeiconsIcon icon={MoreHorizontalIcon} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setEditOpen(true)}>
+            <HugeiconsIcon icon={PencilIcon} />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <HugeiconsIcon icon={FolderIcon} />
+              Add to Collection
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem onClick={() => handleCollectionChange(null)}>
+                Remove from Collection
+              </DropdownMenuItem>
+              {collections?.map((collection) => (
+                <DropdownMenuItem
+                  key={collection._id}
+                  onClick={() => handleCollectionChange(collection._id)}
+                >
+                  <HugeiconsIcon icon={FolderIcon} />
+                  {collection.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuItem onClick={handleDelete} variant="destructive">
+            <HugeiconsIcon icon={DeleteIcon} />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <BookmarkEditDialog
+        bookmark={bookmark}
+        open={editOpen}
+        setOpen={setEditOpen}
+      />
+    </>
+  );
+};
 
 export default function BookmarkPage() {
   const [selectedCollectionId, setSelectedCollectionId] =
@@ -300,25 +495,36 @@ export default function BookmarkPage() {
           </div>
           <div className="flex flex-col gap-2">
             {bookmarks.map((bookmark: (typeof bookmarks)[0]) => (
-              <div
+              <Card
                 key={bookmark._id}
-                className="border rounded-md p-3 hover:bg-accent transition-colors"
+                className="hover:bg-accent transition-colors cursor-pointer"
               >
-                <h3 className="font-medium text-sm">{bookmark.title}</h3>
-                {bookmark.description && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {bookmark.description}
-                  </p>
-                )}
-                <a
-                  href={bookmark.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline mt-2 block truncate"
-                >
-                  {bookmark.url}
-                </a>
-              </div>
+                <CardHeader>
+                  <CardTitle>{bookmark.title}</CardTitle>
+                  {bookmark.description && (
+                    <CardDescription className="line-clamp-2">
+                      {bookmark.description}
+                    </CardDescription>
+                  )}
+                  <CardAction>
+                    <BookmarkOptionsDropdown
+                      bookmark={bookmark}
+                      collections={collections}
+                    />
+                  </CardAction>
+                </CardHeader>
+                <CardContent>
+                  <a
+                    href={bookmark.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline block truncate"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {bookmark.url}
+                  </a>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
