@@ -5,9 +5,9 @@ import { UserSettingsProvider } from "@/providers/UserSettingsProvider";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <UserSettingsProvider>
-      <div className="bg-background w-full h-full overflow-hidden">
+      <div className="bg-background w-svw h-svh overflow-hidden">
         <SidebarProvider>
-          <main className="flex flex-row w-full h-[calc(100vh-2rem)] overflow-hidden">
+          <main className="flex flex-row w-svw h-svh overflow-hidden">
             <AppMainSidebar />
             {children}
           </main>
