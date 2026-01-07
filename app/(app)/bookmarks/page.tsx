@@ -49,6 +49,7 @@ import {
   MoreHorizontalIcon,
   PencilIcon,
   DeleteIcon,
+  BookmarkAdd01Icon,
 } from "@hugeicons/core-free-icons";
 import { Doc } from "@/convex/_generated/dataModel";
 import { useState, useEffect } from "react";
@@ -412,6 +413,18 @@ export default function BookmarkPage() {
               onKeyDown={handleInputKeyDown}
               disabled={isCreatingBookmark}
             />
+            <Button
+              onClick={handleCreateBookmark}
+              disabled={isCreatingBookmark || !searchQuery.trim()}
+              className="md:hidden"
+              size="icon"
+            >
+              {isCreatingBookmark ? (
+                <Spinner />
+              ) : (
+                <HugeiconsIcon icon={BookmarkAdd01Icon} />
+              )}
+            </Button>
           </div>
           <Empty>
             <EmptyHeader>
@@ -492,6 +505,18 @@ export default function BookmarkPage() {
               onKeyDown={handleInputKeyDown}
               disabled={isCreatingBookmark}
             />
+            <Button
+              onClick={handleCreateBookmark}
+              disabled={isCreatingBookmark || !searchQuery.trim()}
+              className="md:hidden"
+              size="icon"
+            >
+              {isCreatingBookmark ? (
+                <Spinner />
+              ) : (
+                <HugeiconsIcon icon={BookmarkAdd01Icon} />
+              )}
+            </Button>
           </div>
           <div className="flex flex-col gap-2">
             {bookmarks.map((bookmark: (typeof bookmarks)[0]) => (
