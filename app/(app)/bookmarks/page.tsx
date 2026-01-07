@@ -56,6 +56,7 @@ import { useState, useEffect } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { Spinner } from "@/components/ui/spinner";
+import Image from "next/image";
 
 const BookmarkEditDialog = ({
   bookmark,
@@ -527,10 +528,23 @@ export default function BookmarkPage() {
             {bookmarks.map((bookmark: (typeof bookmarks)[0]) => (
               <Card
                 key={bookmark._id}
-                className="hover:bg-accent transition-colors cursor-pointer"
+                className="hover:bg-accent transition-colors cursor-pointer gap-1"
               >
                 <CardHeader>
-                  <CardTitle>{bookmark.title}</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    {bookmark.favicon ? (
+                      <Image
+                        src={bookmark.favicon}
+                        alt="favicon"
+                        width={16}
+                        height={16}
+                        className="h-4 w-4"
+                        unoptimized
+                      />
+                    ) : null}
+                    {bookmark.title}
+                  </CardTitle>
+
                   {bookmark.description && (
                     <CardDescription className="line-clamp-2">
                       {bookmark.description}
