@@ -58,7 +58,7 @@ export const ListPageContent = () => {
   const lists = useQuery(api.listFunctions.getLists) || [];
   const [openCreateListModal, setOpenCreateListModal] = useState(false);
 
-  if (lists?.length === 0) {
+  if (lists.length === 0) {
     return (
       <>
         <div className="flex flex-col w-full h-full p-4">

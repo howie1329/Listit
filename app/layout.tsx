@@ -23,18 +23,18 @@ export default function RootLayout({
   return (
     <ConvexAuthNextjsServerProvider>
       <html lang="en" className={inter.variable} suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+        <body
+          className={`${inter.variable} antialiased w-svw h-svh overflow-hidden bg-background`}
         >
-          <body
-            className={`${inter.variable} antialiased w-svw h-svh overflow-hidden bg-background`}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
           >
             <ConvexClientProvider>{children}</ConvexClientProvider>
-          </body>
-        </ThemeProvider>
+          </ThemeProvider>
+        </body>
       </html>
     </ConvexAuthNextjsServerProvider>
   );
