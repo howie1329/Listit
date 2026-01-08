@@ -1,7 +1,7 @@
 "use client";
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,14 +30,12 @@ export const UserSettingsModal = ({
   setOpen: (open: boolean) => void;
 }) => {
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
-  const [name, setName] = useState(userSettings?.name || "");
-  const [theme, setTheme] = useState(userSettings?.theme || "dark");
-  const [defaultModel, setDefaultModel] = useState(
-    userSettings?.defaultModel || "gpt-4o",
+  const [name, setName] = useState("");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [defaultModel, setDefaultModel] = useState<"gpt-4o" | "gpt-4o-mini">(
+    "gpt-4o",
   );
-  const [isAiEnabled, setIsAiEnabled] = useState(
-    userSettings?.isAiEnabled || false,
-  );
+  const [isAiEnabled, setIsAiEnabled] = useState(false);
   const { signOut } = useAuthActions();
   const router = useRouter();
   const updateUserSettings = useMutation(api.userFunctions.updateUserSettings);
@@ -56,6 +54,20 @@ export const UserSettingsModal = ({
       router.push("/");
     });
   };
+
+  useEffect(() => {
+    const changeState = () => {
+      if (!userSettings) return;
+      setName(userSettings.name);
+      setTheme(userSettings.theme as "light" | "dark");
+      setDefaultModel(userSettings.defaultModel as "gpt-4o" | "gpt-4o-mini");
+      setIsAiEnabled(userSettings.isAiEnabled);
+    };
+    if (open) {
+      changeState();
+    }
+  }, [open, userSettings]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
