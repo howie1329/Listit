@@ -57,6 +57,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { Spinner } from "@/components/ui/spinner";
 import Image from "next/image";
+import { toast } from "sonner";
 
 const BookmarkEditDialog = ({
   bookmark,
@@ -310,9 +311,11 @@ export default function BookmarkPage() {
       setCreateCollectionOpen(false);
       setSelectedCollectionId(newCollectionId);
     } catch (error) {
+      toast.error("Failed to create collection");
       console.error("Failed to create collection:", error);
     } finally {
       setIsCreating(false);
+      toast.success("Collection created successfully");
     }
   };
 
@@ -334,7 +337,14 @@ export default function BookmarkPage() {
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && searchQuery.trim()) {
       e.preventDefault();
-      handleCreateBookmark();
+      try {
+        toast.loading("Creating bookmark...");
+        handleCreateBookmark();
+        toast.success("Bookmark created successfully");
+      } catch (error) {
+        toast.error("Failed to create bookmark");
+        console.error("Failed to create bookmark:", error);
+      }
     }
   };
 

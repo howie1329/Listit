@@ -36,15 +36,13 @@ export const basicFirecrawlScraper = async (
   url: string,
 ): Promise<firecrawlresponse> => {
   const results = await firecrawl.scrape(url, {
-    formats: [
-      { type: "json", schema: schema },
-      { type: "summary" },
-      { type: "screenshot" },
-    ],
+    formats: [{ type: "summary" }, { type: "screenshot" }],
   });
   if (!results) {
     throw new Error("Failed to scrape website");
   }
+
+  console.log("Basic Firecrawl Scraper Results: ", results);
 
   const response: firecrawlresponse = {
     title: results.metadata?.title || results.metadata?.ogTitle || "",
@@ -55,7 +53,6 @@ export const basicFirecrawlScraper = async (
     favicon: results.metadata?.favicon || "",
   };
 
-  console.log("Basic Firecrawl Scraper Results: ", response);
   return response;
 };
 

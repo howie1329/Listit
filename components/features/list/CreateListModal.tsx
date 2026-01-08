@@ -6,7 +6,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,8 +13,7 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Spinner } from "@/components/ui/spinner";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { PlusSignIcon } from "@hugeicons/core-free-icons";
+import { toast } from "sonner";
 
 export const CreateListModel = ({
   open,
@@ -31,11 +29,18 @@ export const CreateListModel = ({
 
   const handleCreateList = async () => {
     setIsLoading(true);
-    await createList({ title, description });
-    setIsLoading(false);
-    setTitle("");
-    setDescription("");
-    setOpen(false);
+    try {
+      await createList({ title, description });
+      setTitle("");
+      setDescription("");
+      setOpen(false);
+      toast.success("List created successfully");
+    } catch (error) {
+      toast.error("Failed to create list");
+      console.error("Failed to create list:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   return (
     <Dialog open={open} onOpenChange={setOpen}>
