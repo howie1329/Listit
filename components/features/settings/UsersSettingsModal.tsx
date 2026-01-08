@@ -7,11 +7,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Settings01Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useRouter } from "next/navigation";
 
 export const UserSettingsModal = ({
   open,
@@ -39,6 +38,8 @@ export const UserSettingsModal = ({
   const [isAiEnabled, setIsAiEnabled] = useState(
     userSettings?.isAiEnabled || false,
   );
+  const { signOut } = useAuthActions();
+  const router = useRouter();
   const updateUserSettings = useMutation(api.userFunctions.updateUserSettings);
   const handleSave = () => {
     updateUserSettings({
@@ -46,6 +47,13 @@ export const UserSettingsModal = ({
       theme,
       defaultModel,
       isAiEnabled,
+    });
+  };
+
+  const handleSignOut = () => {
+    signOut().then(() => {
+      setOpen(false);
+      router.push("/");
     });
   };
   return (
@@ -95,7 +103,12 @@ export const UserSettingsModal = ({
             onCheckedChange={() => setIsAiEnabled(!isAiEnabled)}
           />
         </div>
-        <Button onClick={handleSave}>Save</Button>
+        <div className="flex flex-row gap-2">
+          <Button variant="destructive" onClick={handleSignOut}>
+            Sign Out
+          </Button>
+          <Button onClick={handleSave}>Save</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

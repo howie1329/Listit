@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -98,7 +99,7 @@ export const AuthComponents = () => {
   };
 
   return (
-    <div className="flex flex-col w-full h-full justify-center items-center border-2 border-red-500">
+    <div className="flex flex-col w-full h-full justify-center items-center ">
       {flow === "signIn"
         ? SignInFlow()
         : flow === "signUp"

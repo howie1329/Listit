@@ -58,6 +58,7 @@ export const fetchUserSettings = query({
       updatedAt: v.string(),
       _creationTime: v.number(),
     }),
+    v.null(),
   ),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -70,7 +71,7 @@ export const fetchUserSettings = query({
       .first();
 
     if (!userSettings) {
-      throw new Error("User settings not found");
+      return null;
     }
     return userSettings;
   },
