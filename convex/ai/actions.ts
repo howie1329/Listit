@@ -6,6 +6,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText, ModelMessage, stepCountIs } from "ai";
 import { firecrawlTool } from "./tools/firecrawlAgent";
 import { Experimental_Agent as agent } from "ai";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const generateThreadResponse = action({
   args: {
@@ -46,6 +47,15 @@ export const generateThreadResponse = action({
 
     console.log("Model Messages", modelMessages);
 
+    const assistantMessageId = await ctx.runMutation(
+      api.threadMessages.mutations.addThreadMessage,
+      {
+        threadId: args.threadId,
+        role: "assistant",
+        content: "",
+      },
+    );
+
     const chatAgent = new agent({
       model: openRouter("openai/gpt-5-nano", {
         extraBody: {
@@ -62,16 +72,33 @@ export const generateThreadResponse = action({
       temperature: 0.8,
     });
 
-    const response = await chatAgent.generate({ messages: modelMessages });
+    const response = chatAgent.stream({ messages: modelMessages });
+    let fullResponse = "";
+    let lastResponseTime = Date.now();
+    console.log("Streaming response...", response.textStream);
+    for await (const chunk of response.textStream) {
+      console.log("Chunk", chunk);
+      fullResponse += chunk;
+      if (Date.now() - lastResponseTime > 75) {
+        console.log("Updating response...", fullResponse);
+        await ctx.runMutation(
+          api.threadMessages.mutations.updateThreadMessage,
+          {
+            threadMessageId: assistantMessageId,
+            content: fullResponse,
+          },
+        );
+        lastResponseTime = Date.now();
+      }
+    }
 
-    console.log("Response", response.text);
+    if (fullResponse) {
+      await ctx.runMutation(api.threadMessages.mutations.updateThreadMessage, {
+        threadMessageId: assistantMessageId,
+        content: fullResponse,
+      });
+    }
 
-    await ctx.runMutation(api.threadMessages.mutations.addThreadMessage, {
-      threadId: args.threadId,
-      role: "assistant",
-      content: response.text,
-    });
-
-    return response.text;
+    return fullResponse;
   },
 });
