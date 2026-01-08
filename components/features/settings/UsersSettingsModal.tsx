@@ -43,7 +43,10 @@ export const UserSettingsModal = ({
       name,
       defaultModel,
       isAiEnabled,
+    }).then(() => {
+      // TODO: Add a toast notification
     });
+    setOpen(false);
   };
 
   const handleSignOut = () => {

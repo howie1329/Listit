@@ -52,7 +52,7 @@ export default function OnboardingPage() {
         isAiEnabled: isAiEnabled,
       });
     }
-  }, [userSettings, createUserSettingsMutation]);
+  }, [userSettings, createUserSettingsMutation, defaultModel, isAiEnabled]);
   return (
     <div className="flex flex-col w-full h-full border-black border-2 items-center justify-center">
       <Card className="w-full max-w-md">
