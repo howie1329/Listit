@@ -50,10 +50,9 @@ export const UserSettingsModal = ({
   };
 
   const handleSignOut = () => {
-    signOut().then(() => {
-      setOpen(false);
-      router.push("/");
-    });
+    void signOut();
+    setOpen(false);
+    router.push("/");
   };
 
   useEffect(() => {
