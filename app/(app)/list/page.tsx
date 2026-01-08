@@ -23,6 +23,14 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from "@/components/ui/empty";
+import { CreateListModel } from "@/components/features/list/CreateListModal";
 import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
 import {
@@ -31,6 +39,7 @@ import {
   MoreHorizontalIcon,
   PencilIcon,
   PlusSignIcon,
+  HomeIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useAction, useMutation, useQuery } from "convex/react";
@@ -46,12 +55,37 @@ export default function ListPage() {
 
 export const ListPageContent = () => {
   const lists = useQuery(api.listFunctions.getLists);
+  const [openCreateListModal, setOpenCreateListModal] = useState(false);
 
   if (lists?.length === 0) {
     return (
-      <div className="flex flex-col w-full h-full">
-        <p>No lists found</p>
-      </div>
+      <>
+        <div className="flex flex-col w-full h-full p-4">
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <HugeiconsIcon icon={HomeIcon} />
+              </EmptyMedia>
+              <EmptyTitle>No lists found</EmptyTitle>
+              <EmptyDescription>
+                Get started by creating your first list. Organize your tasks,
+                ideas, or anything else you need to keep track of.
+              </EmptyDescription>
+            </EmptyHeader>
+            <Button
+              onClick={() => setOpenCreateListModal(true)}
+              className="mt-4"
+            >
+              <HugeiconsIcon icon={PlusSignIcon} />
+              Create Your First List
+            </Button>
+          </Empty>
+        </div>
+        <CreateListModel
+          open={openCreateListModal}
+          setOpen={setOpenCreateListModal}
+        />
+      </>
     );
   }
 
