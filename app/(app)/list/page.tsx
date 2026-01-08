@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Empty,
@@ -54,7 +55,7 @@ export default function ListPage() {
 }
 
 export const ListPageContent = () => {
-  const lists = useQuery(api.listFunctions.getLists);
+  const lists = useQuery(api.listFunctions.getLists) || [];
   const [openCreateListModal, setOpenCreateListModal] = useState(false);
 
   if (lists?.length === 0) {
@@ -91,8 +92,24 @@ export const ListPageContent = () => {
 
   if (!lists) {
     return (
-      <div className="flex flex-col w-full h-full">
-        <p>Loading...</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full h-full gap-2 p-4">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div
+            key={index}
+            className="bg-card border rounded-lg h-fit p-2 gap-2 flex flex-col"
+          >
+            <div className="flex flex-col items-start justify-start gap-2">
+              <div className="flex items-center justify-between gap-2 w-full">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-6 w-6 rounded" />
+              </div>
+              <div className="flex items-center justify-between gap-2 w-full">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
