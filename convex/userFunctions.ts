@@ -7,7 +7,6 @@ export const createUserSettings = mutation({
     name: v.optional(v.string()),
     email: v.optional(v.string()),
     profilePicture: v.optional(v.string()),
-    theme: v.union(v.literal("light"), v.literal("dark")),
     defaultModel: v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
     isAiEnabled: v.boolean(),
   },
@@ -33,7 +32,6 @@ export const createUserSettings = mutation({
       name: args.name ?? "",
       email: user?.email ?? args.email ?? "",
       profilePicture: args.profilePicture ?? "",
-      theme: args.theme ?? "dark",
       defaultModel: args.defaultModel ?? "gpt-4o",
       isAiEnabled: args.isAiEnabled ?? true,
       onboardingCompleted: false,
@@ -51,7 +49,6 @@ export const fetchUserSettings = query({
       name: v.string(),
       email: v.string(),
       profilePicture: v.optional(v.string()),
-      theme: v.union(v.literal("light"), v.literal("dark")),
       defaultModel: v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
       isAiEnabled: v.boolean(),
       onboardingCompleted: v.boolean(),
@@ -83,7 +80,6 @@ export const updateUserSettings = mutation({
     defaultModel: v.optional(
       v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
     ),
-    theme: v.optional(v.union(v.literal("light"), v.literal("dark"))),
     isAiEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {

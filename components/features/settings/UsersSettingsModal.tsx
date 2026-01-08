@@ -31,7 +31,6 @@ export const UserSettingsModal = ({
 }) => {
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const [name, setName] = useState("");
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [defaultModel, setDefaultModel] = useState<"gpt-4o" | "gpt-4o-mini">(
     "gpt-4o",
   );
@@ -42,7 +41,6 @@ export const UserSettingsModal = ({
   const handleSave = () => {
     updateUserSettings({
       name,
-      theme,
       defaultModel,
       isAiEnabled,
     });
@@ -59,7 +57,6 @@ export const UserSettingsModal = ({
     const changeState = () => {
       if (!userSettings) return;
       setName(userSettings.name);
-      setTheme(userSettings.theme as "light" | "dark");
       setDefaultModel(userSettings.defaultModel as "gpt-4o" | "gpt-4o-mini");
       setIsAiEnabled(userSettings.isAiEnabled);
     };
@@ -75,22 +72,7 @@ export const UserSettingsModal = ({
           <DialogTitle>User Settings</DialogTitle>
         </DialogHeader>
         <Input value={name} onChange={(e) => setName(e.target.value)} />
-        <div className="flex flex-row gap-2">
-          <Label>Display Mode</Label>
-          <Select
-            value={theme}
-            onValueChange={(value) => setTheme(value as "light" | "dark")}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a display mode" />
-            </SelectTrigger>
 
-            <SelectContent>
-              <SelectItem value="light">Light</SelectItem>
-              <SelectItem value="dark">Dark</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
         <div className="flex flex-row gap-2">
           <Label>Default AI Model</Label>
           <Select

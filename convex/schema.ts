@@ -50,7 +50,6 @@ export default defineSchema({
     name: v.string(),
     email: v.string(),
     profilePicture: v.optional(v.string()),
-    theme: v.union(v.literal("light"), v.literal("dark")),
     defaultModel: v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
     updatedAt: v.string(), // UTC string
     isAiEnabled: v.boolean(),

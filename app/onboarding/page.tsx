@@ -48,7 +48,6 @@ export default function OnboardingPage() {
     if (userSettings === null || userSettings === undefined) {
       void createUserSettingsMutation({
         name: "",
-        theme: "dark",
         defaultModel: defaultModel,
         isAiEnabled: isAiEnabled,
       });
