@@ -8,6 +8,15 @@ import { Experimental_Agent as agent } from "ai";
 import { tools } from "./tools/firecrawlAgent";
 
 /**
+ * Available fallback models for OpenRouter
+ */
+const FALLBACK_MODELS = [
+  "openai/gpt-4o",
+  "openai/gpt-4o-mini",
+  "openai/gpt-oss-20b:free",
+] as const;
+
+/**
  * Maps user settings defaultModel to OpenRouter model identifier
  */
 function mapModelToOpenRouter(
@@ -88,7 +97,7 @@ export const generateThreadResponse = action({
     const chatAgent = new agent({
       model: openRouter(modelName, {
         extraBody: {
-          models: [modelName],
+          models: FALLBACK_MODELS,
         },
       }),
       system:

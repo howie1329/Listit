@@ -7,6 +7,15 @@ import { api } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 /**
+ * Available fallback models for OpenRouter
+ */
+const FALLBACK_MODELS = [
+  "openai/gpt-4o",
+  "openai/gpt-4o-mini",
+  "openai/gpt-oss-20b:free",
+] as const;
+
+/**
  * Maps user settings defaultModel to OpenRouter model identifier
  */
 function mapModelToOpenRouter(
@@ -74,7 +83,7 @@ export const generateList = action({
     const { object }: { object: aiResult } = await generateObject({
       model: openRouter(modelName, {
         extraBody: {
-          models: [modelName],
+          models: FALLBACK_MODELS,
         },
       }),
       prompt: `Generate a list of 2 items for the list ${list.title} with the following description: ${list.description}`,
