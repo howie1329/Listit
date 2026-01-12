@@ -7,6 +7,7 @@ import { ModelMessage, stepCountIs } from "ai";
 import { Experimental_Agent as agent } from "ai";
 import { tools } from "./tools/firecrawlAgent";
 import { FALLBACK_MODELS, mapModelToOpenRouter } from "../lib/modelMapping";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const generateThreadResponse = action({
   args: {
@@ -20,6 +21,15 @@ export const generateThreadResponse = action({
 
     if (!thread) {
       throw new Error("Thread not found");
+    }
+
+    // Verify ownership of the thread
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+    if (thread.userId !== userId) {
+      throw new Error("Not authorized");
     }
 
     // Fetch user settings to get defaultModel

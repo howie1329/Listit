@@ -10,8 +10,4 @@ reviews:
     - "!**/.next/**"
     - "!**/_generated/**"
 
-language:
-  typescript:
-    review_comment_language: "en-US"
-  javascript:
-    review_comment_language: "en-US"
+language: "en-US"
