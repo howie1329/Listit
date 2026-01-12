@@ -77,6 +77,7 @@ export const fetchUserSettings = query({
 export const updateUserSettings = mutation({
   args: {
     name: v.optional(v.string()),
+    email: v.optional(v.string()),
     defaultModel: v.optional(
       v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
     ),
@@ -96,6 +97,7 @@ export const updateUserSettings = mutation({
     }
     return await ctx.db.patch(userSettings._id, {
       name: args.name ?? userSettings.name,
+      email: args.email ?? userSettings.email,
       defaultModel: args.defaultModel ?? userSettings.defaultModel,
       isAiEnabled: args.isAiEnabled ?? userSettings.isAiEnabled,
       onboardingCompleted: true,

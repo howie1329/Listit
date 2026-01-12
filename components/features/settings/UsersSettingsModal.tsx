@@ -31,6 +31,7 @@ export const UserSettingsModal = ({
 }) => {
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [defaultModel, setDefaultModel] = useState<"gpt-4o" | "gpt-4o-mini">(
     "gpt-4o",
   );
@@ -41,6 +42,7 @@ export const UserSettingsModal = ({
   const handleSave = () => {
     updateUserSettings({
       name,
+      email,
       defaultModel,
       isAiEnabled,
     }).then(() => {
@@ -59,6 +61,7 @@ export const UserSettingsModal = ({
     const changeState = () => {
       if (!userSettings) return;
       setName(userSettings.name);
+      setEmail(userSettings.email);
       setDefaultModel(userSettings.defaultModel as "gpt-4o" | "gpt-4o-mini");
       setIsAiEnabled(userSettings.isAiEnabled);
     };
@@ -73,7 +76,19 @@ export const UserSettingsModal = ({
         <DialogHeader>
           <DialogTitle>User Settings</DialogTitle>
         </DialogHeader>
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
+        <div className="flex flex-col gap-2">
+          <Label>Name</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label>Email</Label>
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
         <div className="flex flex-row gap-2">
           <Label>Default AI Model</Label>
