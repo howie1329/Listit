@@ -7,7 +7,11 @@ export const createUserSettings = mutation({
     name: v.optional(v.string()),
     email: v.optional(v.string()),
     profilePicture: v.optional(v.string()),
-    defaultModel: v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
+    defaultModel: v.union(
+      v.literal("gpt-4o"),
+      v.literal("gpt-4o-mini"),
+      v.literal("openai/gpt-oss-20b:free"),
+    ),
     isAiEnabled: v.boolean(),
   },
   handler: async (ctx, args) => {
@@ -49,7 +53,11 @@ export const fetchUserSettings = query({
       name: v.string(),
       email: v.string(),
       profilePicture: v.optional(v.string()),
-      defaultModel: v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
+      defaultModel: v.union(
+        v.literal("gpt-4o"),
+        v.literal("gpt-4o-mini"),
+        v.literal("openai/gpt-oss-20b:free"),
+      ),
       isAiEnabled: v.boolean(),
       onboardingCompleted: v.boolean(),
       updatedAt: v.string(),
@@ -79,7 +87,11 @@ export const updateUserSettings = mutation({
     name: v.optional(v.string()),
     email: v.optional(v.string()),
     defaultModel: v.optional(
-      v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
+      v.union(
+        v.literal("gpt-4o"),
+        v.literal("gpt-4o-mini"),
+        v.literal("openai/gpt-oss-20b:free"),
+      ),
     ),
     isAiEnabled: v.optional(v.boolean()),
   },

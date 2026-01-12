@@ -28,9 +28,9 @@ export default function OnboardingPage() {
     api.userFunctions.createUserSettings,
   );
   const [name, setName] = useState("");
-  const [defaultModel, setDefaultModel] = useState<"gpt-4o" | "gpt-4o-mini">(
-    "gpt-4o",
-  );
+  const [defaultModel, setDefaultModel] = useState<
+    "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free"
+  >("gpt-4o");
   const [isAiEnabled, setIsAiEnabled] = useState(true);
   const updateUserSettings = useMutation(api.userFunctions.updateUserSettings);
   const router = useRouter();
@@ -72,7 +72,9 @@ export default function OnboardingPage() {
               <Select
                 value={defaultModel}
                 onValueChange={(value) =>
-                  setDefaultModel(value as "gpt-4o" | "gpt-4o-mini")
+                  setDefaultModel(
+                    value as "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free",
+                  )
                 }
               >
                 <SelectTrigger>
@@ -81,6 +83,9 @@ export default function OnboardingPage() {
                 <SelectContent>
                   <SelectItem value="gpt-4o">GPT-4o</SelectItem>
                   <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
+                  <SelectItem value="openai/gpt-oss-20b:free">
+                    GPT-OSS-20B (Free)
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

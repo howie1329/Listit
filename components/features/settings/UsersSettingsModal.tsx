@@ -32,9 +32,9 @@ export const UserSettingsModal = ({
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [defaultModel, setDefaultModel] = useState<"gpt-4o" | "gpt-4o-mini">(
-    "gpt-4o",
-  );
+  const [defaultModel, setDefaultModel] = useState<
+    "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free"
+  >("gpt-4o");
   const [isAiEnabled, setIsAiEnabled] = useState(false);
   const { signOut } = useAuthActions();
   const router = useRouter();
@@ -62,7 +62,12 @@ export const UserSettingsModal = ({
       if (!userSettings) return;
       setName(userSettings.name);
       setEmail(userSettings.email);
-      setDefaultModel(userSettings.defaultModel as "gpt-4o" | "gpt-4o-mini");
+      setDefaultModel(
+        userSettings.defaultModel as
+          | "gpt-4o"
+          | "gpt-4o-mini"
+          | "openai/gpt-oss-20b:free",
+      );
       setIsAiEnabled(userSettings.isAiEnabled);
     };
     if (open) {
@@ -95,7 +100,9 @@ export const UserSettingsModal = ({
           <Select
             value={defaultModel}
             onValueChange={(value) =>
-              setDefaultModel(value as "gpt-4o" | "gpt-4o-mini")
+              setDefaultModel(
+                value as "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free",
+              )
             }
           >
             <SelectTrigger>
@@ -104,6 +111,9 @@ export const UserSettingsModal = ({
             <SelectContent>
               <SelectItem value="gpt-4o">GPT-4o</SelectItem>
               <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
+              <SelectItem value="openai/gpt-oss-20b:free">
+                GPT-OSS-20B (Free)
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>

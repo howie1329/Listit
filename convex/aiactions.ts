@@ -9,12 +9,16 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 /**
  * Maps user settings defaultModel to OpenRouter model identifier
  */
-function mapModelToOpenRouter(defaultModel: "gpt-4o" | "gpt-4o-mini"): string {
+function mapModelToOpenRouter(
+  defaultModel: "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free",
+): string {
   switch (defaultModel) {
     case "gpt-4o":
       return "openai/gpt-4o";
     case "gpt-4o-mini":
       return "openai/gpt-4o-mini";
+    case "openai/gpt-oss-20b:free":
+      return "openai/gpt-oss-20b:free"; // Already in OpenRouter format
     default:
       return "openai/gpt-4o"; // fallback
   }

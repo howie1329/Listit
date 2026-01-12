@@ -67,7 +67,11 @@ export default defineSchema({
     name: v.string(),
     email: v.string(),
     profilePicture: v.optional(v.string()),
-    defaultModel: v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
+    defaultModel: v.union(
+      v.literal("gpt-4o"),
+      v.literal("gpt-4o-mini"),
+      v.literal("openai/gpt-oss-20b:free"),
+    ),
     updatedAt: v.string(), // UTC string
     isAiEnabled: v.boolean(),
     onboardingCompleted: v.boolean(),
