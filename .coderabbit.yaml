@@ -9,10 +9,9 @@ reviews:
     - "!**/node_modules/**"
     - "!**/.next/**"
     - "!**/_generated/**"
-  
+
 language:
   typescript:
-    review_comment_language: "en"
+    review_comment_language: "en-US"
   javascript:
-    review_comment_language: "en"
-
+    review_comment_language: "en-US"
