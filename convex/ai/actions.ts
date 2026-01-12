@@ -7,11 +7,45 @@ import { ModelMessage, stepCountIs } from "ai";
 import { Experimental_Agent as agent } from "ai";
 import { tools } from "./tools/firecrawlAgent";
 
+/**
+ * Maps user settings defaultModel to OpenRouter model identifier
+ */
+function mapModelToOpenRouter(defaultModel: "gpt-4o" | "gpt-4o-mini"): string {
+  switch (defaultModel) {
+    case "gpt-4o":
+      return "openai/gpt-4o";
+    case "gpt-4o-mini":
+      return "openai/gpt-4o-mini";
+    default:
+      return "openai/gpt-4o"; // fallback
+  }
+}
+
 export const generateThreadResponse = action({
   args: {
     threadId: v.id("thread"),
   },
   handler: async (ctx, args) => {
+    // Get the thread to verify ownership and get userId
+    const thread = await ctx.runQuery(api.thread.queries.getSingleThread, {
+      threadId: args.threadId,
+    });
+
+    if (!thread) {
+      throw new Error("Thread not found");
+    }
+
+    // Fetch user settings to get defaultModel
+    const userSettings = await ctx.runQuery(
+      api.userFunctions.fetchUserSettings,
+    );
+
+    // Map user's defaultModel to OpenRouter format, with fallback
+    const modelName =
+      userSettings?.defaultModel != null
+        ? mapModelToOpenRouter(userSettings.defaultModel)
+        : "openai/gpt-4o"; // fallback if settings not found
+
     const messages = await ctx.runQuery(
       api.threadMessages.queries.getThreadMessages,
       {
@@ -48,9 +82,9 @@ export const generateThreadResponse = action({
     const toolFunctions = tools(ctx, args.threadId, assistantMessageId);
 
     const chatAgent = new agent({
-      model: openRouter("openai/gpt-5-nano", {
+      model: openRouter(modelName, {
         extraBody: {
-          models: ["openai/gpt-oss-20b"],
+          models: [modelName],
         },
       }),
       system:

@@ -6,6 +6,20 @@ import { generateObject } from "ai";
 import { api } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+/**
+ * Maps user settings defaultModel to OpenRouter model identifier
+ */
+function mapModelToOpenRouter(defaultModel: "gpt-4o" | "gpt-4o-mini"): string {
+  switch (defaultModel) {
+    case "gpt-4o":
+      return "openai/gpt-4o";
+    case "gpt-4o-mini":
+      return "openai/gpt-4o-mini";
+    default:
+      return "openai/gpt-4o"; // fallback
+  }
+}
+
 type aiResult = {
   items: aiResultItems[];
 };
@@ -38,13 +52,25 @@ export const generateList = action({
         "You are not authorized to generate a list for this list",
       );
     }
+
+    // Fetch user settings to get defaultModel
+    const userSettings = await ctx.runQuery(
+      api.userFunctions.fetchUserSettings,
+    );
+
+    // Map user's defaultModel to OpenRouter format, with fallback
+    const modelName =
+      userSettings?.defaultModel != null
+        ? mapModelToOpenRouter(userSettings.defaultModel)
+        : "openai/gpt-4o"; // fallback if settings not found
+
     const openRouter = createOpenRouter({
       apiKey: process.env.OPENROUTER_AI_KEY,
     });
     const { object }: { object: aiResult } = await generateObject({
-      model: openRouter("openai/gpt-oss-20b:free", {
+      model: openRouter(modelName, {
         extraBody: {
-          models: ["openai/gpt-oss-20b", "openai/gpt-5-nano"],
+          models: [modelName],
         },
       }),
       prompt: `Generate a list of 2 items for the list ${list.title} with the following description: ${list.description}`,
