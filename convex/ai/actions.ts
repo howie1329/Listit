@@ -4,7 +4,6 @@ import { v } from "convex/values";
 import { api } from "../_generated/api";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { ModelMessage, stepCountIs } from "ai";
-import { Experimental_Agent as agent } from "ai";
 import { ToolLoopAgent } from "ai";
 import { tools } from "./tools/firecrawlAgent";
 import { FALLBACK_MODELS, mapModelToOpenRouter } from "../lib/modelMapping";
