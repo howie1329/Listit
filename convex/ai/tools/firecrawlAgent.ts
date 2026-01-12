@@ -15,7 +15,6 @@ export const tools = (
 ) => {
   return {
     firecrawlTool: tool({
-      name: "firecrawl",
       description: "Use this tool to search the web for information",
       inputSchema: z.object({
         query: z.string().describe("The query to search the web for"),
@@ -50,7 +49,6 @@ export const tools = (
 };
 // Need To test to see if this works... if not move to js file and and new Tool
 export const firecrawlTool = tool({
-  name: "firecrawl",
   description: "Use this tool to search the web for information",
   inputSchema: z.object({
     query: z.string().describe("The query to search the web for"),
@@ -100,7 +98,6 @@ export const basicFirecrawlScraper = async (
 };
 
 export const firecrawlScraperTool = tool({
-  name: "firecrawlScraper",
   description: "Use this tool to scrape a website for information",
   inputSchema: z.object({
     url: z.string().describe("The URL of the website to scrape"),

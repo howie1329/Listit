@@ -5,6 +5,7 @@ import { api } from "../_generated/api";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { ModelMessage, stepCountIs } from "ai";
 import { Experimental_Agent as agent } from "ai";
+import { ToolLoopAgent } from "ai";
 import { tools } from "./tools/firecrawlAgent";
 import { FALLBACK_MODELS, mapModelToOpenRouter } from "../lib/modelMapping";
 import { getAuthUserId } from "@convex-dev/auth/server";
@@ -78,13 +79,13 @@ export const generateThreadResponse = action({
 
     const toolFunctions = tools(ctx, args.threadId, assistantMessageId);
 
-    const chatAgent = new agent({
+    const chatAgent = new ToolLoopAgent({
       model: openRouter(modelName, {
         extraBody: {
           models: FALLBACK_MODELS,
         },
       }),
-      system:
+      instructions:
         "You are a helpful assistant that can answer questions." +
         "You can use the firecrawl tool to search the web for information." +
         "Only run the firecrawl tool one time. Do not run it multiple times." +
@@ -94,7 +95,7 @@ export const generateThreadResponse = action({
       temperature: 0.8,
     });
 
-    const response = chatAgent.stream({ messages: modelMessages });
+    const response = await chatAgent.stream({ messages: modelMessages });
     let fullResponse = "";
     let lastResponseTime = Date.now();
     for await (const chunk of response.textStream) {
