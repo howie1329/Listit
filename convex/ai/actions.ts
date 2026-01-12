@@ -6,12 +6,43 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { ModelMessage, stepCountIs } from "ai";
 import { Experimental_Agent as agent } from "ai";
 import { tools } from "./tools/firecrawlAgent";
+import { FALLBACK_MODELS, mapModelToOpenRouter } from "../lib/modelMapping";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const generateThreadResponse = action({
   args: {
     threadId: v.id("thread"),
   },
   handler: async (ctx, args) => {
+    // Get the thread to verify ownership and get userId
+    const thread = await ctx.runQuery(api.thread.queries.getSingleThread, {
+      threadId: args.threadId,
+    });
+
+    if (!thread) {
+      throw new Error("Thread not found");
+    }
+
+    // Verify ownership of the thread
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+    if (thread.userId !== userId) {
+      throw new Error("Not authorized");
+    }
+
+    // Fetch user settings to get defaultModel
+    const userSettings = await ctx.runQuery(
+      api.userFunctions.fetchUserSettings,
+    );
+
+    // Map user's defaultModel to OpenRouter format, with fallback
+    const modelName =
+      userSettings?.defaultModel != null
+        ? mapModelToOpenRouter(userSettings.defaultModel)
+        : FALLBACK_MODELS[0]; // fallback if settings not found
+
     const messages = await ctx.runQuery(
       api.threadMessages.queries.getThreadMessages,
       {
@@ -48,9 +79,9 @@ export const generateThreadResponse = action({
     const toolFunctions = tools(ctx, args.threadId, assistantMessageId);
 
     const chatAgent = new agent({
-      model: openRouter("openai/gpt-5-nano", {
+      model: openRouter(modelName, {
         extraBody: {
-          models: ["openai/gpt-oss-20b"],
+          models: FALLBACK_MODELS,
         },
       }),
       system:

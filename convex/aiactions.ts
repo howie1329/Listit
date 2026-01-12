@@ -5,6 +5,10 @@ import { z } from "zod/v3";
 import { generateObject } from "ai";
 import { api } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import {
+  FALLBACK_MODELS,
+  mapModelToOpenRouter,
+} from "./lib/modelMapping";
 
 type aiResult = {
   items: aiResultItems[];
@@ -38,13 +42,25 @@ export const generateList = action({
         "You are not authorized to generate a list for this list",
       );
     }
+
+    // Fetch user settings to get defaultModel
+    const userSettings = await ctx.runQuery(
+      api.userFunctions.fetchUserSettings,
+    );
+
+    // Map user's defaultModel to OpenRouter format, with fallback
+    const modelName =
+      userSettings?.defaultModel != null
+        ? mapModelToOpenRouter(userSettings.defaultModel)
+        : FALLBACK_MODELS[0]; // fallback if settings not found
+
     const openRouter = createOpenRouter({
       apiKey: process.env.OPENROUTER_AI_KEY,
     });
     const { object }: { object: aiResult } = await generateObject({
-      model: openRouter("openai/gpt-oss-20b:free", {
+      model: openRouter(modelName, {
         extraBody: {
-          models: ["openai/gpt-oss-20b", "openai/gpt-5-nano"],
+          models: FALLBACK_MODELS,
         },
       }),
       prompt: `Generate a list of 2 items for the list ${list.title} with the following description: ${list.description}`,

@@ -21,6 +21,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { DefaultModel } from "@/convex/lib/modelMapping";
 
 export const UserSettingsModal = ({
   open,
@@ -31,22 +33,28 @@ export const UserSettingsModal = ({
 }) => {
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const [name, setName] = useState("");
-  const [defaultModel, setDefaultModel] = useState<"gpt-4o" | "gpt-4o-mini">(
-    "gpt-4o",
-  );
+  const [email, setEmail] = useState("");
+  const [defaultModel, setDefaultModel] = useState<DefaultModel>("gpt-4o");
   const [isAiEnabled, setIsAiEnabled] = useState(false);
   const { signOut } = useAuthActions();
   const router = useRouter();
   const updateUserSettings = useMutation(api.userFunctions.updateUserSettings);
+
   const handleSave = () => {
     updateUserSettings({
       name,
+      email,
       defaultModel,
       isAiEnabled,
-    }).then(() => {
-      // TODO: Add a toast notification
-    });
-    setOpen(false);
+    })
+      .then(() => {
+        setOpen(false);
+        toast.success("User settings updated successfully");
+      })
+      .catch((error) => {
+        toast.error("Failed to update user settings");
+        console.error("Failed to update user settings:", error);
+      });
   };
 
   const handleSignOut = () => {
@@ -59,7 +67,8 @@ export const UserSettingsModal = ({
     const changeState = () => {
       if (!userSettings) return;
       setName(userSettings.name);
-      setDefaultModel(userSettings.defaultModel as "gpt-4o" | "gpt-4o-mini");
+      setEmail(userSettings.email);
+      setDefaultModel(userSettings.defaultModel as DefaultModel);
       setIsAiEnabled(userSettings.isAiEnabled);
     };
     if (open) {
@@ -73,14 +82,26 @@ export const UserSettingsModal = ({
         <DialogHeader>
           <DialogTitle>User Settings</DialogTitle>
         </DialogHeader>
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
+        <div className="flex flex-col gap-2">
+          <Label>Name</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label>Email</Label>
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
         <div className="flex flex-row gap-2">
           <Label>Default AI Model</Label>
           <Select
             value={defaultModel}
             onValueChange={(value) =>
-              setDefaultModel(value as "gpt-4o" | "gpt-4o-mini")
+              setDefaultModel(value as DefaultModel)
             }
           >
             <SelectTrigger>
@@ -89,6 +110,9 @@ export const UserSettingsModal = ({
             <SelectContent>
               <SelectItem value="gpt-4o">GPT-4o</SelectItem>
               <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
+              <SelectItem value="openai/gpt-oss-20b:free">
+                GPT-OSS-20B (Free)
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>

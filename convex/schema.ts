@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
+import { defaultModelValidator } from "./lib/modelMapping";
 
 // The schema is normally optional, but Convex Auth
 // requires indexes defined on `authTables`.
@@ -67,7 +68,7 @@ export default defineSchema({
     name: v.string(),
     email: v.string(),
     profilePicture: v.optional(v.string()),
-    defaultModel: v.union(v.literal("gpt-4o"), v.literal("gpt-4o-mini")),
+    defaultModel: defaultModelValidator(),
     updatedAt: v.string(), // UTC string
     isAiEnabled: v.boolean(),
     onboardingCompleted: v.boolean(),
