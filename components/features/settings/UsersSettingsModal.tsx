@@ -21,6 +21,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export const UserSettingsModal = ({
   open,
@@ -39,16 +40,22 @@ export const UserSettingsModal = ({
   const { signOut } = useAuthActions();
   const router = useRouter();
   const updateUserSettings = useMutation(api.userFunctions.updateUserSettings);
+
   const handleSave = () => {
     updateUserSettings({
       name,
       email,
       defaultModel,
       isAiEnabled,
-    }).then(() => {
-      // TODO: Add a toast notification
-    });
-    setOpen(false);
+    })
+      .then(() => {
+        setOpen(false);
+        toast.success("User settings updated successfully");
+      })
+      .catch((error) => {
+        toast.error("Failed to update user settings");
+        console.error("Failed to update user settings:", error);
+      });
   };
 
   const handleSignOut = () => {
