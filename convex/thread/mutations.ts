@@ -14,7 +14,24 @@ export const createThread = mutation({
     return await ctx.db.insert("thread", {
       userId: userId,
       title: args.title,
+      streamingStatus: "idle",
       updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
+export const updateThreadStreamingStatus = mutation({
+  args: {
+    threadId: v.id("thread"),
+    streamingStatus: v.union(
+      v.literal("idle"),
+      v.literal("streaming"),
+      v.literal("error"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.threadId, {
+      streamingStatus: args.streamingStatus,
     });
   },
 });

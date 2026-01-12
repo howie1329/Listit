@@ -3,28 +3,15 @@ import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText, ModelMessage, stepCountIs } from "ai";
-import { firecrawlTool } from "./tools/firecrawlAgent";
+import { ModelMessage, stepCountIs } from "ai";
 import { Experimental_Agent as agent } from "ai";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { tools } from "./tools/firecrawlAgent";
 
 export const generateThreadResponse = action({
   args: {
     threadId: v.id("thread"),
-    usersMessage: v.string(),
   },
   handler: async (ctx, args) => {
-    const thread = await ctx.runQuery(api.thread.queries.getSingleThread, {
-      threadId: args.threadId,
-    });
-    if (!thread) {
-      throw new Error("Thread not found");
-    }
-    await ctx.runMutation(api.threadMessages.mutations.addThreadMessage, {
-      threadId: args.threadId,
-      role: "user",
-      content: args.usersMessage,
-    });
     const messages = await ctx.runQuery(
       api.threadMessages.queries.getThreadMessages,
       {
@@ -32,7 +19,6 @@ export const generateThreadResponse = action({
       },
     );
 
-    console.log("Messages", messages);
     if (!messages) {
       throw new Error("Messages not found");
     }
@@ -45,7 +31,10 @@ export const generateThreadResponse = action({
       content: msg.content,
     }));
 
-    console.log("Model Messages", modelMessages);
+    await ctx.runMutation(api.thread.mutations.updateThreadStreamingStatus, {
+      threadId: args.threadId,
+      streamingStatus: "streaming",
+    });
 
     const assistantMessageId = await ctx.runMutation(
       api.threadMessages.mutations.addThreadMessage,
@@ -55,6 +44,8 @@ export const generateThreadResponse = action({
         content: "",
       },
     );
+
+    const toolFunctions = tools(ctx, args.threadId, assistantMessageId);
 
     const chatAgent = new agent({
       model: openRouter("openai/gpt-5-nano", {
@@ -67,7 +58,7 @@ export const generateThreadResponse = action({
         "You can use the firecrawl tool to search the web for information." +
         "Only run the firecrawl tool one time. Do not run it multiple times." +
         "If you need to run firecrawl again, you must ask the user first.",
-      tools: { firecrawl: firecrawlTool },
+      tools: { firecrawl: toolFunctions.firecrawlTool },
       stopWhen: stepCountIs(10),
       temperature: 0.8,
     });
@@ -75,12 +66,10 @@ export const generateThreadResponse = action({
     const response = chatAgent.stream({ messages: modelMessages });
     let fullResponse = "";
     let lastResponseTime = Date.now();
-    console.log("Streaming response...", response.textStream);
     for await (const chunk of response.textStream) {
       console.log("Chunk", chunk);
       fullResponse += chunk;
       if (Date.now() - lastResponseTime > 75) {
-        console.log("Updating response...", fullResponse);
         await ctx.runMutation(
           api.threadMessages.mutations.updateThreadMessage,
           {
@@ -96,6 +85,10 @@ export const generateThreadResponse = action({
       await ctx.runMutation(api.threadMessages.mutations.updateThreadMessage, {
         threadMessageId: assistantMessageId,
         content: fullResponse,
+      });
+      await ctx.runMutation(api.thread.mutations.updateThreadStreamingStatus, {
+        threadId: args.threadId,
+        streamingStatus: "idle",
       });
     }
 

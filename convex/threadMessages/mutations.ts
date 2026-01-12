@@ -1,5 +1,37 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { api } from "../_generated/api";
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
+
+export const sendThreadMessage = mutation({
+  args: {
+    threadId: v.id("thread"),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not found");
+    }
+    const thread = await ctx.db.get(args.threadId);
+    if (!thread) {
+      throw new Error("Thread not found");
+    }
+    if (thread.userId !== userId) {
+      throw new Error("User does not have access to this thread");
+    }
+    const messageId = await ctx.db.insert("threadMessage", {
+      threadId: args.threadId,
+      role: "user",
+      content: args.content,
+      updatedAt: new Date().toISOString(),
+    });
+    await ctx.scheduler.runAfter(0, api.ai.actions.generateThreadResponse, {
+      threadId: args.threadId,
+    });
+    return messageId;
+  },
+});
 
 export const addThreadMessage = mutation({
   args: {

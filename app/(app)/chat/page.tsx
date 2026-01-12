@@ -2,20 +2,23 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useAction } from "convex/react";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function ChatPage() {
   const [isGenerating, setIsGenerating] = useState(false);
-  const generateThreadResponse = useAction(
-    api.ai.actions.generateThreadResponse,
+  const sendThreadMessage = useMutation(
+    api.threadMessages.mutations.sendThreadMessage,
   );
   const threads = useQuery(api.thread.queries.getUserThreads);
   const [selectedThread, setSelectedThread] = useState<Id<"thread"> | null>(
     null,
+  );
+  const threadWithStreamingStatus = useQuery(
+    api.thread.queries.getSingleThreadWithStreamingStatus,
+    selectedThread ? { threadId: selectedThread } : "skip",
   );
   const [message, setMessage] = useState("");
   const messages = useQuery(
@@ -37,14 +40,23 @@ export default function ChatPage() {
     if (!selectedThread || !message) {
       return;
     }
-    setIsGenerating(true);
-    await generateThreadResponse({
+    await sendThreadMessage({
       threadId: selectedThread,
-      usersMessage: message,
+      content: message,
     });
-    setIsGenerating(false);
     setMessage("");
   };
+
+  useEffect(() => {
+    const setIsGeneratingStatus = () => {
+      if (threadWithStreamingStatus?.streamingStatus === "streaming") {
+        setIsGenerating(true);
+      } else if (threadWithStreamingStatus?.streamingStatus === "idle") {
+        setIsGenerating(false);
+      }
+    };
+    setIsGeneratingStatus();
+  }, [threadWithStreamingStatus]);
 
   return (
     <div className="flex flex-row border-2 border-red-500 w-full h-full p-2 gap-2">

@@ -2,9 +2,52 @@
 import Firecrawl from "@mendable/firecrawl-js";
 import { z } from "zod";
 import { tool } from "ai";
+import { ActionCtx } from "../../_generated/server";
+import { api } from "../../_generated/api";
+import { Id } from "../../_generated/dataModel";
 
 const firecrawl = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
 
+export const tools = (
+  ctx: ActionCtx,
+  threadId: Id<"thread">,
+  threadMessageId: Id<"threadMessage">,
+) => {
+  return {
+    firecrawlTool: tool({
+      name: "firecrawl",
+      description: "Use this tool to search the web for information",
+      inputSchema: z.object({
+        query: z.string().describe("The query to search the web for"),
+      }),
+      execute: async ({ query }) => {
+        console.log("Firecrawl Query: ", query);
+        const threadToolId = await ctx.runMutation(
+          api.threadtools.mutation.addThreadTool,
+          {
+            threadId: threadId,
+            threadMessageId: threadMessageId,
+            toolName: "firecrawl",
+          },
+        );
+        console.log("Thread Tool ID: ", threadToolId);
+        const results = await firecrawl.search(query, {
+          limit: 3,
+          scrapeOptions: { formats: ["summary", "json"] },
+        });
+
+        console.log("Firecrawl Results: ", results);
+        await ctx.runMutation(api.threadtools.mutation.updateThreadTool, {
+          threadToolId: threadToolId,
+          toolOutput: JSON.stringify(results),
+          status: "completed",
+        });
+
+        return results;
+      },
+    }),
+  };
+};
 // Need To test to see if this works... if not move to js file and and new Tool
 export const firecrawlTool = tool({
   name: "firecrawl",

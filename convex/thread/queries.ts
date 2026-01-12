@@ -9,6 +9,7 @@ export const getUserThreads = query({
       _id: v.id("thread"),
       userId: v.id("users"),
       _creationTime: v.number(),
+      streamingStatus: v.string(),
       title: v.string(),
       updatedAt: v.string(),
     }),
@@ -23,6 +24,30 @@ export const getUserThreads = query({
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .collect();
     return threads;
+  },
+});
+
+export const getSingleThreadWithStreamingStatus = query({
+  args: {
+    threadId: v.id("thread"),
+  },
+  returns: v.object({
+    _id: v.id("thread"),
+    streamingStatus: v.union(
+      v.literal("idle"),
+      v.literal("streaming"),
+      v.literal("error"),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const thread = await ctx.db.get(args.threadId);
+    if (!thread) {
+      throw new Error("Thread not found");
+    }
+    return {
+      _id: thread._id,
+      streamingStatus: thread.streamingStatus,
+    };
   },
 });
 

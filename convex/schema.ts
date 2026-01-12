@@ -7,9 +7,29 @@ import { authTables } from "@convex-dev/auth/server";
 // The schema provides more precise TypeScript types.
 export default defineSchema({
   ...authTables,
+  threadTools: defineTable({
+    threadId: v.id("thread"),
+    threadMessageId: v.id("threadMessage"),
+    toolName: v.string(),
+    toolOutput: v.string(),
+    status: v.union(
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("error"),
+    ),
+    errorMessage: v.optional(v.string()),
+    updatedAt: v.string(),
+  })
+    .index("by_threadId", ["threadId"])
+    .index("by_threadMessageId", ["threadMessageId"]),
   thread: defineTable({
     userId: v.id("users"),
     title: v.string(),
+    streamingStatus: v.union(
+      v.literal("idle"),
+      v.literal("streaming"),
+      v.literal("error"),
+    ),
     updatedAt: v.string(),
   }).index("by_userId", ["userId"]),
   threadMessage: defineTable({
