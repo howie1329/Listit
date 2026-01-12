@@ -1,0 +1,18 @@
+reviews:
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+  request_changes_workflow: true
+  path_filters:
+    - "**/*"
+    - "!**/*.md"
+    - "!**/node_modules/**"
+    - "!**/.next/**"
+    - "!**/_generated/**"
+  
+language:
+  typescript:
+    review_comment_language: "en"
+  javascript:
+    review_comment_language: "en"
+
