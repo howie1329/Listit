@@ -115,60 +115,6 @@ export const getBookmark = query({
   },
 });
 
-export const searchBookmarks = query({
-  args: {
-    searchQuery: v.string(),
-    includeArchived: v.optional(v.boolean()),
-  },
-  returns: v.array(
-    v.object({
-      _id: v.id("bookmarks"),
-      userId: v.id("users"),
-      url: v.string(),
-      title: v.string(),
-      description: v.optional(v.string()),
-      favicon: v.optional(v.string()),
-      thumbnail: v.optional(v.string()),
-      screenshot: v.optional(v.string()),
-      summary: v.optional(v.string()),
-      extractedContent: v.optional(v.string()),
-      tags: v.array(v.string()),
-      collectionId: v.optional(v.id("bookmarkCollections")),
-      isArchived: v.boolean(),
-      isDeleted: v.boolean(),
-      isPinned: v.boolean(),
-      isRead: v.boolean(),
-      isPublic: v.boolean(),
-      _creationTime: v.number(),
-      createdAt: v.string(),
-      updatedAt: v.string(),
-      readAt: v.optional(v.string()),
-      readingTime: v.optional(v.number()),
-      searchText: v.string(),
-    }),
-  ),
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("User not found");
-    }
-    const bookmarks = await ctx.db
-      .query("bookmarks")
-      .withSearchIndex("search_bookmarks", (q) =>
-        q
-          .search("searchText", args.searchQuery)
-          .eq("userId", userId)
-          .eq("isDeleted", false),
-      )
-      .collect();
-    // Filter by archived status if specified
-    if (args.includeArchived === false) {
-      return bookmarks.filter((bookmark) => !bookmark.isArchived);
-    }
-    return bookmarks;
-  },
-});
-
 export const getBookmarksByCollection = query({
   args: {
     collectionId: v.id("bookmarkCollections"),

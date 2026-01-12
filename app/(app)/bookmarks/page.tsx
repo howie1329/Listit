@@ -1,7 +1,7 @@
 "use client";
 import { api } from "@/convex/_generated/api";
 import { useAction, useQuery } from "convex/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -10,6 +10,50 @@ import { BookmarkSearchBar } from "@/components/features/bookmarks/BookmarkSearc
 import { BookmarksEmptyState } from "@/components/features/bookmarks/BookmarksEmptyState";
 import { BookmarksList } from "@/components/features/bookmarks/BookmarksList";
 import { CreateCollectionDialog } from "@/components/features/bookmarks/CreateCollectionDialog";
+
+// Client-side search filter function
+function filterBookmarks<
+  T extends {
+    title: string;
+    url: string;
+    description?: string;
+    summary?: string;
+    tags: string[];
+    searchText: string;
+  },
+>(bookmarks: T[] | undefined, searchQuery: string): T[] | undefined {
+  if (!bookmarks || !searchQuery.trim()) {
+    return bookmarks;
+  }
+
+  const query = searchQuery.toLowerCase().trim();
+  return bookmarks.filter((bookmark) => {
+    // Search in multiple fields
+    const titleMatch = bookmark.title.toLowerCase().includes(query);
+    const urlMatch = bookmark.url.toLowerCase().includes(query);
+    const descriptionMatch = bookmark.description
+      ? bookmark.description.toLowerCase().includes(query)
+      : false;
+    const summaryMatch = bookmark.summary
+      ? bookmark.summary.toLowerCase().includes(query)
+      : false;
+    const tagsMatch = bookmark.tags.some((tag) =>
+      tag.toLowerCase().includes(query),
+    );
+    const searchTextMatch = bookmark.searchText
+      ? bookmark.searchText.toLowerCase().includes(query)
+      : false;
+
+    return (
+      titleMatch ||
+      urlMatch ||
+      descriptionMatch ||
+      summaryMatch ||
+      tagsMatch ||
+      searchTextMatch
+    );
+  });
+}
 
 export default function BookmarkPage() {
   const [selectedCollectionId, setSelectedCollectionId] =
@@ -47,27 +91,28 @@ export default function BookmarkPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const searchResults = useQuery(
-    api.bookmarks.bookmarkFunctions.searchBookmarks,
-    debouncedSearchQuery.trim()
-      ? { searchQuery: debouncedSearchQuery.trim(), includeArchived: false }
-      : "skip",
-  );
+  // Determine which bookmarks to display with client-side filtering
+  const bookmarks = useMemo(() => {
+    const baseBookmarks = selectedCollectionId
+      ? collectionBookmarks
+      : allBookmarks;
 
-  // Determine which bookmarks to display
-  let bookmarks = selectedCollectionId ? collectionBookmarks : allBookmarks;
-
-  // If there's a search query, use search results and filter by collection if needed
-  if (debouncedSearchQuery.trim() && searchResults) {
-    if (selectedCollectionId) {
-      // Filter search results by selected collection
-      bookmarks = searchResults.filter(
-        (bookmark) => bookmark.collectionId === selectedCollectionId,
-      );
-    } else {
-      bookmarks = searchResults;
+    if (!baseBookmarks) {
+      return undefined;
     }
-  }
+
+    // Apply client-side search filter if there's a search query
+    if (debouncedSearchQuery.trim()) {
+      return filterBookmarks(baseBookmarks, debouncedSearchQuery);
+    }
+
+    return baseBookmarks;
+  }, [
+    selectedCollectionId,
+    collectionBookmarks,
+    allBookmarks,
+    debouncedSearchQuery,
+  ]);
 
   const selectedCollection = collections?.find(
     (c) => c._id === selectedCollectionId,
@@ -117,11 +162,7 @@ export default function BookmarkPage() {
     }
   };
 
-  if (
-    bookmarks === undefined ||
-    collections === undefined ||
-    (debouncedSearchQuery.trim() && searchResults === undefined)
-  ) {
+  if (bookmarks === undefined || collections === undefined) {
     return (
       <div className="flex flex-col w-full h-full items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
