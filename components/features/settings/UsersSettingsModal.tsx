@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { DefaultModel } from "@/convex/lib/modelMapping";
 
 export const UserSettingsModal = ({
   open,
@@ -33,9 +34,7 @@ export const UserSettingsModal = ({
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [defaultModel, setDefaultModel] = useState<
-    "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free"
-  >("gpt-4o");
+  const [defaultModel, setDefaultModel] = useState<DefaultModel>("gpt-4o");
   const [isAiEnabled, setIsAiEnabled] = useState(false);
   const { signOut } = useAuthActions();
   const router = useRouter();
@@ -69,12 +68,7 @@ export const UserSettingsModal = ({
       if (!userSettings) return;
       setName(userSettings.name);
       setEmail(userSettings.email);
-      setDefaultModel(
-        userSettings.defaultModel as
-          | "gpt-4o"
-          | "gpt-4o-mini"
-          | "openai/gpt-oss-20b:free",
-      );
+      setDefaultModel(userSettings.defaultModel as DefaultModel);
       setIsAiEnabled(userSettings.isAiEnabled);
     };
     if (open) {
@@ -107,9 +101,7 @@ export const UserSettingsModal = ({
           <Select
             value={defaultModel}
             onValueChange={(value) =>
-              setDefaultModel(
-                value as "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free",
-              )
+              setDefaultModel(value as DefaultModel)
             }
           >
             <SelectTrigger>

@@ -5,33 +5,10 @@ import { z } from "zod/v3";
 import { generateObject } from "ai";
 import { api } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-
-/**
- * Available fallback models for OpenRouter
- */
-const FALLBACK_MODELS = [
-  "openai/gpt-4o",
-  "openai/gpt-4o-mini",
-  "openai/gpt-oss-20b:free",
-] as const;
-
-/**
- * Maps user settings defaultModel to OpenRouter model identifier
- */
-function mapModelToOpenRouter(
-  defaultModel: "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free",
-): string {
-  switch (defaultModel) {
-    case "gpt-4o":
-      return "openai/gpt-4o";
-    case "gpt-4o-mini":
-      return "openai/gpt-4o-mini";
-    case "openai/gpt-oss-20b:free":
-      return "openai/gpt-oss-20b:free"; // Already in OpenRouter format
-    default:
-      return "openai/gpt-4o"; // fallback
-  }
-}
+import {
+  FALLBACK_MODELS,
+  mapModelToOpenRouter,
+} from "./lib/modelMapping";
 
 type aiResult = {
   items: aiResultItems[];
@@ -75,7 +52,7 @@ export const generateList = action({
     const modelName =
       userSettings?.defaultModel != null
         ? mapModelToOpenRouter(userSettings.defaultModel)
-        : "openai/gpt-4o"; // fallback if settings not found
+        : FALLBACK_MODELS[0]; // fallback if settings not found
 
     const openRouter = createOpenRouter({
       apiKey: process.env.OPENROUTER_AI_KEY,

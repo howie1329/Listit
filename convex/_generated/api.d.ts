@@ -17,6 +17,7 @@ import type * as bookmarks_bookmarkCollectionFunctions from "../bookmarks/bookma
 import type * as bookmarks_bookmarkFunctions from "../bookmarks/bookmarkFunctions.js";
 import type * as http from "../http.js";
 import type * as itemFunctions from "../itemFunctions.js";
+import type * as lib_modelMapping from "../lib/modelMapping.js";
 import type * as listFunctions from "../listFunctions.js";
 import type * as thread_mutations from "../thread/mutations.js";
 import type * as thread_queries from "../thread/queries.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   "bookmarks/bookmarkFunctions": typeof bookmarks_bookmarkFunctions;
   http: typeof http;
   itemFunctions: typeof itemFunctions;
+  "lib/modelMapping": typeof lib_modelMapping;
   listFunctions: typeof listFunctions;
   "thread/mutations": typeof thread_mutations;
   "thread/queries": typeof thread_queries;

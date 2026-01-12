@@ -21,6 +21,7 @@ import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { DefaultModel } from "@/convex/lib/modelMapping";
 
 export default function OnboardingPage() {
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
@@ -28,9 +29,7 @@ export default function OnboardingPage() {
     api.userFunctions.createUserSettings,
   );
   const [name, setName] = useState("");
-  const [defaultModel, setDefaultModel] = useState<
-    "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free"
-  >("gpt-4o");
+  const [defaultModel, setDefaultModel] = useState<DefaultModel>("gpt-4o");
   const [isAiEnabled, setIsAiEnabled] = useState(true);
   const updateUserSettings = useMutation(api.userFunctions.updateUserSettings);
   const router = useRouter();
@@ -72,9 +71,7 @@ export default function OnboardingPage() {
               <Select
                 value={defaultModel}
                 onValueChange={(value) =>
-                  setDefaultModel(
-                    value as "gpt-4o" | "gpt-4o-mini" | "openai/gpt-oss-20b:free",
-                  )
+                  setDefaultModel(value as DefaultModel)
                 }
               >
                 <SelectTrigger>

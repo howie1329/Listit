@@ -1,17 +1,14 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { defaultModelValidator, DefaultModel } from "./lib/modelMapping";
 
 export const createUserSettings = mutation({
   args: {
     name: v.optional(v.string()),
     email: v.optional(v.string()),
     profilePicture: v.optional(v.string()),
-    defaultModel: v.union(
-      v.literal("gpt-4o"),
-      v.literal("gpt-4o-mini"),
-      v.literal("openai/gpt-oss-20b:free"),
-    ),
+    defaultModel: defaultModelValidator(),
     isAiEnabled: v.boolean(),
   },
   handler: async (ctx, args) => {
@@ -36,7 +33,7 @@ export const createUserSettings = mutation({
       name: args.name ?? "",
       email: user?.email ?? args.email ?? "",
       profilePicture: args.profilePicture ?? "",
-      defaultModel: args.defaultModel ?? "gpt-4o",
+      defaultModel: args.defaultModel ?? ("gpt-4o" as DefaultModel),
       isAiEnabled: args.isAiEnabled ?? true,
       onboardingCompleted: false,
       updatedAt: new Date().toISOString(),
@@ -53,11 +50,7 @@ export const fetchUserSettings = query({
       name: v.string(),
       email: v.string(),
       profilePicture: v.optional(v.string()),
-      defaultModel: v.union(
-        v.literal("gpt-4o"),
-        v.literal("gpt-4o-mini"),
-        v.literal("openai/gpt-oss-20b:free"),
-      ),
+      defaultModel: defaultModelValidator(),
       isAiEnabled: v.boolean(),
       onboardingCompleted: v.boolean(),
       updatedAt: v.string(),
@@ -86,13 +79,7 @@ export const updateUserSettings = mutation({
   args: {
     name: v.optional(v.string()),
     email: v.optional(v.string()),
-    defaultModel: v.optional(
-      v.union(
-        v.literal("gpt-4o"),
-        v.literal("gpt-4o-mini"),
-        v.literal("openai/gpt-oss-20b:free"),
-      ),
-    ),
+    defaultModel: v.optional(defaultModelValidator()),
     isAiEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
