@@ -13,6 +13,7 @@ export const generateThreadResponse = action({
   args: {
     threadId: v.id("thread"),
   },
+  returns: v.string(),
   handler: async (ctx, args) => {
     // Get the thread to verify ownership and get userId
     const thread = await ctx.runQuery(api.thread.queries.getSingleThread, {
@@ -111,17 +112,16 @@ export const generateThreadResponse = action({
         lastResponseTime = Date.now();
       }
     }
-
-    if (fullResponse) {
-      await ctx.runMutation(api.threadMessages.mutations.updateThreadMessage, {
+    await Promise.all([
+      ctx.runMutation(api.threadMessages.mutations.updateThreadMessage, {
         threadMessageId: assistantMessageId,
         content: fullResponse,
-      });
-      await ctx.runMutation(api.thread.mutations.updateThreadStreamingStatus, {
+      }),
+      ctx.runMutation(api.thread.mutations.updateThreadStreamingStatus, {
         threadId: args.threadId,
         streamingStatus: "idle",
-      });
-    }
+      }),
+    ]);
 
     return fullResponse;
   },
