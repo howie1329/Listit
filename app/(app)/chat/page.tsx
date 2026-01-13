@@ -57,7 +57,7 @@ export default function ChatPage() {
   });
 
   useEffect(() => {
-    if (combinedData) {
+    if (combinedData && status !== "streaming") {
       setMessages(
         combinedData.map((message) => ({
           id: message._id,
@@ -67,7 +67,7 @@ export default function ChatPage() {
         })),
       );
     }
-  }, [combinedData, setMessages]);
+  }, [combinedData, setMessages, status]);
 
   const [message, setMessage] = useState("");
 
