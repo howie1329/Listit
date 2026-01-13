@@ -16,18 +16,57 @@ export async function POST(request: Request) {
 
   const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-  const { messages, threadId, model } = await request.json();
-
-  if (!messages || messages.length === 0) {
-    return new Response("No messages provided", { status: 400 });
+  let messages, threadId, model;
+  try {
+    const body = await request.json();
+    messages = body.messages;
+    threadId = body.threadId;
+    model = body.model;
+  } catch (error) {
+    return new Response("Invalid JSON in request body", { status: 400 });
   }
 
-  const userMessage = messages[messages.length - 1].parts[0].text;
-  const messageId = messages[messages.length - 1]._id;
-
-  if (!userMessage || !threadId || !messageId) {
-    return new Response("Invalid request", { status: 400 });
+  // Validate messages is an array with length > 0
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return new Response("messages must be a non-empty array", { status: 400 });
   }
+
+  // Get the last message and validate its structure
+  const lastMessage = messages[messages.length - 1];
+
+  if (
+    !lastMessage.parts ||
+    !Array.isArray(lastMessage.parts) ||
+    lastMessage.parts.length === 0
+  ) {
+    return new Response("last message must have a non-empty parts array", {
+      status: 400,
+    });
+  }
+
+  if (typeof lastMessage.parts[0].text !== "string") {
+    return new Response("last message parts[0].text must be a string", {
+      status: 400,
+    });
+  }
+
+  if (!lastMessage._id) {
+    return new Response("last message must have an _id", { status: 400 });
+  }
+
+  const userMessage = lastMessage.parts[0].text;
+  const messageId = lastMessage._id;
+
+  if (!threadId) {
+    return new Response("threadId is required", { status: 400 });
+  }
+
+  // Persist user message immediately before starting the stream
+  await convex.mutation(api.threadMessages.mutations.addThreadMessage, {
+    threadId,
+    role: "user",
+    content: userMessage,
+  });
 
   // Fetch user settings to get defaultModel, with fallback to request-provided model
   const userSettings = await convex.query(api.userFunctions.fetchUserSettings);
@@ -51,18 +90,18 @@ export async function POST(request: Request) {
       firecrawl: toolFunctions.firecrawlTool,
     },
     onFinish: async (response) => {
-      await Promise.all([
-        convex.mutation(api.threadMessages.mutations.addThreadMessage, {
-          threadId: threadId,
-          role: "user",
-          content: userMessage,
-        }),
-        convex.mutation(api.threadMessages.mutations.addThreadMessage, {
-          threadId: threadId,
+      // Persist assistant message sequentially after ensuring response.text is defined
+      const assistantContent = response.text ?? "";
+      try {
+        await convex.mutation(api.threadMessages.mutations.addThreadMessage, {
+          threadId,
           role: "assistant",
-          content: response.text as string,
-        }),
-      ]);
+          content: assistantContent,
+        });
+      } catch (error) {
+        // Handle persistence failures gracefully
+        console.error("Failed to persist assistant message:", error);
+      }
     },
   });
 

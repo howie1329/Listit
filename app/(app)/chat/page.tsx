@@ -74,12 +74,14 @@ export default function ChatPage() {
   const threads = useQuery(api.thread.queries.getUserThreads);
 
   const handleSendMessage = async () => {
-    if (!selectedThread) {
+    if (!selectedThread || !message) {
       return;
     }
-
     try {
-      sendMessage({ text: message }, { body: { threadId: selectedThread } });
+      await sendMessage(
+        { text: message },
+        { body: { threadId: selectedThread } },
+      );
       setMessage("");
     } catch (error) {
       toast.error("Error sending message");

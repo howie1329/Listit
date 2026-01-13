@@ -70,19 +70,26 @@ export const secondTool = (
         );
         await toolWriter.initialize();
         console.log("Firecrawl Query: ", query);
-        const results = await firecrawl.search(query, {
-          limit: 3,
-          scrapeOptions: { formats: ["summary", "json"] },
-        });
-
-        await toolWriter.update(
-          JSON.stringify(results),
-          "completed",
-          undefined,
-        );
-
-        console.log("Firecrawl Results: ", results);
-        return results;
+        try {
+          const results = await firecrawl.search(query, {
+            limit: 3,
+            scrapeOptions: { formats: ["summary", "json"] },
+          });
+          await toolWriter.update(
+            JSON.stringify(results),
+            "completed",
+            undefined,
+          );
+          console.log("Firecrawl Results: ", results);
+          return results;
+        } catch (err) {
+          await toolWriter.update(
+            JSON.stringify({ error: String(err) }),
+            "error",
+            undefined,
+          );
+          throw err;
+        }
       },
     }),
   };
