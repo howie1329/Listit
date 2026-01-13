@@ -5,6 +5,7 @@ import { tool } from "ai";
 import { ActionCtx } from "../../_generated/server";
 import { api } from "../../_generated/api";
 import { Id } from "../../_generated/dataModel";
+import { ConvexHttpClient } from "convex/browser";
 
 const firecrawl = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
 
@@ -15,7 +16,6 @@ export const tools = (
 ) => {
   return {
     firecrawlTool: tool({
-      name: "firecrawl",
       description: "Use this tool to search the web for information",
       inputSchema: z.object({
         query: z.string().describe("The query to search the web for"),
@@ -48,9 +48,54 @@ export const tools = (
     }),
   };
 };
+
+export const secondTool = (
+  convex: ConvexHttpClient,
+  threadId: Id<"thread">,
+  threadMessageId: Id<"threadMessage">,
+) => {
+  return {
+    firecrawlTool: tool({
+      description: "Use this tool to search the web for information",
+      inputSchema: z.object({
+        query: z.string().describe("The query to search the web for"),
+      }),
+      execute: async ({ query }) => {
+        const toolWriter = new toolWriters(
+          convex,
+          threadId,
+          threadMessageId,
+          "firecrawl",
+          null,
+        );
+        await toolWriter.initialize();
+        console.log("Firecrawl Query: ", query);
+        try {
+          const results = await firecrawl.search(query, {
+            limit: 3,
+            scrapeOptions: { formats: ["summary", "json"] },
+          });
+          await toolWriter.update(
+            JSON.stringify(results),
+            "completed",
+            undefined,
+          );
+          console.log("Firecrawl Results: ", results);
+          return results;
+        } catch (err) {
+          await toolWriter.update(
+            JSON.stringify({ error: String(err) }),
+            "error",
+            undefined,
+          );
+          throw err;
+        }
+      },
+    }),
+  };
+};
 // Need To test to see if this works... if not move to js file and and new Tool
 export const firecrawlTool = tool({
-  name: "firecrawl",
   description: "Use this tool to search the web for information",
   inputSchema: z.object({
     query: z.string().describe("The query to search the web for"),
@@ -100,7 +145,6 @@ export const basicFirecrawlScraper = async (
 };
 
 export const firecrawlScraperTool = tool({
-  name: "firecrawlScraper",
   description: "Use this tool to scrape a website for information",
   inputSchema: z.object({
     url: z.string().describe("The URL of the website to scrape"),
@@ -124,3 +168,46 @@ const schema = z.object({
   description: z.string(),
   url: z.string(),
 });
+
+class toolWriters {
+  constructor(
+    private convexItem: ConvexHttpClient,
+    private threadId: Id<"thread">,
+    private threadMessageId: Id<"threadMessage">,
+    private toolName: string,
+    private toolId: Id<"threadTools"> | null,
+  ) {
+    this.convexItem = convexItem;
+    this.threadId = threadId;
+    this.threadMessageId = threadMessageId;
+    this.toolName = toolName;
+    this.toolId = toolId;
+  }
+
+  async initialize() {
+    this.toolId = await this.convexItem.mutation(
+      api.threadtools.mutation.addThreadTool,
+      {
+        threadId: this.threadId,
+        threadMessageId: this.threadMessageId,
+        toolName: this.toolName,
+      },
+    );
+  }
+
+  async update(
+    toolOutput: string,
+    status: "running" | "completed" | "error",
+    errorMessage: string | undefined,
+  ) {
+    if (!this.toolId || this.toolId === null) {
+      throw new Error("Tool ID not found");
+    }
+    await this.convexItem.mutation(api.threadtools.mutation.updateThreadTool, {
+      threadToolId: this.toolId,
+      toolOutput: toolOutput,
+      status: status,
+      errorMessage: errorMessage ?? undefined,
+    });
+  }
+}
