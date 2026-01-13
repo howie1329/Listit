@@ -5,6 +5,7 @@ import { tool } from "ai";
 import { ActionCtx } from "../../_generated/server";
 import { api } from "../../_generated/api";
 import { Id } from "../../_generated/dataModel";
+import { ConvexHttpClient } from "convex/browser";
 
 const firecrawl = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
 
@@ -42,6 +43,45 @@ export const tools = (
           status: "completed",
         });
 
+        return results;
+      },
+    }),
+  };
+};
+
+export const secondTool = (
+  convex: ConvexHttpClient,
+  threadId: Id<"thread">,
+  threadMessageId: Id<"threadMessage">,
+) => {
+  return {
+    firecrawlTool: tool({
+      description: "Use this tool to search the web for information",
+      inputSchema: z.object({
+        query: z.string().describe("The query to search the web for"),
+      }),
+      execute: async ({ query }) => {
+        const toolWriter = new toolWriters(
+          convex,
+          threadId,
+          threadMessageId,
+          "firecrawl",
+          null,
+        );
+        await toolWriter.initialize();
+        console.log("Firecrawl Query: ", query);
+        const results = await firecrawl.search(query, {
+          limit: 3,
+          scrapeOptions: { formats: ["summary", "json"] },
+        });
+
+        await toolWriter.update(
+          JSON.stringify(results),
+          "completed",
+          undefined,
+        );
+
+        console.log("Firecrawl Results: ", results);
         return results;
       },
     }),
@@ -121,3 +161,43 @@ const schema = z.object({
   description: z.string(),
   url: z.string(),
 });
+
+class toolWriters {
+  constructor(
+    private convexItem: ConvexHttpClient,
+    private threadId: Id<"thread">,
+    private threadMessageId: Id<"threadMessage">,
+    private toolName: string,
+    private toolId: Id<"threadTools"> | null,
+  ) {
+    this.convexItem = convexItem;
+    this.threadId = threadId;
+    this.threadMessageId = threadMessageId;
+    this.toolName = toolName;
+    this.toolId = toolId;
+  }
+
+  async initialize() {
+    this.toolId = await this.convexItem.mutation(
+      api.threadtools.mutation.addThreadTool,
+      {
+        threadId: this.threadId,
+        threadMessageId: this.threadMessageId,
+        toolName: this.toolName,
+      },
+    );
+  }
+
+  async update(
+    toolOutput: string,
+    status: "running" | "completed" | "error",
+    errorMessage: string | undefined,
+  ) {
+    await this.convexItem.mutation(api.threadtools.mutation.updateThreadTool, {
+      threadToolId: this.toolId as Id<"threadTools">,
+      toolOutput: toolOutput,
+      status: status,
+      errorMessage: errorMessage,
+    });
+  }
+}

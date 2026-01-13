@@ -12,6 +12,7 @@
     "lint": "eslint . --ignore-pattern \"convex/_generated/**\""
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.32",
     "@base-ui/react": "^1.0.0",
     "@convex-dev/auth": "^0.0.90",
     "@hugeicons/core-free-icons": "^3.1.1",
