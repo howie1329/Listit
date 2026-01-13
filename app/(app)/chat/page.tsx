@@ -2,7 +2,7 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -56,8 +56,17 @@ export default function ChatPage() {
     experimental_throttle: 1000,
   });
 
+  const prevStatusState = useRef(status);
+
   useEffect(() => {
-    if (combinedData && status !== "streaming") {
+    const wasStreaming = prevStatusState.current === "streaming";
+    prevStatusState.current = status;
+
+    if (
+      combinedData &&
+      status === "ready" &&
+      (wasStreaming || chatMessages.length === 0)
+    ) {
       setMessages(
         combinedData.map((message) => ({
           id: message._id,
@@ -67,7 +76,7 @@ export default function ChatPage() {
         })),
       );
     }
-  }, [combinedData, setMessages, status]);
+  }, [combinedData, setMessages, status, chatMessages.length]);
 
   const [message, setMessage] = useState("");
 
