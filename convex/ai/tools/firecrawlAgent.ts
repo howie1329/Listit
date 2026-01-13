@@ -193,11 +193,14 @@ class toolWriters {
     status: "running" | "completed" | "error",
     errorMessage: string | undefined,
   ) {
+    if (!this.toolId || this.toolId === null) {
+      throw new Error("Tool ID not found");
+    }
     await this.convexItem.mutation(api.threadtools.mutation.updateThreadTool, {
-      threadToolId: this.toolId as Id<"threadTools">,
+      threadToolId: this.toolId,
       toolOutput: toolOutput,
       status: status,
-      errorMessage: errorMessage,
+      errorMessage: errorMessage ?? undefined,
     });
   }
 }

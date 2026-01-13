@@ -67,7 +67,7 @@ export const UserSettingsModal = ({
     const changeState = () => {
       if (!userSettings) return;
       setName(userSettings.name);
-      setEmail(userSettings.email);
+      setEmail(userSettings.email ?? "");
       setDefaultModel(userSettings.defaultModel as DefaultModel);
       setIsAiEnabled(userSettings.isAiEnabled);
     };
@@ -100,9 +100,7 @@ export const UserSettingsModal = ({
           <Label>Default AI Model</Label>
           <Select
             value={defaultModel}
-            onValueChange={(value) =>
-              setDefaultModel(value as DefaultModel)
-            }
+            onValueChange={(value) => setDefaultModel(value as DefaultModel)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a model" />

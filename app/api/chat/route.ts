@@ -2,8 +2,12 @@ import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
-import { firecrawlTool, secondTool } from "@/convex/ai/tools/firecrawlAgent";
+import { secondTool } from "@/convex/ai/tools/firecrawlAgent";
+import {
+  FALLBACK_MODELS,
+  mapModelToOpenRouter,
+} from "@/convex/lib/modelMapping";
+import type { DefaultModel } from "@/convex/lib/modelMapping";
 
 export async function POST(request: Request) {
   const openRouter = createOpenRouter({
@@ -12,7 +16,7 @@ export async function POST(request: Request) {
 
   const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-  const { messages, threadId } = await request.json();
+  const { messages, threadId, model } = await request.json();
 
   if (!messages || messages.length === 0) {
     return new Response("No messages provided", { status: 400 });
@@ -25,12 +29,21 @@ export async function POST(request: Request) {
     return new Response("Invalid request", { status: 400 });
   }
 
+  // Fetch user settings to get defaultModel, with fallback to request-provided model
+  const userSettings = await convex.query(api.userFunctions.fetchUserSettings);
+  const userModel =
+    userSettings?.defaultModel ?? (model as DefaultModel | undefined);
+
+  // Map user's defaultModel (or request-provided model) to OpenRouter format, with fallback
+  const modelName =
+    userModel != null ? mapModelToOpenRouter(userModel) : FALLBACK_MODELS[0]; // fallback if settings not found
+
   const systemMessages = await convertToModelMessages(messages);
 
   const toolFunctions = secondTool(convex, threadId, messageId);
 
   const stream = streamText({
-    model: openRouter("gpt-4o"),
+    model: openRouter(modelName),
     system: "You are a helpful assistant that can answer questions.",
     messages: systemMessages,
     stopWhen: stepCountIs(10),
