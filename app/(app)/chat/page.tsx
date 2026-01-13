@@ -2,7 +2,7 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -24,25 +24,6 @@ export default function ChatPage() {
       : "skip",
   );
 
-  const threadTools = useQuery(
-    api.threadtools.queries.getThreadTools,
-    selectedThread
-      ? {
-          threadId: selectedThread,
-        }
-      : "skip",
-  );
-
-  // Move this to a convex query
-  const combinedData = useMemo(() => {
-    return threadMessages?.map((message) => ({
-      ...message,
-      threadTools: threadTools?.find(
-        (tool) => tool.threadMessageId === message._id,
-      ),
-    }));
-  }, [threadMessages, threadTools]);
-
   const {
     messages: chatMessages,
     sendMessage,
@@ -63,12 +44,12 @@ export default function ChatPage() {
     prevStatusState.current = status;
 
     if (
-      combinedData &&
+      threadMessages &&
       status === "ready" &&
       (wasStreaming || chatMessages.length === 0)
     ) {
       setMessages(
-        combinedData.map((message) => ({
+        threadMessages.map((message) => ({
           id: message._id,
           role: message.role as "user" | "assistant",
           content: message.content,
@@ -76,7 +57,7 @@ export default function ChatPage() {
         })),
       );
     }
-  }, [combinedData, setMessages, status, chatMessages.length]);
+  }, [threadMessages, setMessages, status, chatMessages.length]);
 
   const [message, setMessage] = useState("");
 
