@@ -8,6 +8,8 @@ import { defaultModelValidator } from "./lib/modelMapping";
 // The schema provides more precise TypeScript types.
 export default defineSchema({
   ...authTables,
+  // TODO: Look into vercel ai sdk for message ui structure. We need to match the structure as closely as possible.
+  // TODO: This then could combine threadTools and threadMessages into a single table
   threadTools: defineTable({
     threadId: v.id("thread"),
     threadMessageId: v.id("threadMessage"),
