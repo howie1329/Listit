@@ -33,6 +33,7 @@ export default function ChatPage() {
       : "skip",
   );
 
+  // Move this to a convex query
   const combinedData = useMemo(() => {
     return threadMessages?.map((message) => ({
       ...message,
@@ -87,10 +88,15 @@ export default function ChatPage() {
   };
 
   const handleCreateThread = async () => {
-    const thread = await createThread({
-      title: "New Thread",
-    });
-    setSelectedThread(thread);
+    try {
+      const thread = await createThread({
+        title: "New Thread",
+      });
+      setSelectedThread(thread);
+    } catch (error) {
+      toast.error("Error creating thread");
+      console.warn("Error creating thread: ", error);
+    }
   };
 
   return (
