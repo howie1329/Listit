@@ -14,17 +14,20 @@ export async function POST(request: Request) {
 
   const { messages, threadId } = await request.json();
 
-  const userMessage = messages[messages.length - 1].parts[0].text;
+  if (!messages || messages.length === 0) {
+    return new Response("No messages provided", { status: 400 });
+  }
 
-  console.log("User message: ", userMessage);
+  const userMessage = messages[messages.length - 1].parts[0].text;
+  const messageId = messages[messages.length - 1]._id;
+
+  if (!userMessage || !threadId || !messageId) {
+    return new Response("Invalid request", { status: 400 });
+  }
 
   const systemMessages = await convertToModelMessages(messages);
 
-  const toolFunctions = secondTool(
-    convex,
-    threadId,
-    messages[messages.length - 1]._id,
-  );
+  const toolFunctions = secondTool(convex, threadId, messageId);
 
   const stream = streamText({
     model: openRouter("gpt-4o"),
@@ -35,7 +38,7 @@ export async function POST(request: Request) {
       firecrawl: toolFunctions.firecrawlTool,
     },
     onFinish: async (response) => {
-      Promise.all([
+      await Promise.all([
         convex.mutation(api.threadMessages.mutations.addThreadMessage, {
           threadId: threadId,
           role: "user",

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
+import { toast } from "sonner";
 
 export default function ChatPage() {
   const createThread = useMutation(api.thread.mutations.createThread);
@@ -75,12 +76,14 @@ export default function ChatPage() {
     if (!selectedThread) {
       return;
     }
-    console.log("Sending message to thread: ", selectedThread);
-    sendMessage({ text: message }, { body: { threadId: selectedThread } }).then(
-      () => {
-        setMessage("");
-      },
-    );
+
+    try {
+      sendMessage({ text: message }, { body: { threadId: selectedThread } });
+      setMessage("");
+    } catch (error) {
+      toast.error("Error sending message");
+      console.warn("Error sending message: ", error);
+    }
   };
 
   const handleCreateThread = async () => {
