@@ -2,7 +2,7 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -36,21 +36,30 @@ export default function ChatPage() {
       api: "/api/chat",
     }),
     messages: [],
-    experimental_throttle: 200,
+    experimental_throttle: 0,
   });
 
+  const prevThreadRef = useRef<Id<"thread"> | null>(null);
+
   useEffect(() => {
-    if (threadMessages && selectedThread) {
-      setMessages(
-        threadMessages.map((message) => ({
-          id: message._id,
-          role: message.role as "user" | "assistant",
-          content: message.content,
-          parts: [{ type: "text", text: message.content }],
-        })),
-      );
+    if (
+      threadMessages &&
+      selectedThread &&
+      selectedThread !== prevThreadRef.current
+    ) {
+      prevThreadRef.current = selectedThread;
+      if (status !== "streaming") {
+        setMessages(
+          threadMessages.map((message) => ({
+            id: message._id,
+            role: message.role as "user" | "assistant",
+            content: message.content,
+            parts: [{ type: "text", text: message.content }],
+          })),
+        );
+      }
     }
-  }, [threadMessages, setMessages, selectedThread]);
+  }, [threadMessages, setMessages, selectedThread, status]);
 
   const [message, setMessage] = useState("");
 
