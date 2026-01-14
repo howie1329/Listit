@@ -7,12 +7,7 @@ export type OpenRouterModels =
   | "openai/gpt-4o-mini"
   | "openai/gpt-oss-20b:free";
 
-export type FallbackModels =
-  | "openai/gpt-4o"
-  | "openai/gpt-4o-mini"
-  | "openai/gpt-oss-20b:free";
-
-export const FALLBACK_MODELS: FallbackModels[] = [
+export const FALLBACK_MODELS: OpenRouterModels[] = [
   "openai/gpt-4o",
   "openai/gpt-4o-mini",
   "openai/gpt-oss-20b:free",

@@ -9,7 +9,7 @@ import {
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { FALLBACK_MODELS } from "@/convex/lib/modelMapping";
+import { FALLBACK_MODELS, OpenRouterModels } from "@/convex/lib/modelMapping";
 
 // TODO: Need to refactor this to take in models and tools
 export async function POST(request: Request) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     messages = body.messages;
     threadId = body.threadId;
-    model = body.model;
+    model = body.model as OpenRouterModels;
   } catch (error) {
     return new Response("Invalid JSON in request body", { status: 400 });
   }
@@ -95,6 +95,14 @@ export async function POST(request: Request) {
           stream.toUIMessageStream({
             onFinish: async ({ messages }) => {
               let fullResponse = "";
+              if (!messages || messages.length === 0) {
+                writer.write({
+                  type: "error",
+                  errorText: "No messages returned from agent",
+                });
+                console.error("No messages returned from agent");
+                return;
+              }
               const lastMessage = messages[messages.length - 1];
               lastMessage.parts.forEach((part) => {
                 if (part.type === "text") {
@@ -112,8 +120,10 @@ export async function POST(request: Request) {
                 );
               } catch (error) {
                 console.error("Error adding thread message", error);
-                // TODO: return error to client
-                // writer.write({ type: "error", text: "Error adding thread message" });
+                writer.write({
+                  type: "error",
+                  errorText: "Error adding thread message",
+                });
               }
             },
           }),
