@@ -9,8 +9,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
+import { mapModelToOpenRouter } from "@/convex/lib/modelMapping";
 
 export default function ChatPage() {
+  const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const createThread = useMutation(api.thread.mutations.createThread);
   const [selectedThread, setSelectedThread] = useState<Id<"thread"> | null>(
     null,
@@ -60,7 +62,12 @@ export default function ChatPage() {
     try {
       await sendMessage(
         { text: message },
-        { body: { threadId: selectedThread } },
+        {
+          body: {
+            threadId: selectedThread,
+            model: mapModelToOpenRouter(userSettings?.defaultModel ?? "gpt-4o"),
+          },
+        },
       );
       setMessage("");
     } catch (error) {

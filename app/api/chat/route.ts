@@ -9,12 +9,8 @@ import {
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { secondTool } from "@/convex/ai/tools/firecrawlAgent";
-import {
-  FALLBACK_MODELS,
-  mapModelToOpenRouter,
-} from "@/convex/lib/modelMapping";
-import type { DefaultModel } from "@/convex/lib/modelMapping";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { FALLBACK_MODELS } from "@/convex/lib/modelMapping";
 
 // Need to refactor this to take in models and tools
 export async function POST(request: Request) {
@@ -76,15 +72,6 @@ export async function POST(request: Request) {
     content: userMessage,
   });
 
-  // Fetch user settings to get defaultModel, with fallback to request-provided model
-  // const userSettings = await convex.query(api.userFunctions.fetchUserSettings);
-  // const userModel =
-  // userSettings?.defaultModel ?? (model as DefaultModel | undefined);
-
-  // Map user's defaultModel (or request-provided model) to OpenRouter format, with fallback
-  // const modelName =
-  // userModel != null ? mapModelToOpenRouter(userModel) : FALLBACK_MODELS[0]; // fallback if settings not found
-
   const systemMessages = convertToModelMessages(messages);
 
   // const toolFunctions = secondTool(convex, threadId, messageId);
@@ -94,7 +81,9 @@ export async function POST(request: Request) {
     stream: createUIMessageStream({
       execute: async ({ writer }) => {
         const agent = new Agent({
-          model: openRouter("openai/gpt-4o-mini") as unknown as LanguageModel,
+          model: openRouter(model, {
+            extraBody: { models: FALLBACK_MODELS },
+          }) as unknown as LanguageModel,
           system: "You are a helpful assistant that can answer questions.",
           stopWhen: stepCountIs(10),
         });
