@@ -1,5 +1,11 @@
-import { convertToModelMessages, stepCountIs, streamText } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import {
+  convertToModelMessages,
+  stepCountIs,
+  Experimental_Agent as Agent,
+  LanguageModel,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+} from "ai";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { secondTool } from "@/convex/ai/tools/firecrawlAgent";
@@ -8,7 +14,9 @@ import {
   mapModelToOpenRouter,
 } from "@/convex/lib/modelMapping";
 import type { DefaultModel } from "@/convex/lib/modelMapping";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
+// Need to refactor this to take in models and tools
 export async function POST(request: Request) {
   const openRouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_AI_KEY,
@@ -50,12 +58,12 @@ export async function POST(request: Request) {
     });
   }
 
-  if (!lastMessage._id) {
-    return new Response("last message must have an _id", { status: 400 });
+  if (!lastMessage.id) {
+    return new Response("last message must have an id", { status: 400 });
   }
 
   const userMessage = lastMessage.parts[0].text;
-  const messageId = lastMessage._id;
+  const messageId = lastMessage.id;
 
   if (!threadId) {
     return new Response("threadId is required", { status: 400 });
@@ -69,41 +77,54 @@ export async function POST(request: Request) {
   });
 
   // Fetch user settings to get defaultModel, with fallback to request-provided model
-  const userSettings = await convex.query(api.userFunctions.fetchUserSettings);
-  const userModel =
-    userSettings?.defaultModel ?? (model as DefaultModel | undefined);
+  // const userSettings = await convex.query(api.userFunctions.fetchUserSettings);
+  // const userModel =
+  // userSettings?.defaultModel ?? (model as DefaultModel | undefined);
 
   // Map user's defaultModel (or request-provided model) to OpenRouter format, with fallback
-  const modelName =
-    userModel != null ? mapModelToOpenRouter(userModel) : FALLBACK_MODELS[0]; // fallback if settings not found
+  // const modelName =
+  // userModel != null ? mapModelToOpenRouter(userModel) : FALLBACK_MODELS[0]; // fallback if settings not found
 
-  const systemMessages = await convertToModelMessages(messages);
+  const systemMessages = convertToModelMessages(messages);
 
-  const toolFunctions = secondTool(convex, threadId, messageId);
+  // const toolFunctions = secondTool(convex, threadId, messageId);
 
-  const stream = streamText({
-    model: openRouter(modelName),
-    system: "You are a helpful assistant that can answer questions.",
-    messages: systemMessages,
-    stopWhen: stepCountIs(10),
-    tools: {
-      firecrawl: toolFunctions.firecrawlTool,
-    },
-    onFinish: async (response) => {
-      // Persist assistant message sequentially after ensuring response.text is defined
-      const assistantContent = response.text ?? "";
-      try {
-        await convex.mutation(api.threadMessages.mutations.addThreadMessage, {
-          threadId,
-          role: "assistant",
-          content: assistantContent,
+  const response = createUIMessageStreamResponse({
+    status: 200,
+    stream: createUIMessageStream({
+      execute: async ({ writer }) => {
+        const agent = new Agent({
+          model: openRouter("openai/gpt-4o-mini") as unknown as LanguageModel,
+          system: "You are a helpful assistant that can answer questions.",
+          stopWhen: stepCountIs(10),
         });
-      } catch (error) {
-        // Handle persistence failures gracefully
-        console.error("Failed to persist assistant message:", error);
-      }
-    },
+
+        const stream = agent.stream({ messages: systemMessages });
+
+        writer.merge(
+          stream.toUIMessageStream({
+            onFinish: async ({ messages }) => {
+              let fullResponse = "";
+              const lastMessage = messages[messages.length - 1];
+              lastMessage.parts.forEach((part) => {
+                if (part.type === "text") {
+                  fullResponse += part.text;
+                }
+              });
+              await convex.mutation(
+                api.threadMessages.mutations.addThreadMessage,
+                {
+                  threadId,
+                  role: "assistant",
+                  content: fullResponse,
+                },
+              );
+            },
+          }),
+        );
+      },
+    }),
   });
 
-  return stream.toUIMessageStreamResponse();
+  return response;
 }
