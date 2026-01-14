@@ -2,13 +2,10 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { z } from "zod/v3";
-import { generateObject } from "ai";
+import { generateObject, LanguageModel } from "ai";
 import { api } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import {
-  FALLBACK_MODELS,
-  mapModelToOpenRouter,
-} from "./lib/modelMapping";
+import { FALLBACK_MODELS, mapModelToOpenRouter } from "./lib/modelMapping";
 
 type aiResult = {
   items: aiResultItems[];
@@ -62,7 +59,7 @@ export const generateList = action({
         extraBody: {
           models: FALLBACK_MODELS,
         },
-      }),
+      }) as unknown as LanguageModel,
       prompt: `Generate a list of 2 items for the list ${list.title} with the following description: ${list.description}`,
       schema: z.object({
         items: z.array(

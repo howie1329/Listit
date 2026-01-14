@@ -3,12 +3,13 @@ import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { ModelMessage, stepCountIs } from "ai";
-import { ToolLoopAgent } from "ai";
+import { LanguageModel, ModelMessage, stepCountIs } from "ai";
+import { Experimental_Agent as Agent } from "ai";
 import { tools } from "./tools/firecrawlAgent";
 import { FALLBACK_MODELS, mapModelToOpenRouter } from "../lib/modelMapping";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+// TODO: This action is not used anymore. We should remove it.
 export const generateThreadResponse = action({
   args: {
     threadId: v.id("thread"),
@@ -79,13 +80,13 @@ export const generateThreadResponse = action({
 
     const toolFunctions = tools(ctx, args.threadId, assistantMessageId);
 
-    const chatAgent = new ToolLoopAgent({
+    const chatAgent = new Agent({
       model: openRouter(modelName, {
         extraBody: {
           models: FALLBACK_MODELS,
         },
-      }),
-      instructions:
+      }) as unknown as LanguageModel,
+      system:
         "You are a helpful assistant that can answer questions." +
         "You can use the firecrawl tool to search the web for information." +
         "Only run the firecrawl tool one time. Do not run it multiple times." +
@@ -95,7 +96,7 @@ export const generateThreadResponse = action({
       temperature: 0.8,
     });
 
-    const response = await chatAgent.stream({ messages: modelMessages });
+    const response = chatAgent.stream({ messages: modelMessages });
     let fullResponse = "";
     let lastResponseTime = Date.now();
     for await (const chunk of response.textStream) {

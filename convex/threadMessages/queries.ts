@@ -13,7 +13,7 @@ export const getThreadMessages = query({
       _creationTime: v.number(),
       content: v.string(),
       updatedAt: v.string(),
-      threadTool: v.optional(
+      threadTools: v.optional(
         v.object({
           _id: v.id("threadTools"),
           threadId: v.id("thread"),
@@ -49,7 +49,7 @@ export const getThreadMessages = query({
       );
       return {
         ...message,
-        threadTool: threadTool,
+        threadTools: threadTool,
       };
     });
 

@@ -2,15 +2,17 @@
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
+import { mapModelToOpenRouter } from "@/convex/lib/modelMapping";
 
 export default function ChatPage() {
+  const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const createThread = useMutation(api.thread.mutations.createThread);
   const [selectedThread, setSelectedThread] = useState<Id<"thread"> | null>(
     null,
@@ -24,25 +26,6 @@ export default function ChatPage() {
       : "skip",
   );
 
-  const threadTools = useQuery(
-    api.threadtools.queries.getThreadTools,
-    selectedThread
-      ? {
-          threadId: selectedThread,
-        }
-      : "skip",
-  );
-
-  // Move this to a convex query
-  const combinedData = useMemo(() => {
-    return threadMessages?.map((message) => ({
-      ...message,
-      threadTools: threadTools?.find(
-        (tool) => tool.threadMessageId === message._id,
-      ),
-    }));
-  }, [threadMessages, threadTools]);
-
   const {
     messages: chatMessages,
     sendMessage,
@@ -53,30 +36,30 @@ export default function ChatPage() {
       api: "/api/chat",
     }),
     messages: [],
-    experimental_throttle: 1000,
+    experimental_throttle: 0,
   });
 
-  const prevStatusState = useRef(status);
+  const prevThreadRef = useRef<Id<"thread"> | null>(null);
 
   useEffect(() => {
-    const wasStreaming = prevStatusState.current === "streaming";
-    prevStatusState.current = status;
-
     if (
-      combinedData &&
-      status === "ready" &&
-      (wasStreaming || chatMessages.length === 0)
+      threadMessages &&
+      selectedThread &&
+      selectedThread !== prevThreadRef.current
     ) {
-      setMessages(
-        combinedData.map((message) => ({
-          id: message._id,
-          role: message.role as "user" | "assistant",
-          content: message.content,
-          parts: [{ type: "text", text: message.content }],
-        })),
-      );
+      if (status !== "streaming") {
+        prevThreadRef.current = selectedThread;
+        setMessages(
+          threadMessages.map((message) => ({
+            id: message._id,
+            role: message.role as "user" | "assistant",
+            content: message.content,
+            parts: [{ type: "text", text: message.content }],
+          })),
+        );
+      }
     }
-  }, [combinedData, setMessages, status, chatMessages.length]);
+  }, [threadMessages, setMessages, selectedThread, status]);
 
   const [message, setMessage] = useState("");
 
@@ -89,7 +72,12 @@ export default function ChatPage() {
     try {
       await sendMessage(
         { text: message },
-        { body: { threadId: selectedThread } },
+        {
+          body: {
+            threadId: selectedThread,
+            model: mapModelToOpenRouter(userSettings?.defaultModel ?? "gpt-4o"),
+          },
+        },
       );
       setMessage("");
     } catch (error) {
@@ -144,7 +132,10 @@ export default function ChatPage() {
             </div>
           ))}
         <Input value={message} onChange={(e) => setMessage(e.target.value)} />
-        <Button onClick={handleSendMessage} disabled={status !== "ready"}>
+        <Button
+          onClick={handleSendMessage}
+          disabled={status !== "ready" || userSettings === undefined}
+        >
           {status === "streaming" ? (
             <>
               <Spinner /> <span>Generating...</span>
