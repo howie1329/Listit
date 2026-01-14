@@ -36,6 +36,7 @@ export default function ChatPage() {
       api: "/api/chat",
     }),
     messages: [],
+    experimental_throttle: 200,
   });
 
   useEffect(() => {

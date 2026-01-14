@@ -84,7 +84,7 @@ export async function POST(request: Request) {
         const agent = new Agent({
           model: openRouter(model, {
             extraBody: { models: FALLBACK_MODELS },
-          }) as unknown as LanguageModel,
+          }) as LanguageModel,
           system: "You are a helpful assistant that can answer questions.",
           stopWhen: stepCountIs(10),
         });
