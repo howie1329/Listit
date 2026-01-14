@@ -47,8 +47,8 @@ export default function ChatPage() {
       selectedThread &&
       selectedThread !== prevThreadRef.current
     ) {
-      prevThreadRef.current = selectedThread;
       if (status !== "streaming") {
+        prevThreadRef.current = selectedThread;
         setMessages(
           threadMessages.map((message) => ({
             id: message._id,
