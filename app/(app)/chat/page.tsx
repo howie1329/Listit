@@ -122,7 +122,10 @@ export default function ChatPage() {
             </div>
           ))}
         <Input value={message} onChange={(e) => setMessage(e.target.value)} />
-        <Button onClick={handleSendMessage} disabled={status !== "ready"}>
+        <Button
+          onClick={handleSendMessage}
+          disabled={status !== "ready" || userSettings === undefined}
+        >
           {status === "streaming" ? (
             <>
               <Spinner /> <span>Generating...</span>

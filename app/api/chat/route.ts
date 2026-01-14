@@ -8,11 +8,10 @@ import {
 } from "ai";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
-import { secondTool } from "@/convex/ai/tools/firecrawlAgent";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { FALLBACK_MODELS } from "@/convex/lib/modelMapping";
 
-// Need to refactor this to take in models and tools
+// TODO: Need to refactor this to take in models and tools
 export async function POST(request: Request) {
   const openRouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_AI_KEY,
@@ -66,15 +65,17 @@ export async function POST(request: Request) {
   }
 
   // Persist user message immediately before starting the stream
-  await convex.mutation(api.threadMessages.mutations.addThreadMessage, {
-    threadId,
-    role: "user",
-    content: userMessage,
-  });
+  try {
+    await convex.mutation(api.threadMessages.mutations.addThreadMessage, {
+      threadId,
+      role: "user",
+      content: userMessage,
+    });
+  } catch (error) {
+    return new Response("Error adding user message", { status: 500 });
+  }
 
   const systemMessages = convertToModelMessages(messages);
-
-  // const toolFunctions = secondTool(convex, threadId, messageId);
 
   const response = createUIMessageStreamResponse({
     status: 200,
