@@ -100,14 +100,20 @@ export async function POST(request: Request) {
                   fullResponse += part.text;
                 }
               });
-              await convex.mutation(
-                api.threadMessages.mutations.addThreadMessage,
-                {
-                  threadId,
-                  role: "assistant",
-                  content: fullResponse,
-                },
-              );
+              try {
+                await convex.mutation(
+                  api.threadMessages.mutations.addThreadMessage,
+                  {
+                    threadId,
+                    role: "assistant",
+                    content: fullResponse,
+                  },
+                );
+              } catch (error) {
+                console.error("Error adding thread message", error);
+                // TODO: return error to client
+                // writer.write({ type: "error", text: "Error adding thread message" });
+              }
             },
           }),
         );
