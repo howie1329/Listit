@@ -11,7 +11,7 @@ import {
 
 export const SingleItem = ({ item }: { item: Doc<"items"> }) => {
   return (
-    <Card className="hover:bg-accent transition-colors cursor-pointer w-5/6">
+    <Card className="hover:bg-accent transition-colors cursor-pointer w-11/12 border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Checkbox

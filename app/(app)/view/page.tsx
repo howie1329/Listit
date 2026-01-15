@@ -47,14 +47,14 @@ export const ViewPageContent = () => {
 
   return (
     <div className="flex flex-col w-full h-full gap-2">
-      <div className="flex flex-row gap-2 w-full h-fit p-4">
+      <div className="flex flex-row gap-2 w-full h-fit p-2">
         <ViewStatusSelect
           className="w-36 h-16"
           value={status}
           onChange={setStatus}
         />
         <InputSearch
-          className="self-center w-5/6 h-12"
+          className="self-center h-8"
           search={search}
           setSearch={setSearch}
         />
