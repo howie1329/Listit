@@ -1,44 +1,17 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { mutation, query } from "./_generated/server";
+import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 
-export const getItems = query({
+// Create a single item
+export const createSingleItem = mutation({
   args: {
-    listId: v.id("list"),
-  },
-  returns: v.array(
-    v.object({
-      _id: v.id("items"),
-      listId: v.id("list"),
-      userId: v.id("users"),
-      title: v.string(),
-      description: v.optional(v.string()),
-      _creationTime: v.number(),
-      updatedAt: v.string(),
-      isCompleted: v.boolean(),
-      isDeleted: v.boolean(),
-      isArchived: v.boolean(),
-      priority: v.union(
-        v.literal("low"),
-        v.literal("medium"),
-        v.literal("high"),
-      ),
-    }),
-  ),
-  handler: async (ctx, args) => {
-    const items = await ctx.db
-      .query("items")
-      .withIndex("by_listId", (q) => q.eq("listId", args.listId))
-      .collect();
-    return items;
-  },
-});
-
-export const createItem = mutation({
-  args: {
-    listId: v.id("list"),
     title: v.string(),
     description: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    priority: v.optional(
+      v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    ),
+    notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -46,7 +19,6 @@ export const createItem = mutation({
       throw new Error("User not found");
     }
     return await ctx.db.insert("items", {
-      listId: args.listId,
       userId: userId,
       title: args.title,
       description: args.description ?? "",
@@ -54,20 +26,31 @@ export const createItem = mutation({
       isCompleted: false,
       isDeleted: false,
       isArchived: false,
-      priority: "low",
+      priority: args.priority ?? "low",
+      tags: args.tags ?? [],
+      notes: args.notes ?? "",
+      focusState: "back_burner",
     });
   },
 });
 
-export const updateItem = mutation({
+// Update an existing item
+export const updateSingleItem = mutation({
   args: {
     itemId: v.id("items"),
-    title: v.string(),
+    title: v.optional(v.string()),
     description: v.optional(v.string()),
-    isCompleted: v.boolean(),
-    isDeleted: v.boolean(),
-    isArchived: v.boolean(),
-    priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    isCompleted: v.optional(v.boolean()),
+    isDeleted: v.optional(v.boolean()),
+    isArchived: v.optional(v.boolean()),
+    priority: v.optional(
+      v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    ),
+    tags: v.optional(v.array(v.string())),
+    notes: v.optional(v.string()),
+    focusState: v.optional(
+      v.union(v.literal("today"), v.literal("back_burner")),
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -79,18 +62,22 @@ export const updateItem = mutation({
       throw new Error("You are not authorized to update this item");
     }
     return await ctx.db.patch(args.itemId, {
-      title: args.title,
-      description: args.description ?? "",
+      title: args.title ?? item.title,
+      description: args.description ?? item.description,
       updatedAt: new Date().toISOString(),
-      isCompleted: args.isCompleted,
-      isDeleted: args.isDeleted,
-      isArchived: args.isArchived,
-      priority: args.priority,
+      isCompleted: args.isCompleted ?? item.isCompleted,
+      isDeleted: args.isDeleted ?? item.isDeleted,
+      isArchived: args.isArchived ?? item.isArchived,
+      priority: args.priority ?? item.priority,
+      tags: args.tags ?? item.tags,
+      notes: args.notes ?? item.notes,
+      focusState: args.focusState ?? item.focusState,
     });
   },
 });
 
-export const toogleItemCompletion = mutation({
+// Toggle the completion status of an item
+export const toogleSingleItemCompletion = mutation({
   args: {
     itemId: v.id("items"),
   },
@@ -110,26 +97,25 @@ export const toogleItemCompletion = mutation({
   },
 });
 
-export const createItems = mutation({
+// Create multiple items
+export const createMultipleItems = mutation({
   args: {
-    listId: v.id("list"),
-    userId: v.id("users"),
     items: v.array(
       v.object({
         title: v.string(),
         description: v.optional(v.string()),
+        tags: v.optional(v.array(v.string())),
       }),
     ),
   },
   handler: async (ctx, args) => {
-    const list = await ctx.db.get(args.listId);
-    if (!list || list.userId !== args.userId) {
-      throw new Error("You are not authorized to create items for this list");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not found");
     }
     for (const item of args.items) {
       await ctx.db.insert("items", {
-        listId: args.listId,
-        userId: args.userId,
+        userId: userId,
         title: item.title,
         description: item.description ?? "",
         updatedAt: new Date().toISOString(),
@@ -137,6 +123,8 @@ export const createItems = mutation({
         isDeleted: false,
         isArchived: false,
         priority: "low",
+        tags: item.tags ?? [],
+        focusState: "back_burner",
       });
     }
   },

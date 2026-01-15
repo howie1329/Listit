@@ -42,6 +42,7 @@ export default defineSchema({
     updatedAt: v.string(),
   }).index("by_threadId", ["threadId"]),
   list: defineTable({
+    // TODO: Delete this table as we are not using it for version 2
     userId: v.id("users"),
     title: v.string(),
     description: v.string(),
@@ -53,7 +54,6 @@ export default defineSchema({
     isPublic: v.boolean(),
   }).index("by_userId", ["userId"]),
   items: defineTable({
-    listId: v.id("list"),
     userId: v.id("users"),
     title: v.string(),
     description: v.optional(v.string()),
@@ -62,9 +62,10 @@ export default defineSchema({
     isDeleted: v.boolean(),
     isArchived: v.boolean(),
     priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
-  })
-    .index("by_listId", ["listId"])
-    .index("by_listId_userId", ["listId", "userId"]),
+    tags: v.array(v.string()),
+    notes: v.optional(v.string()),
+    focusState: v.union(v.literal("today"), v.literal("back_burner")),
+  }).index("by_userId", ["userId"]),
   userSettings: defineTable({
     userId: v.id("users"),
     name: v.string(),
