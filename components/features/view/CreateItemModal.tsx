@@ -42,10 +42,10 @@ export const CreateItemModal = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <span className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Button onClick={() => setOpen(true)} className="mt-4">
           <HugeiconsIcon icon={PlusSignIcon} />
           Create Your First Item
-        </span>
+        </Button>
       </DialogTrigger>
       <DialogContent showCloseButton={false}>
         <DialogHeader>

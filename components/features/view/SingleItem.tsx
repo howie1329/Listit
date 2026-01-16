@@ -8,6 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 
 export const SingleItem = ({ item }: { item: Doc<"items"> }) => {
   return (
@@ -40,12 +43,9 @@ export const SingleItem = ({ item }: { item: Doc<"items"> }) => {
         </CardTitle>
 
         <CardAction>
-          <Checkbox
-            checked={item.isCompleted}
-            className="mt-1"
-            // Prevent parent click handlers from firing if added later
-            onClick={(e) => e.stopPropagation()}
-          />
+          <Button variant="ghost" size="icon">
+            <HugeiconsIcon icon={MoreHorizontalIcon} />
+          </Button>
         </CardAction>
       </CardHeader>
     </Card>
