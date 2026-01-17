@@ -143,8 +143,8 @@ const MinimalSingleItem = ({ item }: { item: Doc<"items"> }) => {
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 px-2 py-1 rounded-md transition-colors",
-        isHovered && "border border-border bg-accent/50",
+        "flex flex-col gap-2 px-2 py-1 rounded-md ",
+        isHovered && "border border-border",
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -156,8 +156,10 @@ const MinimalSingleItem = ({ item }: { item: Doc<"items"> }) => {
         />
         {isHovered ? (
           <Select value={item.priority} onValueChange={handlePriorityChange}>
-            <SelectTrigger className="h-6 w-20">
-              <SelectValue />
+            <SelectTrigger className="h-6 w-20 [&_svg]:hidden border-none bg-transparent">
+              <Badge variant="outline">
+                <SelectValue />
+              </Badge>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="low">low</SelectItem>
