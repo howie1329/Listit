@@ -122,6 +122,24 @@ export default function ChatPage() {
             <div key={message.id}>
               {message.parts.map((part, index) => {
                 switch (part.type) {
+                  case "data-weather-tool": {
+                    const data = part.data as {
+                      location: string;
+                      status: string;
+                      result: string;
+                    };
+                    return (
+                      <div key={index}>
+                        {data.status === "running" && (
+                          <p>Getting weather for {data.location}...</p>
+                        )}
+                        {data.status === "completed" && <p>{data.result}</p>}
+                        {data.status === "error" && (
+                          <p>Error getting weather for {data.location}</p>
+                        )}
+                      </div>
+                    );
+                  }
                   case "text":
                     return <p key={index}>{part.text}</p>;
                   default:
