@@ -19,6 +19,14 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { DeleteIcon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 
 export const SingleItemListComponent = ({ item }: { item: Doc<"items"> }) => {
   // States
@@ -124,7 +132,7 @@ export const SingleItemListComponent = ({ item }: { item: Doc<"items"> }) => {
             </Badge>
           ))}
         </div>
-        <DeleteItemAlertDialog itemId={item._id} />
+        <OptionsDropdown item={item} />
       </div>
       {/* Description */}
       {item.description && (
@@ -160,7 +168,39 @@ export const SingleItemListComponent = ({ item }: { item: Doc<"items"> }) => {
   );
 };
 
-const DeleteItemAlertDialog = ({ itemId }: { itemId: Id<"items"> }) => {
+const OptionsDropdown = ({ item }: { item: Doc<"items"> }) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <HugeiconsIcon icon={MoreHorizontalIcon} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
+          <HugeiconsIcon icon={DeleteIcon} />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+      <DeleteItemAlertDialog
+        itemId={item._id}
+        open={isDeleteDialogOpen}
+        setOpen={setIsDeleteDialogOpen}
+      />
+    </DropdownMenu>
+  );
+};
+
+const DeleteItemAlertDialog = ({
+  itemId,
+  open,
+  setOpen,
+}: {
+  itemId: Id<"items">;
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) => {
   const deleteItem = useMutation(api.items.mutations.deleteSingleItem);
   const handleDeleteItem = async () => {
     try {
@@ -171,10 +211,7 @@ const DeleteItemAlertDialog = ({ itemId }: { itemId: Id<"items"> }) => {
     }
   };
   return (
-    <AlertDialog>
-      <AlertDialogTrigger>
-        <Button variant="destructive">Delete</Button>
-      </AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
