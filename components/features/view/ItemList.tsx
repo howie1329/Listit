@@ -27,8 +27,95 @@ export const ItemList = ({ items }: { items: Doc<"items">[] }) => {
   return (
     <div className="flex flex-col gap-2 w-full h-full overflow-y-auto p-2">
       {items.map((item) => (
-        <MinimalSingleItem key={item._id} item={item} />
+        <SingleItem key={item._id} item={item} />
       ))}
+    </div>
+  );
+};
+
+const SingleItem = ({ item }: { item: Doc<"items"> }) => {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(item.title);
+  const [editedDescription, setEditedDescription] = useState(
+    item.description || "",
+  );
+  const toggleCompletion = useMutation(
+    api.items.mutations.toogleSingleItemCompletion,
+  );
+
+  const handleToggleCompletion = async () => {
+    try {
+      await toggleCompletion({ itemId: item._id });
+    } catch {
+      toast.error("Failed to toggle completion");
+    }
+  };
+  return (
+    <div className="flex flex-col gap-2 hover:bg-accent/50 rounded-md p-2 border border-transparent">
+      {/* Title */}
+      <div className="flex flex-row items-center gap-1">
+        <Checkbox
+          checked={item.isCompleted}
+          onCheckedChange={handleToggleCompletion}
+        />
+        {item.priority && <Badge variant="outline">{item.priority}</Badge>}
+        {isEditingTitle ? (
+          <input
+            type="text"
+            value={editedTitle}
+            className="text-sm font-medium border focus:ring-0 focus:outline-none"
+            onChange={(e) => setEditedTitle(e.target.value)}
+            onBlur={() => setIsEditingTitle(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setIsEditingTitle(false);
+              }
+            }}
+          />
+        ) : (
+          <p
+            className={cn(
+              "text-sm font-medium",
+              item.isCompleted && "line-through text-muted-foreground",
+            )}
+            onDoubleClick={() => setIsEditingTitle(true)}
+          >
+            {item.title}
+          </p>
+        )}
+        {item.tags.map((tag) => (
+          <Badge variant="outline" key={tag}>
+            {tag}
+          </Badge>
+        ))}
+      </div>
+      {/* Description */}
+      {item.description && (
+        <div className="flex flex-row items-center gap-2">
+          {isEditingDescription ? (
+            <input
+              type="text"
+              value={editedDescription}
+              className="text-xs focus:ring-0 focus:outline-none"
+              onChange={(e) => setEditedDescription(e.target.value)}
+              onBlur={() => setIsEditingDescription(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setIsEditingDescription(false);
+                }
+              }}
+            />
+          ) : (
+            <p
+              className="text-xs text-muted-foreground line-clamp-2"
+              onDoubleClick={() => setIsEditingDescription(true)}
+            >
+              {item.description}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
