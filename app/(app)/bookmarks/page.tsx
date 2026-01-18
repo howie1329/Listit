@@ -171,9 +171,9 @@ export default function BookmarkPage() {
   }
 
   return (
-    <>
-      <div className="flex flex-col w-full h-full p-4">
-        <div className="flex items-center gap-3 md:gap-2 mb-4">
+    <div className="flex flex-col w-full h-full overflow-hidden">
+      <div className="flex flex-col w-full h-full p-2 overflow-y-auto">
+        <div className="flex items-center gap-3 md:gap-2 mb-4 sticky top-0 bg-background z-10">
           <CollectionSelector
             selectedCollectionId={selectedCollectionId}
             collections={collections}
@@ -203,6 +203,6 @@ export default function BookmarkPage() {
         onOpenChange={setCreateCollectionOpen}
         onCreate={handleCreateCollection}
       />
-    </>
+    </div>
   );
 }
