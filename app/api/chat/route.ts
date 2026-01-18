@@ -10,6 +10,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { FALLBACK_MODELS, OpenRouterModels } from "@/convex/lib/modelMapping";
+import { baseTools } from "@/lib/tools/weather";
 
 // TODO: Need to refactor this to take in models and tools
 export async function POST(request: Request) {
@@ -81,12 +82,19 @@ export async function POST(request: Request) {
     status: 200,
     stream: createUIMessageStream({
       execute: async ({ writer }) => {
+        const baseToolFunctions = baseTools({ writer });
+
         const agent = new Agent({
           model: openRouter(model, {
             extraBody: { models: FALLBACK_MODELS },
           }) as LanguageModel,
-          system: "You are a helpful assistant that can answer questions.",
+          system:
+            "You are a helpful assistant that can answer questions." +
+            "You can use the weather tool to get the weather for a given location." +
+            "Include sources when providing information." +
+            "Everything you return must be formatted in markdown.",
           stopWhen: stepCountIs(10),
+          tools: { weather: baseToolFunctions.weatherTool },
         });
 
         const stream = agent.stream({ messages: systemMessages });

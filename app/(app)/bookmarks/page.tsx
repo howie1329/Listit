@@ -171,9 +171,9 @@ export default function BookmarkPage() {
   }
 
   return (
-    <>
-      <div className="flex flex-col w-full h-full p-4">
-        <div className="flex items-center gap-3 md:gap-2 mb-4">
+    <div className="flex flex-col w-full h-full overflow-hidden">
+      <div className="flex flex-col w-full h-full p-2 overflow-hidden">
+        <div className="flex items-center px-1 gap-3 md:gap-2 mb-2 ">
           <CollectionSelector
             selectedCollectionId={selectedCollectionId}
             collections={collections}
@@ -189,20 +189,22 @@ export default function BookmarkPage() {
             onKeyDown={handleInputKeyDown}
           />
         </div>
-        {bookmarks.length === 0 ? (
-          <BookmarksEmptyState
-            searchQuery={searchQuery}
-            selectedCollection={selectedCollection}
-          />
-        ) : (
-          <BookmarksList bookmarks={bookmarks} collections={collections} />
-        )}
+        <div className="flex flex-col h-full overflow-y-auto p-1">
+          {bookmarks.length === 0 ? (
+            <BookmarksEmptyState
+              searchQuery={searchQuery}
+              selectedCollection={selectedCollection}
+            />
+          ) : (
+            <BookmarksList bookmarks={bookmarks} collections={collections} />
+          )}
+        </div>
       </div>
       <CreateCollectionDialog
         open={createCollectionOpen}
         onOpenChange={setCreateCollectionOpen}
         onCreate={handleCreateCollection}
       />
-    </>
+    </div>
   );
 }
