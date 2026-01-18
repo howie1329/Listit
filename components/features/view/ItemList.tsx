@@ -4,7 +4,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { SingleItemListComponent } from "./SingleItemListComponent";
 import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlusSignCircleIcon, PlusSignIcon } from "@hugeicons/core-free-icons";
+import { PlusSignCircleIcon } from "@hugeicons/core-free-icons";
 import { api } from "@/convex/_generated/api";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";

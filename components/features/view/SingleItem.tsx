@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
+// Deprecated - Used in the old list view - Will be removed soon
 export const SingleItem = ({ item }: { item: Doc<"items"> }) => {
   return (
     <Card className="hover:bg-accent transition-colors cursor-pointer w-11/12 border">

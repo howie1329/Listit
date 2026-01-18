@@ -26,7 +26,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { DeleteIcon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import {
+  CenterFocusIcon,
+  DeleteIcon,
+  MoreHorizontalIcon,
+} from "@hugeicons/core-free-icons";
 
 export const SingleItemListComponent = ({ item }: { item: Doc<"items"> }) => {
   // States
@@ -170,6 +174,19 @@ export const SingleItemListComponent = ({ item }: { item: Doc<"items"> }) => {
 
 const OptionsDropdown = ({ item }: { item: Doc<"items"> }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const toggleFocusState = useMutation(api.items.mutations.updateSingleItem);
+
+  const handleToggleFocusState = async () => {
+    try {
+      await toggleFocusState({
+        itemId: item._id,
+        focusState: item.focusState === "today" ? "back_burner" : "today",
+      });
+    } catch {
+      toast.error("Failed to toggle focus state");
+    }
+  };
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -178,6 +195,12 @@ const OptionsDropdown = ({ item }: { item: Doc<"items"> }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <DropdownMenuItem onClick={handleToggleFocusState}>
+          <HugeiconsIcon icon={CenterFocusIcon} />
+          {item.focusState === "today"
+            ? "Move to Back Burner"
+            : "Move to Today"}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
           <HugeiconsIcon icon={DeleteIcon} />
           Delete
