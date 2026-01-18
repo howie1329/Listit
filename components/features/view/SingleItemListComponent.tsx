@@ -33,17 +33,8 @@ export const SingleItemListComponent = ({ item }: { item: Doc<"items"> }) => {
     api.items.mutations.toogleSingleItemCompletion,
   );
   const updateItem = useMutation(api.items.mutations.updateSingleItem);
-  const deleteItem = useMutation(api.items.mutations.deleteSingleItem);
 
   // Handlers
-  const handleDeleteItem = async () => {
-    try {
-      await deleteItem({ itemId: item._id });
-      toast.success("Item deleted");
-    } catch {
-      toast.error("Failed to delete item");
-    }
-  };
   const handleToggleCompletion = async () => {
     try {
       await toggleCompletion({ itemId: item._id });
