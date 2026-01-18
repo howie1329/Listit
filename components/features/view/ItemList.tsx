@@ -12,9 +12,11 @@ export const ItemList = ({ items }: { items: Doc<"items">[] }) => {
   }
   return (
     <div className="flex flex-col gap-2 w-full h-full overflow-y-auto p-2">
-      {items.map((item) => (
-        <SingleItemListComponent key={item._id} item={item} />
-      ))}
+      {items
+        .filter((item) => !item.isDeleted)
+        .map((item) => (
+          <SingleItemListComponent key={item._id} item={item} />
+        ))}
     </div>
   );
 };

@@ -34,6 +34,27 @@ export const createSingleItem = mutation({
   },
 });
 
+// Delete a single item
+export const deleteSingleItem = mutation({
+  args: {
+    itemId: v.id("items"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not found");
+    }
+    const item = await ctx.db.get(args.itemId);
+    if (!item || item.userId !== userId) {
+      throw new Error("You are not authorized to delete this item");
+    }
+    return await ctx.db.patch(args.itemId, {
+      isDeleted: true,
+      updatedAt: new Date().toISOString(),
+    });
+  },
+});
+
 // Update an existing item
 export const updateSingleItem = mutation({
   args: {
