@@ -46,8 +46,8 @@ export const ViewPageContent = () => {
   }, [items, search, status]);
 
   return (
-    <div className="flex flex-col w-full h-full gap-2">
-      <div className="flex flex-row gap-2 w-full h-fit p-2">
+    <div className="flex flex-col w-full h-full gap-1">
+      <div className="flex flex-row gap-1 w-full h-fit p-1">
         <ViewStatusSelect
           className="w-36 h-16"
           value={status}

@@ -31,7 +31,7 @@ export const InputSearch = ({
   return (
     <Input
       className={cn(className)}
-      placeholder="Search"
+      placeholder="Search or add item"
       value={search}
       onChange={(e) => setSearch(e.target.value)}
       onKeyDown={(e) => {
