@@ -10,6 +10,7 @@ import { DefaultChatTransport } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
 import { mapModelToOpenRouter } from "@/convex/lib/modelMapping";
+import { Streamdown } from "streamdown";
 
 export default function ChatPage() {
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
@@ -141,7 +142,7 @@ export default function ChatPage() {
                     );
                   }
                   case "text":
-                    return <p key={index}>{part.text}</p>;
+                    return <Streamdown>{part.text}</Streamdown>;
                   default:
                     return null;
                 }

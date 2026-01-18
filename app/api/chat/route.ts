@@ -90,7 +90,9 @@ export async function POST(request: Request) {
           }) as LanguageModel,
           system:
             "You are a helpful assistant that can answer questions." +
-            "You can use the weather tool to get the weather for a given location.",
+            "You can use the weather tool to get the weather for a given location." +
+            "Include sources when providing information." +
+            "Everything you return must be formatted in markdown.",
           stopWhen: stepCountIs(10),
           tools: { weather: baseToolFunctions.weatherTool },
         });
