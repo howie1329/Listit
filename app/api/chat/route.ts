@@ -112,6 +112,7 @@ export async function POST(request: Request) {
                 return;
               }
               const lastMessage = messages[messages.length - 1];
+              console.log("Last message", lastMessage);
               lastMessage.parts.forEach((part) => {
                 if (part.type === "text") {
                   fullResponse += part.text;

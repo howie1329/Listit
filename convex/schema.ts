@@ -8,8 +8,103 @@ import { defaultModelValidator } from "./lib/modelMapping";
 // The schema provides more precise TypeScript types.
 export default defineSchema({
   ...authTables,
-  // TODO: Look into vercel ai sdk for message ui structure. We need to match the structure as closely as possible.
-  // TODO: This then could combine threadTools and threadMessages into a single table
+  // Matches Vercel AI SDK UIMessage structure: https://v5.ai-sdk.dev/docs/reference/ai-sdk-core/ui-message#uimessage
+  uiMessages: defineTable({
+    threadId: v.id("thread"),
+    id: v.string(), // Unique identifier for the message (as per AI SDK spec)
+    role: v.union(
+      v.literal("system"),
+      v.literal("user"),
+      v.literal("assistant"),
+    ),
+    metadata: v.optional(v.any()), // Custom metadata (AI SDK uses 'metadata', not 'metaData')
+    parts: v.array(
+      v.union(
+        // StepStartUIPart - no fields except type
+        v.object({
+          type: v.literal("step-start"),
+        }),
+        // TextUIPart - text is required
+        v.object({
+          type: v.literal("text"),
+          text: v.string(),
+          state: v.optional(v.union(v.literal("streaming"), v.literal("done"))),
+        }),
+        // ReasoningUIPart - text is required
+        v.object({
+          type: v.literal("reasoning"),
+          text: v.string(),
+          state: v.optional(v.union(v.literal("streaming"), v.literal("done"))),
+          providerMetadata: v.optional(v.any()),
+        }),
+        // ToolUIPart - input-streaming state
+        v.object({
+          type: v.string(), // Will be "tool-{toolName}" dynamically (e.g., "tool-weather")
+          toolCallId: v.string(),
+          state: v.literal("input-streaming"),
+          input: v.optional(v.any()), // DeepPartial<TOOLS[NAME]['input']> | undefined
+          providerExecuted: v.optional(v.boolean()),
+        }),
+        // ToolUIPart - input-available state
+        v.object({
+          type: v.string(), // Will be "tool-{toolName}" dynamically
+          toolCallId: v.string(),
+          state: v.literal("input-available"),
+          input: v.any(), // TOOLS[NAME]['input']
+          providerExecuted: v.optional(v.boolean()),
+        }),
+        // ToolUIPart - output-available state
+        v.object({
+          type: v.string(), // Will be "tool-{toolName}" dynamically
+          toolCallId: v.string(),
+          state: v.literal("output-available"),
+          input: v.any(), // TOOLS[NAME]['input']
+          output: v.any(), // TOOLS[NAME]['output']
+          providerExecuted: v.optional(v.boolean()),
+        }),
+        // ToolUIPart - output-error state
+        v.object({
+          type: v.string(), // Will be "tool-{toolName}" dynamically
+          toolCallId: v.string(),
+          state: v.literal("output-error"),
+          input: v.any(), // TOOLS[NAME]['input']
+          errorText: v.string(),
+          providerExecuted: v.optional(v.boolean()),
+        }),
+        // DataUIPart - for custom data types (e.g., "data-weather-tool")
+        v.object({
+          type: v.string(), // Will be "data-{dataTypeName}" dynamically
+          id: v.optional(v.string()),
+          data: v.any(), // DATA_TYPES[NAME]
+        }),
+        // SourceUrlUIPart
+        v.object({
+          type: v.literal("source-url"),
+          sourceId: v.string(),
+          url: v.string(),
+          title: v.optional(v.string()),
+          providerMetadata: v.optional(v.any()),
+        }),
+        // SourceDocumentUIPart
+        v.object({
+          type: v.literal("source-document"),
+          sourceId: v.string(),
+          mediaType: v.string(),
+          title: v.string(),
+          filename: v.optional(v.string()),
+          providerMetadata: v.optional(v.any()),
+        }),
+        // FileUIPart
+        v.object({
+          type: v.literal("file"),
+          mediaType: v.string(),
+          filename: v.optional(v.string()),
+          url: v.string(),
+        }),
+      ),
+    ),
+    updatedAt: v.string(),
+  }).index("by_threadId", ["threadId"]),
   threadTools: defineTable({
     threadId: v.id("thread"),
     threadMessageId: v.id("threadMessage"),
