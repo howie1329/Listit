@@ -23,6 +23,11 @@ interface ShortcutGroup {
   shortcuts: ShortcutItem[];
 }
 
+/**
+ * Render a button-triggered dialog that displays categorized keyboard shortcuts with visual key badges.
+ *
+ * @returns A React element containing the keyboard shortcuts help dialog.
+ */
 export function KeyboardShortcutsHelp() {
   const modKey = useModifierKey();
 
@@ -110,7 +115,13 @@ export function KeyboardShortcutsHelp() {
 }
 
 /**
- * Inline keyboard hint component for showing a single shortcut
+ * Render a compact inline representation of one or more keyboard keys as keycap badges.
+ *
+ * Renders each entry from `keys` as a styled `<kbd>` badge and separates multiple keys with a "+" glyph.
+ *
+ * @param keys - Ordered list of key labels to display (e.g., `["Ctrl", "K"]`)
+ * @param className - Optional CSS classes applied to the wrapper element
+ * @returns A JSX element containing the rendered key badges
  */
 export function KeyboardHint({ keys, className }: { keys: string[]; className?: string }) {
   return (

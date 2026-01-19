@@ -4,6 +4,14 @@ import { UserSettingsProvider } from "@/providers/UserSettingsProvider";
 import { KeyboardNavigationProvider } from "@/hooks/use-keyboard-navigation";
 import { Toaster } from "sonner";
 
+/**
+ * Composes application-level providers and renders the main app layout with a sidebar and toast container.
+ *
+ * Wraps content with user settings, keyboard navigation, and sidebar providers, and renders the app's main container including the primary sidebar and a Toaster for notifications.
+ *
+ * @param children - Page content to render inside the main application layout
+ * @returns The React element tree for the application's top-level layout
+ */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <UserSettingsProvider>
