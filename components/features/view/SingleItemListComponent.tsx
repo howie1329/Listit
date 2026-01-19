@@ -241,11 +241,11 @@ const OptionsSheet = ({ item }: { item: Doc<"items"> }) => {
         notes: editedNotes,
       });
       toast.success("Notes updated");
+      setIsEditingNotes(false);
     } catch {
       toast.error("Failed to update notes");
     } finally {
       isSavingRef.current = false;
-      setIsEditingNotes(false);
     }
   };
 
