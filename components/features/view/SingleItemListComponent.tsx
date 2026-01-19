@@ -19,12 +19,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -32,6 +37,7 @@ import {
   CenterFocusIcon,
   DeleteIcon,
   MoreHorizontalIcon,
+  PencilIcon,
 } from "@hugeicons/core-free-icons";
 import { Streamdown } from "streamdown";
 
@@ -245,15 +251,33 @@ const OptionsSheet = ({ item }: { item: Doc<"items"> }) => {
 
   return (
     <>
-      <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
-        <SheetTrigger asChild>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" aria-label="Open item options">
             <HugeiconsIcon icon={MoreHorizontalIcon} />
           </Button>
-        </SheetTrigger>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setIsSheetOpen(true)}>
+            <HugeiconsIcon icon={PencilIcon} />
+            Notes
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleToggleFocusState}>
+            <HugeiconsIcon icon={CenterFocusIcon} />
+            {item.focusState === "today"
+              ? "Move to Back Burner"
+              : "Move to Today"}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
+            <HugeiconsIcon icon={DeleteIcon} />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
         <SheetContent className="flex flex-col gap-6">
           <SheetHeader>
-            <SheetTitle>Item options</SheetTitle>
+            <SheetTitle>Notes</SheetTitle>
             <SheetDescription>
               Double-click the notes area to edit markdown.
             </SheetDescription>
@@ -308,28 +332,6 @@ const OptionsSheet = ({ item }: { item: Doc<"items"> }) => {
                   )}
                 </div>
               )}
-            </div>
-            <div className="flex flex-col gap-2">
-              <Button
-                variant="secondary"
-                className="justify-start gap-2"
-                data-icon="inline-start"
-                onClick={handleToggleFocusState}
-              >
-                <HugeiconsIcon icon={CenterFocusIcon} />
-                {item.focusState === "today"
-                  ? "Move to Back Burner"
-                  : "Move to Today"}
-              </Button>
-              <Button
-                variant="destructive"
-                className="justify-start gap-2"
-                data-icon="inline-start"
-                onClick={() => setIsDeleteDialogOpen(true)}
-              >
-                <HugeiconsIcon icon={DeleteIcon} />
-                Delete
-              </Button>
             </div>
           </div>
         </SheetContent>
