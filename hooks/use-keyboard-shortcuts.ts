@@ -94,6 +94,8 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
  */
 export function useModifierKey(): "Cmd" | "Ctrl" {
   if (typeof navigator === "undefined") return "Ctrl";
-  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const platform = navigator.userAgentData?.platform ?? navigator.platform;
+  const normalizedPlatform = String(platform).toUpperCase();
+  const isMac = normalizedPlatform.includes("MAC");
   return isMac ? "Cmd" : "Ctrl";
 }

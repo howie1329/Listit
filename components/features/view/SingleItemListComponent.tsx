@@ -116,6 +116,7 @@ export const SingleItemListComponent = ({
     const trimmedTitle = editedTitle.trim();
 
     if (trimmedTitle === "" || trimmedTitle === item.title) {
+      setEditedTitle(item.title);
       setGlobalIsEditingTitle(false);
       return;
     }
@@ -165,7 +166,8 @@ export const SingleItemListComponent = ({
 
   const handleEditDescription = async () => {
     const trimmedDescription = editedDescription.trim();
-    if (trimmedDescription === "" || trimmedDescription === item.description) {
+    if (trimmedDescription === item.description) {
+      setEditedDescription(item.description);
       setIsEditingDescription(false);
       return;
     }
@@ -302,13 +304,18 @@ export const SingleItemListComponent = ({
               value={editedDescription}
               className="text-xs focus:ring-0 focus:outline-none w-full border line-clamp-2"
               onChange={(e) => setEditedDescription(e.target.value)}
-              onBlur={() => setIsEditingDescription(false)}
+              onClick={(e) => e.stopPropagation()}
+              onBlur={() => {
+                handleEditDescription();
+              }}
               onKeyDown={(e) => {
+                e.stopPropagation();
                 if (e.key === "Enter") {
                   e.preventDefault();
                   handleEditDescription();
                 }
                 if (e.key === "Escape") {
+                  setEditedDescription(item.description || "");
                   setIsEditingDescription(false);
                 }
               }}

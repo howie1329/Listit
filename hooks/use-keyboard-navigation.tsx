@@ -204,18 +204,39 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
   const deleteSelected = useCallback(async () => {
     if (!selectedItem) return;
     
+    // Compute next item to select synchronously before deletion
+    const filteredItems = items.filter((item) => !item.isDeleted);
+    let nextItemId: Id<"items"> | null = null;
+    
+    if (filteredItems.length > 0) {
+      const currentIndex = filteredItems.findIndex((item) => item._id === selectedItem._id);
+      const nextIndex = currentIndex + 1;
+      
+      if (nextIndex < filteredItems.length) {
+        nextItemId = filteredItems[nextIndex]._id;
+      } else if (currentIndex > 0) {
+        // If at the end, select previous item
+        nextItemId = filteredItems[currentIndex - 1]._id;
+      }
+      // If currentIndex is 0 and it's the only item, nextItemId remains null
+    }
+    
     try {
       await updateItem({
         itemId: selectedItem._id,
         isDeleted: true,
       });
       toast.success("Item deleted");
-      // Select next item after deletion
-      selectNextItem();
+      // Select precomputed next item after deletion
+      if (nextItemId !== null) {
+        setSelectedItemId(nextItemId);
+      } else {
+        setSelectedItemId(null);
+      }
     } catch {
       toast.error("Failed to delete item");
     }
-  }, [selectedItem, updateItem, selectNextItem]);
+  }, [selectedItem, items, updateItem, setSelectedItemId]);
 
   const focusSearch = useCallback(() => {
     searchInputRef.current?.focus();

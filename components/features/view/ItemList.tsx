@@ -1,3 +1,4 @@
+"use client";
 import { Doc } from "@/convex/_generated/dataModel";
 import { ViewEmptyState } from "./EmptyState";
 import { Spinner } from "@/components/ui/spinner";
@@ -11,7 +12,8 @@ import { toast } from "sonner";
 import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
 
 export const ItemList = ({ items }: { items: Doc<"items">[] }) => {
-  const { setItems, selectedItemId, setSelectedItemId } = useKeyboardNavigation();
+  const { setItems, selectedItemId, setSelectedItemId } =
+    useKeyboardNavigation();
   const listRef = useRef<HTMLDivElement>(null);
 
   // Sync items with keyboard navigation context
@@ -23,10 +25,13 @@ export const ItemList = ({ items }: { items: Doc<"items">[] }) => {
   useEffect(() => {
     if (selectedItemId && listRef.current) {
       const selectedElement = listRef.current.querySelector(
-        `[data-item-id="${selectedItemId}"]`
+        `[data-item-id="${selectedItemId}"]`,
       );
       if (selectedElement) {
-        selectedElement.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        selectedElement.scrollIntoView({
+          block: "nearest",
+          behavior: "smooth",
+        });
       }
     }
   }, [selectedItemId]);
@@ -41,7 +46,7 @@ export const ItemList = ({ items }: { items: Doc<"items">[] }) => {
   const filteredItems = items.filter((item) => !item.isDeleted);
 
   return (
-    <div 
+    <div
       ref={listRef}
       className="flex flex-col gap-2 w-full h-full overflow-y-auto p-2"
       role="listbox"
@@ -55,9 +60,9 @@ export const ItemList = ({ items }: { items: Doc<"items">[] }) => {
       }}
     >
       {filteredItems.map((item) => (
-        <SingleItemListComponent 
-          key={item._id} 
-          item={item} 
+        <SingleItemListComponent
+          key={item._id}
+          item={item}
           isSelected={selectedItemId === item._id}
           onSelect={() => setSelectedItemId(item._id)}
         />
@@ -73,12 +78,13 @@ const EmptySingleItemComponent = () => {
   const createItem = useMutation(api.items.mutations.createSingleItem);
 
   const handleCreateItem = async () => {
-    if (title.trim() === "") {
+    const trimmedTitle = title.trim();
+    if (trimmedTitle === "") {
       toast.error("Title cannot be empty");
       return;
     }
     try {
-      await createItem({ title: title, description: "" });
+      await createItem({ title: trimmedTitle, description: "" });
       toast.success("Item created successfully");
     } catch (error) {
       toast.error("Failed to create item");

@@ -2,8 +2,7 @@
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { ViewStatusSelect } from "@/components/features/view/ViewStatusSelect";
-import { useState, useMemo, useEffect, useRef } from "react";
-import { InputSearch } from "@/components/features/view/InputSearch";
+import { useState, useMemo } from "react";
 import { ItemList } from "@/components/features/view/ItemList";
 import { ViewStatus } from "@/components/features/view/ViewStatusSelect";
 import { Separator } from "@/components/ui/separator";
@@ -11,7 +10,6 @@ import { KeyboardShortcutsHelp } from "@/components/features/view/KeyboardShortc
 import { QuickCreateItemDialog } from "@/components/features/view/QuickCreateItemDialog";
 import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 /**
  * Render the view page container that hosts the main view content.
@@ -30,11 +28,8 @@ export const ViewPageContent = () => {
   const items = useQuery(api.items.queries.getUserItems);
   const [status, setStatus] = useState<ViewStatus>("today");
   const [search, setSearch] = useState("");
-  const { 
-    openCreateItem, 
-    setOpenCreateItem,
-    searchInputRef,
-  } = useKeyboardNavigation();
+  const { openCreateItem, setOpenCreateItem, searchInputRef } =
+    useKeyboardNavigation();
 
   const filteredItems = useMemo(() => {
     if (!items) return [];
@@ -91,8 +86,8 @@ interface KeyboardEnabledSearchProps {
   inputRef: React.RefObject<HTMLInputElement | null>;
 }
 
-const KeyboardEnabledSearch = ({ 
-  search, 
+const KeyboardEnabledSearch = ({
+  search,
   setSearch,
   inputRef,
 }: KeyboardEnabledSearchProps) => {
