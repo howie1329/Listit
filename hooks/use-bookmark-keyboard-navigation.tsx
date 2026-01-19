@@ -36,6 +36,15 @@ interface BookmarkKeyboardNavigationContextType {
 const BookmarkKeyboardNavigationContext =
   createContext<BookmarkKeyboardNavigationContextType | null>(null);
 
+/**
+ * Provides keyboard-driven bookmark navigation, actions, and related state to descendant components via context.
+ *
+ * Exposes the current selection, bookmark list, navigation handlers (select next/previous), actions (open, edit, delete),
+ * editing state, and a search focus utility through BookmarkKeyboardNavigationContext.
+ *
+ * @param children - React nodes to be wrapped by the provider
+ * @returns A context provider element that supplies bookmark navigation state and handlers to its descendants
+ */
 export function BookmarkKeyboardNavigationProvider({
   children,
 }: {
@@ -220,6 +229,12 @@ export function BookmarkKeyboardNavigationProvider({
   );
 }
 
+/**
+ * Accesses the BookmarkKeyboardNavigation context for the current React tree.
+ *
+ * @returns The context value exposing selection state, navigation helpers, actions, editing state, and focus utilities.
+ * @throws Error if called outside of a BookmarkKeyboardNavigationProvider
+ */
 export function useBookmarkKeyboardNavigation() {
   const context = useContext(BookmarkKeyboardNavigationContext);
   if (!context) {

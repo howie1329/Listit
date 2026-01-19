@@ -21,6 +21,13 @@ interface QuickCreateItemDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Render a controlled dialog that lets the user quickly create a new item using a single title input.
+ *
+ * @param open - Whether the dialog is currently open
+ * @param onOpenChange - Callback invoked with the updated open state
+ * @returns The Dialog element containing the quick-create UI (title input, keyboard hints, and create action)
+ */
 export function QuickCreateItemDialog({
   open,
   onOpenChange,

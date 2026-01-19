@@ -22,6 +22,14 @@ interface ShortcutGroup {
   shortcuts: ShortcutItem[];
 }
 
+/**
+ * Render a dialog that exposes grouped keyboard shortcuts for bookmark navigation and actions.
+ *
+ * The component provides a trigger button and a dialog that lists shortcut groups with
+ * descriptions and key sequences visualized as styled `<kbd>` elements.
+ *
+ * @returns A React element containing the trigger and the keyboard shortcuts dialog.
+ */
 export function BookmarkKeyboardShortcutsHelp() {
   const shortcutGroups: ShortcutGroup[] = [
     {

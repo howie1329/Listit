@@ -47,6 +47,17 @@ interface KeyboardNavigationContextType {
 
 const KeyboardNavigationContext = createContext<KeyboardNavigationContextType | null>(null);
 
+/**
+ * Provides a keyboard-driven navigation and action context for an item list and exposes state and handlers to consumers.
+ *
+ * The provider manages selection, item list state, editing/adding UI state, and a search input ref. It supplies helpers to
+ * navigate between non-deleted items, edit or modify the selected item (move to Today/Back Burner, toggle completion, archive,
+ * cycle priority, add tag, delete), focus the search input, and open the create-item modal. Global keyboard shortcuts are registered
+ * (arrow keys / j k, Enter, t/b/x/a/#/p, Shift+Delete/Backspace, /, Ctrl/Cmd+N, Escape) and ignored when typing.
+ *
+ * @param children - The React node tree that will have access to the keyboard navigation context.
+ * @returns A JSX element that provides the KeyboardNavigationContext to its children
+ */
 export function KeyboardNavigationProvider({ children }: { children: React.ReactNode }) {
   const [selectedItemId, setSelectedItemId] = useState<Id<"items"> | null>(null);
   const [items, setItems] = useState<Doc<"items">[]>([]);
@@ -375,6 +386,12 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
   );
 }
 
+/**
+ * Access the keyboard navigation context containing selection state and navigation/action handlers.
+ *
+ * @returns The keyboard navigation context value with selection state, navigation helpers, and item action handlers.
+ * @throws If called outside a KeyboardNavigationProvider (throws "useKeyboardNavigation must be used within a KeyboardNavigationProvider").
+ */
 export function useKeyboardNavigation() {
   const context = useContext(KeyboardNavigationContext);
   if (!context) {

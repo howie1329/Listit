@@ -13,7 +13,16 @@ import { CreateCollectionDialog } from "@/components/features/bookmarks/CreateCo
 import { BookmarkKeyboardNavigationProvider, useBookmarkKeyboardNavigation } from "@/hooks/use-bookmark-keyboard-navigation";
 import { BookmarkKeyboardShortcutsHelp } from "@/components/features/bookmarks/BookmarkKeyboardShortcutsHelp";
 
-// Client-side search filter function
+/**
+ * Filters a list of bookmark-like items by a search query across multiple text fields.
+ *
+ * Performs a case-insensitive substring match against title, url, description, summary, each tag, and searchText.
+ * If `bookmarks` is `undefined` or `searchQuery` is empty or only whitespace, returns `bookmarks` unchanged.
+ *
+ * @param bookmarks - The array of bookmark-like objects to filter, or `undefined`.
+ * @param searchQuery - The search string used for filtering; whitespace is trimmed and matching is case-insensitive.
+ * @returns The filtered array of items that match the query in any of the searchable fields, or `undefined` if the input was `undefined`.
+ */
 function filterBookmarks<
   T extends {
     title: string;
@@ -57,6 +66,11 @@ function filterBookmarks<
   });
 }
 
+/**
+ * Render the bookmark page with keyboard navigation enabled.
+ *
+ * @returns A React element containing BookmarkPageContent wrapped in BookmarkKeyboardNavigationProvider
+ */
 export default function BookmarkPage() {
   return (
     <BookmarkKeyboardNavigationProvider>
@@ -65,6 +79,15 @@ export default function BookmarkPage() {
   );
 }
 
+/**
+ * Render the bookmark management content: collection selector, search bar with keyboard handling,
+ * bookmarks list (with client-side filtering), and create-collection dialog.
+ *
+ * Handles selection state, debounced search input, creation of collections and bookmarks, and
+ * keyboard interactions for the search input (Enter to create, Escape to clear and blur).
+ *
+ * @returns The BookmarkPageContent React element; shows a loading state until collections and bookmarks are available.
+ */
 function BookmarkPageContent() {
   const [selectedCollectionId, setSelectedCollectionId] =
     useState<Id<"bookmarkCollections"> | null>(null);

@@ -13,6 +13,11 @@ import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+/**
+ * Render the view page container that hosts the main view content.
+ *
+ * @returns The root React element containing the ViewPageContent component
+ */
 export default function ViewPage() {
   return (
     <div className="flex flex-col w-full h-full">

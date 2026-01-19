@@ -18,8 +18,17 @@ type KeyboardShortcut = {
 };
 
 /**
- * Hook to register global keyboard shortcuts
- * @param shortcuts - Array of keyboard shortcuts to register
+ * Register global keyboard shortcuts on the window object.
+ *
+ * The first shortcut that matches a key and required modifiers will have its
+ * default browser behavior prevented and its handler invoked. Shortcuts with
+ * `skipWhenTyping` (defaults to `true`) are ignored while the user is typing in
+ * inputs, textareas, or contenteditable elements.
+ *
+ * @param shortcuts - Array of `KeyboardShortcut` definitions. Each entry specifies
+ *   the key, optional modifier requirements (`metaKey`, `ctrlKey`, `shiftKey`, `altKey`),
+ *   the `handler` to run when matched, an optional `description`, and `skipWhenTyping`
+ *   which defaults to `true`.
  */
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
   const shortcutsRef = useRef(shortcuts);
@@ -79,7 +88,9 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
 }
 
 /**
- * Hook to check if the current platform uses Cmd (Mac) or Ctrl (Windows/Linux)
+ * Determines the platform's primary modifier key label.
+ *
+ * @returns `'Cmd'` on macOS, `'Ctrl'` on other platforms; defaults to `'Ctrl'` when `navigator` is unavailable.
  */
 export function useModifierKey(): "Cmd" | "Ctrl" {
   if (typeof navigator === "undefined") return "Ctrl";
