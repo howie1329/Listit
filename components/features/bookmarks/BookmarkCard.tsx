@@ -10,18 +10,35 @@ import {
 import { Doc } from "@/convex/_generated/dataModel";
 import Image from "next/image";
 import { BookmarkOptionsDropdown } from "./BookmarkOptionsDropdown";
+import { cn } from "@/lib/utils";
+
+interface BookmarkCardProps {
+  bookmark: Doc<"bookmarks">;
+  collections: Doc<"bookmarkCollections">[] | undefined;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}
 
 export const BookmarkCard = ({
   bookmark,
   collections,
-}: {
-  bookmark: Doc<"bookmarks">;
-  collections: Doc<"bookmarkCollections">[] | undefined;
-}) => {
+  isSelected = false,
+  onSelect,
+}: BookmarkCardProps) => {
   return (
     <Card
       key={bookmark._id}
-      className="hover:bg-accent transition-colors cursor-pointer gap-1"
+      className={cn(
+        "transition-colors cursor-pointer gap-1",
+        isSelected
+          ? "bg-accent border-primary/50 ring-1 ring-primary/30"
+          : "hover:bg-accent"
+      )}
+      onClick={onSelect}
+      data-bookmark-id={bookmark._id}
+      role="option"
+      aria-selected={isSelected}
+      tabIndex={isSelected ? 0 : -1}
     >
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -35,7 +52,15 @@ export const BookmarkCard = ({
               unoptimized
             />
           ) : null}
-          {bookmark.title}
+          <span className="truncate">{bookmark.title}</span>
+          {isSelected && (
+            <span className="text-[10px] text-muted-foreground hidden sm:flex items-center gap-1 ml-auto">
+              <kbd className="inline-flex items-center justify-center h-5 min-w-5 px-1 text-[10px] font-medium bg-muted/50 rounded border border-border">
+                Enter
+              </kbd>
+              <span>open</span>
+            </span>
+          )}
         </CardTitle>
 
         {bookmark.description && (

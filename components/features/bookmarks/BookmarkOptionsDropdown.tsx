@@ -17,11 +17,12 @@ import {
   DeleteIcon,
 } from "@hugeicons/core-free-icons";
 import { Doc } from "@/convex/_generated/dataModel";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { BookmarkEditDialog } from "./BookmarkEditDialog";
+import { useBookmarkKeyboardNavigation } from "@/hooks/use-bookmark-keyboard-navigation";
 
 export const BookmarkOptionsDropdown = ({
   bookmark,
@@ -30,7 +31,27 @@ export const BookmarkOptionsDropdown = ({
   bookmark: Doc<"bookmarks">;
   collections: Doc<"bookmarkCollections">[] | undefined;
 }) => {
-  const [editOpen, setEditOpen] = useState(false);
+  const { isEditing, setIsEditing, selectedBookmarkId } = useBookmarkKeyboardNavigation();
+  const [localEditOpen, setLocalEditOpen] = useState(false);
+  
+  // Sync with keyboard navigation editing state
+  const isCurrentlySelected = selectedBookmarkId === bookmark._id;
+  const editOpen = localEditOpen || (isCurrentlySelected && isEditing);
+  
+  const setEditOpen = (open: boolean) => {
+    setLocalEditOpen(open);
+    if (!open && isCurrentlySelected) {
+      setIsEditing(false);
+    }
+  };
+
+  // When keyboard triggers edit on this selected bookmark
+  useEffect(() => {
+    if (isCurrentlySelected && isEditing && !localEditOpen) {
+      setLocalEditOpen(true);
+    }
+  }, [isCurrentlySelected, isEditing, localEditOpen]);
+
   const softDeleteBookmark = useMutation(
     api.bookmarks.bookmarkFunctions.softDeleteBookmark,
   );
@@ -75,6 +96,7 @@ export const BookmarkOptionsDropdown = ({
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
             <HugeiconsIcon icon={PencilIcon} />
             Edit
+            <span className="ml-auto text-xs text-muted-foreground">E</span>
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
@@ -99,6 +121,7 @@ export const BookmarkOptionsDropdown = ({
           <DropdownMenuItem onClick={handleDelete} variant="destructive">
             <HugeiconsIcon icon={DeleteIcon} />
             Delete
+            <span className="ml-auto text-xs text-muted-foreground">⇧⌫</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
