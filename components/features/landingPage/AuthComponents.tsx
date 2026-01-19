@@ -2,10 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export const AuthComponents = () => {
   const [email, setEmail] = useState("");
@@ -16,7 +14,8 @@ export const AuthComponents = () => {
   const router = useRouter();
   const { signIn } = useAuthActions();
 
-  const handleSignIn = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError("");
     void signIn("password", { email, password, flow })
@@ -30,90 +29,82 @@ export const AuthComponents = () => {
         setLoading(false);
       });
   };
-  const toogleFlow = () => {
+
+  const toggleFlow = () => {
     setFlow(flow === "signIn" ? "signUp" : "signIn");
-  };
-
-  const SignInFlow = () => {
-    return (
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Sign In To Your Account</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <Input
-            placeholder="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Input
-            placeholder="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <div className="flex flex-row gap-2">
-            <Button onClick={handleSignIn} disabled={loading}>
-              {loading ? "Signing In..." : "Sign In"}
-            </Button>
-            <Button variant="outline" onClick={toogleFlow} disabled={loading}>
-              Sign Up
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const SignUpFlow = () => {
-    return (
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Sign Up To Your Account</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <Input
-            placeholder="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Input
-            placeholder="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <div className="flex flex-row gap-2">
-            <Button onClick={handleSignIn} disabled={loading}>
-              {loading ? "Signing Up..." : "Sign Up"}
-            </Button>
-            <Button variant="outline" onClick={toogleFlow} disabled={loading}>
-              Sign In
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    setError("");
   };
 
   return (
-    <div className="flex flex-col w-full h-full justify-center items-center ">
-      {flow === "signIn"
-        ? SignInFlow()
-        : flow === "signUp"
-          ? SignUpFlow()
-          : null}
+    <div className="flex flex-col w-full h-full justify-center items-center p-8">
+      <div className="w-full max-w-sm">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                {flow === "signIn" ? "Sign in" : "Create account"}
+              </h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {flow === "signIn"
+                  ? "Sign in to your account to continue"
+                  : "Create a new account to get started"}
+              </p>
+            </div>
 
-      {error && (
-        <Badge
-          className="w-full text-center truncate text-sm line-clamp-1"
-          variant="destructive"
-        >
-          {error}
-        </Badge>
-      )}
+            {error && (
+              <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-md p-3">
+                {error}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-3">
+              <Input
+                placeholder="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                required
+                className="h-11"
+              />
+              <Input
+                placeholder="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                required
+                className="h-11"
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 pt-2">
+              <Button type="submit" disabled={loading} className="h-11">
+                {loading
+                  ? flow === "signIn"
+                    ? "Signing in..."
+                    : "Creating account..."
+                  : flow === "signIn"
+                    ? "Sign in"
+                    : "Create account"}
+              </Button>
+
+              <div className="text-center text-sm text-slate-600 dark:text-slate-400">
+                <button
+                  type="button"
+                  onClick={toggleFlow}
+                  disabled={loading}
+                  className="hover:text-slate-900 dark:hover:text-slate-100 underline underline-offset-2 transition-colors"
+                >
+                  {flow === "signIn"
+                    ? "Don't have an account? Sign up"
+                    : "Already have an account? Sign in"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

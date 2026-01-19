@@ -10,8 +10,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useUserSettings } from "@/providers/UserSettingsProvider";
-import { CreateListModel } from "../list/CreateListModal";
 import { useState } from "react";
 import {
   HomeIcon,
@@ -26,14 +24,12 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { UserSettingsModal } from "../settings/UsersSettingsModal";
 import { useTheme } from "next-themes";
 export const AppMainSidebar = () => {
-  const [openCreateListModal, setOpenCreateListModal] = useState(false);
   const [openSettingsModal, setOpenSettingsModal] = useState(false);
   const { theme, setTheme } = useTheme();
-  const userSettings = useUserSettings();
   const items = [
     {
-      label: "Lists",
-      href: "/list",
+      label: "Items",
+      href: "/item",
       icon: <HugeiconsIcon icon={HomeIcon} />,
     },
     {
@@ -50,11 +46,10 @@ export const AppMainSidebar = () => {
           <SidebarGroupLabel>Main Actions</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => setOpenCreateListModal((prev) => !prev)}
-              >
+              {/* TODO: Create a global command component to handle searching, creating items, etc */}
+              <SidebarMenuButton onClick={() => {}}>
                 <HugeiconsIcon icon={PlusSignIcon} />
-                <span>Create New List</span>
+                <span>Create New Item</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -93,10 +88,6 @@ export const AppMainSidebar = () => {
           <span>Settings</span>
         </SidebarMenuButton>
       </SidebarFooter>
-      <CreateListModel
-        open={openCreateListModal}
-        setOpen={setOpenCreateListModal}
-      />
       <UserSettingsModal
         open={openSettingsModal}
         setOpen={setOpenSettingsModal}

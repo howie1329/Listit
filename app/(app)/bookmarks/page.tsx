@@ -10,8 +10,19 @@ import { BookmarkSearchBar } from "@/components/features/bookmarks/BookmarkSearc
 import { BookmarksEmptyState } from "@/components/features/bookmarks/BookmarksEmptyState";
 import { BookmarksList } from "@/components/features/bookmarks/BookmarksList";
 import { CreateCollectionDialog } from "@/components/features/bookmarks/CreateCollectionDialog";
+import { BookmarkKeyboardNavigationProvider, useBookmarkKeyboardNavigation } from "@/hooks/use-bookmark-keyboard-navigation";
+import { BookmarkKeyboardShortcutsHelp } from "@/components/features/bookmarks/BookmarkKeyboardShortcutsHelp";
 
-// Client-side search filter function
+/**
+ * Filters a list of bookmark-like items by a search query across multiple text fields.
+ *
+ * Performs a case-insensitive substring match against title, url, description, summary, each tag, and searchText.
+ * If `bookmarks` is `undefined` or `searchQuery` is empty or only whitespace, returns `bookmarks` unchanged.
+ *
+ * @param bookmarks - The array of bookmark-like objects to filter, or `undefined`.
+ * @param searchQuery - The search string used for filtering; whitespace is trimmed and matching is case-insensitive.
+ * @returns The filtered array of items that match the query in any of the searchable fields, or `undefined` if the input was `undefined`.
+ */
 function filterBookmarks<
   T extends {
     title: string;
@@ -55,13 +66,37 @@ function filterBookmarks<
   });
 }
 
+/**
+ * Render the bookmark page with keyboard navigation enabled.
+ *
+ * @returns A React element containing BookmarkPageContent wrapped in BookmarkKeyboardNavigationProvider
+ */
 export default function BookmarkPage() {
+  return (
+    <BookmarkKeyboardNavigationProvider>
+      <BookmarkPageContent />
+    </BookmarkKeyboardNavigationProvider>
+  );
+}
+
+/**
+ * Render the bookmark management content: collection selector, search bar with keyboard handling,
+ * bookmarks list (with client-side filtering), and create-collection dialog.
+ *
+ * Handles selection state, debounced search input, creation of collections and bookmarks, and
+ * keyboard interactions for the search input (Enter to create, Escape to clear and blur).
+ *
+ * @returns The BookmarkPageContent React element; shows a loading state until collections and bookmarks are available.
+ */
+function BookmarkPageContent() {
   const [selectedCollectionId, setSelectedCollectionId] =
     useState<Id<"bookmarkCollections"> | null>(null);
   const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isCreatingBookmark, setIsCreatingBookmark] = useState(false);
+  const { searchInputRef } = useBookmarkKeyboardNavigation();
+  
   const createCollection = useMutation(
     api.bookmarks.bookmarkCollectionFunctions.createCollection,
   );
@@ -160,6 +195,10 @@ export default function BookmarkPage() {
       e.preventDefault();
       handleCreateBookmark();
     }
+    if (e.key === "Escape") {
+      setSearchQuery("");
+      e.currentTarget.blur();
+    }
   };
 
   if (bookmarks === undefined || collections === undefined) {
@@ -171,9 +210,9 @@ export default function BookmarkPage() {
   }
 
   return (
-    <>
-      <div className="flex flex-col w-full h-full p-4">
-        <div className="flex items-center gap-3 md:gap-2 mb-4">
+    <div className="flex flex-col w-full h-full overflow-hidden">
+      <div className="flex flex-col w-full h-full p-2 overflow-hidden">
+        <div className="flex items-center px-1 gap-3 md:gap-2 mb-2 ">
           <CollectionSelector
             selectedCollectionId={selectedCollectionId}
             collections={collections}
@@ -187,22 +226,26 @@ export default function BookmarkPage() {
             onCreateBookmark={handleCreateBookmark}
             isCreatingBookmark={isCreatingBookmark}
             onKeyDown={handleInputKeyDown}
+            inputRef={searchInputRef}
           />
+          <BookmarkKeyboardShortcutsHelp />
         </div>
-        {bookmarks.length === 0 ? (
-          <BookmarksEmptyState
-            searchQuery={searchQuery}
-            selectedCollection={selectedCollection}
-          />
-        ) : (
-          <BookmarksList bookmarks={bookmarks} collections={collections} />
-        )}
+        <div className="flex flex-col h-full overflow-y-auto p-1">
+          {bookmarks.length === 0 ? (
+            <BookmarksEmptyState
+              searchQuery={searchQuery}
+              selectedCollection={selectedCollection}
+            />
+          ) : (
+            <BookmarksList bookmarks={bookmarks} collections={collections} />
+          )}
+        </div>
       </div>
       <CreateCollectionDialog
         open={createCollectionOpen}
         onOpenChange={setCreateCollectionOpen}
         onCreate={handleCreateCollection}
       />
-    </>
+    </div>
   );
 }

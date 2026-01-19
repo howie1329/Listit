@@ -41,19 +41,7 @@ export default defineSchema({
     content: v.string(),
     updatedAt: v.string(),
   }).index("by_threadId", ["threadId"]),
-  list: defineTable({
-    userId: v.id("users"),
-    title: v.string(),
-    description: v.string(),
-    updatedAt: v.string(), // UTC string
-    isCompleted: v.boolean(),
-    isDeleted: v.boolean(),
-    isArchived: v.boolean(),
-    isPinned: v.boolean(),
-    isPublic: v.boolean(),
-  }).index("by_userId", ["userId"]),
   items: defineTable({
-    listId: v.id("list"),
     userId: v.id("users"),
     title: v.string(),
     description: v.optional(v.string()),
@@ -62,9 +50,10 @@ export default defineSchema({
     isDeleted: v.boolean(),
     isArchived: v.boolean(),
     priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
-  })
-    .index("by_listId", ["listId"])
-    .index("by_listId_userId", ["listId", "userId"]),
+    tags: v.array(v.string()),
+    notes: v.optional(v.string()),
+    focusState: v.union(v.literal("today"), v.literal("back_burner")),
+  }).index("by_userId", ["userId"]),
   userSettings: defineTable({
     userId: v.id("users"),
     name: v.string(),
