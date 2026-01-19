@@ -1,6 +1,6 @@
 "use client";
 import { Doc, Id } from "@/convex/_generated/dataModel";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
@@ -12,7 +12,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogContent,
-  AlertDialogTrigger,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogCancel,
@@ -20,17 +19,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   CenterFocusIcon,
   DeleteIcon,
   MoreHorizontalIcon,
 } from "@hugeicons/core-free-icons";
+import { Streamdown } from "streamdown";
 
 export const SingleItemListComponent = ({ item }: { item: Doc<"items"> }) => {
   // States
@@ -136,7 +139,7 @@ export const SingleItemListComponent = ({ item }: { item: Doc<"items"> }) => {
             </Badge>
           ))}
         </div>
-        <OptionsDropdown item={item} />
+        <OptionsSheet item={item} />
       </div>
       {/* Description */}
       {item.description && (
@@ -172,10 +175,38 @@ export const SingleItemListComponent = ({ item }: { item: Doc<"items"> }) => {
   );
 };
 
-const OptionsDropdown = ({ item }: { item: Doc<"items"> }) => {
+const OptionsSheet = ({ item }: { item: Doc<"items"> }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [editedNotes, setEditedNotes] = useState(item.notes ?? "");
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const cancelEditRef = useRef(false);
+  const isSavingRef = useRef(false);
+  const notesInputRef = useRef<HTMLTextAreaElement | null>(null);
 
+  const updateItem = useMutation(api.items.mutations.updateSingleItem);
   const toggleFocusState = useMutation(api.items.mutations.updateSingleItem);
+
+  useEffect(() => {
+    if (!isEditingNotes) {
+      setEditedNotes(item.notes ?? "");
+    }
+  }, [item.notes, isEditingNotes]);
+
+  useEffect(() => {
+    if (isEditingNotes) {
+      notesInputRef.current?.focus();
+    }
+  }, [isEditingNotes]);
+
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsSheetOpen(open);
+    if (!open) {
+      setIsEditingNotes(false);
+      setEditedNotes(item.notes ?? "");
+      cancelEditRef.current = false;
+    }
+  };
 
   const handleToggleFocusState = async () => {
     try {
@@ -187,31 +218,128 @@ const OptionsDropdown = ({ item }: { item: Doc<"items"> }) => {
       toast.error("Failed to toggle focus state");
     }
   };
+
+  const handleSaveNotes = async () => {
+    const currentNotes = item.notes ?? "";
+    if (editedNotes === currentNotes) {
+      setIsEditingNotes(false);
+      return;
+    }
+    if (isSavingRef.current) {
+      return;
+    }
+    isSavingRef.current = true;
+    try {
+      await updateItem({
+        itemId: item._id,
+        notes: editedNotes,
+      });
+      toast.success("Notes updated");
+    } catch {
+      toast.error("Failed to update notes");
+    } finally {
+      isSavingRef.current = false;
+      setIsEditingNotes(false);
+    }
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <HugeiconsIcon icon={MoreHorizontalIcon} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItem onClick={handleToggleFocusState}>
-          <HugeiconsIcon icon={CenterFocusIcon} />
-          {item.focusState === "today"
-            ? "Move to Back Burner"
-            : "Move to Today"}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
-          <HugeiconsIcon icon={DeleteIcon} />
-          Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+    <>
+      <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" aria-label="Open item options">
+            <HugeiconsIcon icon={MoreHorizontalIcon} />
+          </Button>
+        </SheetTrigger>
+        <SheetContent className="flex flex-col gap-6">
+          <SheetHeader>
+            <SheetTitle>Item options</SheetTitle>
+            <SheetDescription>
+              Double-click the notes area to edit markdown.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-col gap-4 px-6 pb-6">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[0.625rem] uppercase tracking-wide text-muted-foreground">
+                <span>Notes</span>
+                <span>Markdown</span>
+              </div>
+              {isEditingNotes ? (
+                <Textarea
+                  ref={notesInputRef}
+                  value={editedNotes}
+                  placeholder="Write markdown notes..."
+                  onChange={(event) => setEditedNotes(event.target.value)}
+                  onBlur={() => {
+                    if (cancelEditRef.current) {
+                      cancelEditRef.current = false;
+                      return;
+                    }
+                    void handleSaveNotes();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      cancelEditRef.current = true;
+                      setIsEditingNotes(false);
+                      setEditedNotes(item.notes ?? "");
+                      return;
+                    }
+                    if (
+                      (event.metaKey || event.ctrlKey) &&
+                      event.key === "Enter"
+                    ) {
+                      event.preventDefault();
+                      void handleSaveNotes();
+                    }
+                  }}
+                  className="min-h-36"
+                />
+              ) : (
+                <div
+                  className="min-h-36 rounded-md border bg-muted/20 p-3 text-xs/relaxed"
+                  onDoubleClick={() => setIsEditingNotes(true)}
+                >
+                  {item.notes?.trim() ? (
+                    <Streamdown>{item.notes}</Streamdown>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      Double-click to add notes in markdown.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="secondary"
+                className="justify-start gap-2"
+                data-icon="inline-start"
+                onClick={handleToggleFocusState}
+              >
+                <HugeiconsIcon icon={CenterFocusIcon} />
+                {item.focusState === "today"
+                  ? "Move to Back Burner"
+                  : "Move to Today"}
+              </Button>
+              <Button
+                variant="destructive"
+                className="justify-start gap-2"
+                data-icon="inline-start"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <HugeiconsIcon icon={DeleteIcon} />
+                Delete
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
       <DeleteItemAlertDialog
         itemId={item._id}
         open={isDeleteDialogOpen}
         setOpen={setIsDeleteDialogOpen}
       />
-    </DropdownMenu>
+    </>
   );
 };
 
