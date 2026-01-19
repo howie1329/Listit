@@ -41,18 +41,6 @@ export default defineSchema({
     content: v.string(),
     updatedAt: v.string(),
   }).index("by_threadId", ["threadId"]),
-  list: defineTable({
-    // TODO: Delete this table as we are not using it for version 2
-    userId: v.id("users"),
-    title: v.string(),
-    description: v.string(),
-    updatedAt: v.string(), // UTC string
-    isCompleted: v.boolean(),
-    isDeleted: v.boolean(),
-    isArchived: v.boolean(),
-    isPinned: v.boolean(),
-    isPublic: v.boolean(),
-  }).index("by_userId", ["userId"]),
   items: defineTable({
     userId: v.id("users"),
     title: v.string(),

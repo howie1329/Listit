@@ -19,7 +19,6 @@ import type * as items_ai_actions from "../items/ai/actions.js";
 import type * as items_mutations from "../items/mutations.js";
 import type * as items_queries from "../items/queries.js";
 import type * as lib_modelMapping from "../lib/modelMapping.js";
-import type * as listFunctions from "../listFunctions.js";
 import type * as thread_mutations from "../thread/mutations.js";
 import type * as thread_queries from "../thread/queries.js";
 import type * as threadMessages_mutations from "../threadMessages/mutations.js";
@@ -46,7 +45,6 @@ declare const fullApi: ApiFromModules<{
   "items/mutations": typeof items_mutations;
   "items/queries": typeof items_queries;
   "lib/modelMapping": typeof lib_modelMapping;
-  listFunctions: typeof listFunctions;
   "thread/mutations": typeof thread_mutations;
   "thread/queries": typeof thread_queries;
   "threadMessages/mutations": typeof threadMessages_mutations;
