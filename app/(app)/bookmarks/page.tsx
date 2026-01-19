@@ -10,6 +10,8 @@ import { BookmarkSearchBar } from "@/components/features/bookmarks/BookmarkSearc
 import { BookmarksEmptyState } from "@/components/features/bookmarks/BookmarksEmptyState";
 import { BookmarksList } from "@/components/features/bookmarks/BookmarksList";
 import { CreateCollectionDialog } from "@/components/features/bookmarks/CreateCollectionDialog";
+import { BookmarkKeyboardNavigationProvider, useBookmarkKeyboardNavigation } from "@/hooks/use-bookmark-keyboard-navigation";
+import { BookmarkKeyboardShortcutsHelp } from "@/components/features/bookmarks/BookmarkKeyboardShortcutsHelp";
 
 // Client-side search filter function
 function filterBookmarks<
@@ -56,12 +58,22 @@ function filterBookmarks<
 }
 
 export default function BookmarkPage() {
+  return (
+    <BookmarkKeyboardNavigationProvider>
+      <BookmarkPageContent />
+    </BookmarkKeyboardNavigationProvider>
+  );
+}
+
+function BookmarkPageContent() {
   const [selectedCollectionId, setSelectedCollectionId] =
     useState<Id<"bookmarkCollections"> | null>(null);
   const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isCreatingBookmark, setIsCreatingBookmark] = useState(false);
+  const { searchInputRef } = useBookmarkKeyboardNavigation();
+  
   const createCollection = useMutation(
     api.bookmarks.bookmarkCollectionFunctions.createCollection,
   );
@@ -160,6 +172,10 @@ export default function BookmarkPage() {
       e.preventDefault();
       handleCreateBookmark();
     }
+    if (e.key === "Escape") {
+      setSearchQuery("");
+      e.currentTarget.blur();
+    }
   };
 
   if (bookmarks === undefined || collections === undefined) {
@@ -187,7 +203,9 @@ export default function BookmarkPage() {
             onCreateBookmark={handleCreateBookmark}
             isCreatingBookmark={isCreatingBookmark}
             onKeyDown={handleInputKeyDown}
+            inputRef={searchInputRef}
           />
+          <BookmarkKeyboardShortcutsHelp />
         </div>
         <div className="flex flex-col h-full overflow-y-auto p-1">
           {bookmarks.length === 0 ? (
