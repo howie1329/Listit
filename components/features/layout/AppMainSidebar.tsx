@@ -10,7 +10,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useUserSettings } from "@/providers/UserSettingsProvider";
 import { CreateListModel } from "../list/CreateListModal";
 import { useState } from "react";
 import {
@@ -29,11 +28,10 @@ export const AppMainSidebar = () => {
   const [openCreateListModal, setOpenCreateListModal] = useState(false);
   const [openSettingsModal, setOpenSettingsModal] = useState(false);
   const { theme, setTheme } = useTheme();
-  const userSettings = useUserSettings();
   const items = [
     {
-      label: "Lists",
-      href: "/list",
+      label: "Items",
+      href: "/view",
       icon: <HugeiconsIcon icon={HomeIcon} />,
     },
     {
@@ -50,6 +48,7 @@ export const AppMainSidebar = () => {
           <SidebarGroupLabel>Main Actions</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
+              {/* TODO: Create a global command component to handle searching, creating items, etc */}
               <SidebarMenuButton
                 onClick={() => setOpenCreateListModal((prev) => !prev)}
               >
