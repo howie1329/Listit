@@ -1,3 +1,4 @@
+import { CustomToolCallCapturePart } from "@/app/api/chat/route";
 import { UIMessageStreamWriter, tool } from "ai";
 import z from "zod";
 
@@ -6,7 +7,13 @@ import z from "zod";
  * @param writer - The writer to write the tool data to
  * @returns The base tools
  */
-export const baseTools = ({ writer }: { writer: UIMessageStreamWriter }) => {
+export const baseTools = ({
+  writer,
+  customToolCallCapture,
+}: {
+  writer: UIMessageStreamWriter;
+  customToolCallCapture: CustomToolCallCapturePart[];
+}) => {
   return {
     weatherTool: tool({
       description: "Use this tool to get the weather for a given location",
@@ -24,9 +31,27 @@ export const baseTools = ({ writer }: { writer: UIMessageStreamWriter }) => {
           },
         });
 
+        customToolCallCapture.push({
+          type: "data-weather-tool",
+          id: toolId,
+          data: {
+            location: location,
+            status: "running",
+          },
+        });
+
         const result = `The weather in ${location} is 75 degrees and sunny`;
 
         writer.write({
+          type: "data-weather-tool",
+          id: toolId,
+          data: {
+            location: location,
+            status: "completed",
+            result: result,
+          },
+        });
+        customToolCallCapture.push({
           type: "data-weather-tool",
           id: toolId,
           data: {

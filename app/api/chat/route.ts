@@ -12,6 +12,12 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { FALLBACK_MODELS, OpenRouterModels } from "@/convex/lib/modelMapping";
 import { baseTools } from "@/lib/tools/weather";
 
+export type CustomToolCallCapturePart = {
+  type: string;
+  id?: string;
+  data: unknown;
+};
+
 // TODO: Need to refactor this to take in models and tools
 export async function POST(request: Request) {
   const openRouter = createOpenRouter({
@@ -88,7 +94,8 @@ export async function POST(request: Request) {
     status: 200,
     stream: createUIMessageStream({
       execute: async ({ writer }) => {
-        const baseToolFunctions = baseTools({ writer });
+        const customToolCallCapture: CustomToolCallCapturePart[] = [];
+        const baseToolFunctions = baseTools({ writer, customToolCallCapture });
 
         const agent = new Agent({
           model: openRouter(model, {
@@ -124,7 +131,7 @@ export async function POST(request: Request) {
                   threadId,
                   id: lastMessage.id,
                   role: lastMessage.role,
-                  parts: lastMessage.parts,
+                  parts: [...lastMessage.parts, ...customToolCallCapture],
                   metadata: lastMessage.metadata,
                 });
               } catch (error) {
