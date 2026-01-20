@@ -37,7 +37,7 @@ export default function ChatPage() {
       api: "/api/chat",
     }),
     messages: [],
-    experimental_throttle: 0,
+    experimental_throttle: 100,
   });
 
   const prevThreadRef = useRef<Id<"thread"> | null>(null);

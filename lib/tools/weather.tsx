@@ -31,15 +31,6 @@ export const baseTools = ({
           },
         });
 
-        customToolCallCapture.push({
-          type: "data-weather-tool",
-          id: toolId,
-          data: {
-            location: location,
-            status: "running",
-          },
-        });
-
         const result = `The weather in ${location} is 75 degrees and sunny`;
 
         writer.write({
