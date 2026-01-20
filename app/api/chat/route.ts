@@ -98,7 +98,7 @@ export async function POST(request: Request) {
         const baseToolFunctions = baseTools({ writer, customToolCallCapture });
 
         const agent = new Agent({
-          model: openRouter(model, {
+          model: openRouter.chat(model, {
             extraBody: { models: FALLBACK_MODELS },
           }) as LanguageModel,
           system:
