@@ -33,6 +33,7 @@ export const addUIMessage = mutation({
           state: v.literal("input-streaming"),
           input: v.optional(v.any()),
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         v.object({
           type: v.string(),
@@ -40,6 +41,7 @@ export const addUIMessage = mutation({
           state: v.literal("input-available"),
           input: v.any(),
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         v.object({
           type: v.string(),
@@ -48,6 +50,7 @@ export const addUIMessage = mutation({
           input: v.any(),
           output: v.any(),
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         v.object({
           type: v.string(),
@@ -56,6 +59,7 @@ export const addUIMessage = mutation({
           input: v.any(),
           errorText: v.string(),
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         v.object({
           type: v.string(),
@@ -121,6 +125,7 @@ const partsSchema = v.array(
       state: v.literal("input-streaming"),
       input: v.optional(v.any()),
       providerExecuted: v.optional(v.boolean()),
+      callProviderMetadata: v.optional(v.any()),
     }),
     v.object({
       type: v.string(),
@@ -128,6 +133,7 @@ const partsSchema = v.array(
       state: v.literal("input-available"),
       input: v.any(),
       providerExecuted: v.optional(v.boolean()),
+      callProviderMetadata: v.optional(v.any()),
     }),
     v.object({
       type: v.string(),
@@ -136,6 +142,7 @@ const partsSchema = v.array(
       input: v.any(),
       output: v.any(),
       providerExecuted: v.optional(v.boolean()),
+      callProviderMetadata: v.optional(v.any()),
     }),
     v.object({
       type: v.string(),
@@ -144,6 +151,7 @@ const partsSchema = v.array(
       input: v.any(),
       errorText: v.string(),
       providerExecuted: v.optional(v.boolean()),
+      callProviderMetadata: v.optional(v.any()),
     }),
     v.object({
       type: v.string(),
