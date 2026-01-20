@@ -12,6 +12,12 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { FALLBACK_MODELS, OpenRouterModels } from "@/convex/lib/modelMapping";
 import { baseTools } from "@/lib/tools/weather";
 
+export type CustomToolCallCapturePart = {
+  type: string;
+  id?: string;
+  data: unknown;
+};
+
 // TODO: Need to refactor this to take in models and tools
 export async function POST(request: Request) {
   const openRouter = createOpenRouter({
@@ -67,10 +73,16 @@ export async function POST(request: Request) {
 
   // Persist user message immediately before starting the stream
   try {
-    await convex.mutation(api.threadMessages.mutations.addThreadMessage, {
+    await convex.mutation(api.uiMessages.mutation.addUIMessage, {
       threadId,
+      id: messageId,
       role: "user",
-      content: userMessage,
+      parts: [
+        {
+          type: "text",
+          text: userMessage,
+        },
+      ],
     });
   } catch (error) {
     return new Response("Error adding user message", { status: 500 });
@@ -82,10 +94,11 @@ export async function POST(request: Request) {
     status: 200,
     stream: createUIMessageStream({
       execute: async ({ writer }) => {
-        const baseToolFunctions = baseTools({ writer });
+        const customToolCallCapture: CustomToolCallCapturePart[] = [];
+        const baseToolFunctions = baseTools({ writer, customToolCallCapture });
 
         const agent = new Agent({
-          model: openRouter(model, {
+          model: openRouter.chat(model, {
             extraBody: { models: FALLBACK_MODELS },
           }) as LanguageModel,
           system:
@@ -102,7 +115,6 @@ export async function POST(request: Request) {
         writer.merge(
           stream.toUIMessageStream({
             onFinish: async ({ messages }) => {
-              let fullResponse = "";
               if (!messages || messages.length === 0) {
                 writer.write({
                   type: "error",
@@ -113,25 +125,20 @@ export async function POST(request: Request) {
               }
               const lastMessage = messages[messages.length - 1];
               console.log("Last message", lastMessage);
-              lastMessage.parts.forEach((part) => {
-                if (part.type === "text") {
-                  fullResponse += part.text;
-                }
-              });
+
               try {
-                await convex.mutation(
-                  api.threadMessages.mutations.addThreadMessage,
-                  {
-                    threadId,
-                    role: "assistant",
-                    content: fullResponse,
-                  },
-                );
+                await convex.mutation(api.uiMessages.mutation.addUIMessage, {
+                  threadId,
+                  id: lastMessage.id,
+                  role: lastMessage.role,
+                  parts: [...lastMessage.parts, ...customToolCallCapture],
+                  metadata: lastMessage.metadata,
+                });
               } catch (error) {
-                console.error("Error adding thread message", error);
+                console.error("Error adding UI message", error);
                 writer.write({
                   type: "error",
-                  errorText: "Error adding thread message",
+                  errorText: "Error adding UI message",
                 });
               }
             },

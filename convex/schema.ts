@@ -44,6 +44,7 @@ export default defineSchema({
           state: v.literal("input-streaming"),
           input: v.optional(v.any()), // DeepPartial<TOOLS[NAME]['input']> | undefined
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // ToolUIPart - input-available state
         v.object({
@@ -52,6 +53,7 @@ export default defineSchema({
           state: v.literal("input-available"),
           input: v.any(), // TOOLS[NAME]['input']
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // ToolUIPart - output-available state
         v.object({
@@ -61,6 +63,7 @@ export default defineSchema({
           input: v.any(), // TOOLS[NAME]['input']
           output: v.any(), // TOOLS[NAME]['output']
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // ToolUIPart - output-error state
         v.object({
@@ -70,6 +73,7 @@ export default defineSchema({
           input: v.any(), // TOOLS[NAME]['input']
           errorText: v.string(),
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // DataUIPart - for custom data types (e.g., "data-weather-tool")
         v.object({

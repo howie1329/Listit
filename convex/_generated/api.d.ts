@@ -25,6 +25,8 @@ import type * as threadMessages_mutations from "../threadMessages/mutations.js";
 import type * as threadMessages_queries from "../threadMessages/queries.js";
 import type * as threadtools_mutation from "../threadtools/mutation.js";
 import type * as threadtools_queries from "../threadtools/queries.js";
+import type * as uiMessages_mutation from "../uiMessages/mutation.js";
+import type * as uiMessages_queries from "../uiMessages/queries.js";
 import type * as userFunctions from "../userFunctions.js";
 
 import type {
@@ -51,6 +53,8 @@ declare const fullApi: ApiFromModules<{
   "threadMessages/queries": typeof threadMessages_queries;
   "threadtools/mutation": typeof threadtools_mutation;
   "threadtools/queries": typeof threadtools_queries;
+  "uiMessages/mutation": typeof uiMessages_mutation;
+  "uiMessages/queries": typeof uiMessages_queries;
   userFunctions: typeof userFunctions;
 }>;
 
