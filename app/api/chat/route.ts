@@ -67,10 +67,16 @@ export async function POST(request: Request) {
 
   // Persist user message immediately before starting the stream
   try {
-    await convex.mutation(api.threadMessages.mutations.addThreadMessage, {
+    await convex.mutation(api.uiMessages.mutation.addUIMessage, {
       threadId,
+      id: messageId,
       role: "user",
-      content: userMessage,
+      parts: [
+        {
+          type: "text",
+          text: userMessage,
+        },
+      ],
     });
   } catch (error) {
     return new Response("Error adding user message", { status: 500 });
@@ -102,7 +108,6 @@ export async function POST(request: Request) {
         writer.merge(
           stream.toUIMessageStream({
             onFinish: async ({ messages }) => {
-              let fullResponse = "";
               if (!messages || messages.length === 0) {
                 writer.write({
                   type: "error",
@@ -113,25 +118,20 @@ export async function POST(request: Request) {
               }
               const lastMessage = messages[messages.length - 1];
               console.log("Last message", lastMessage);
-              lastMessage.parts.forEach((part) => {
-                if (part.type === "text") {
-                  fullResponse += part.text;
-                }
-              });
+
               try {
-                await convex.mutation(
-                  api.threadMessages.mutations.addThreadMessage,
-                  {
-                    threadId,
-                    role: "assistant",
-                    content: fullResponse,
-                  },
-                );
+                await convex.mutation(api.uiMessages.mutation.addUIMessage, {
+                  threadId,
+                  id: lastMessage.id,
+                  role: lastMessage.role,
+                  parts: lastMessage.parts,
+                  metadata: lastMessage.metadata,
+                });
               } catch (error) {
-                console.error("Error adding thread message", error);
+                console.error("Error adding UI message", error);
                 writer.write({
                   type: "error",
-                  errorText: "Error adding thread message",
+                  errorText: "Error adding UI message",
                 });
               }
             },

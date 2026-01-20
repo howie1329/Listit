@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
 import { mapModelToOpenRouter } from "@/convex/lib/modelMapping";
@@ -18,8 +18,8 @@ export default function ChatPage() {
   const [selectedThread, setSelectedThread] = useState<Id<"thread"> | null>(
     null,
   );
-  const threadMessages = useQuery(
-    api.threadMessages.queries.getThreadMessages,
+  const uiMessages = useQuery(
+    api.uiMessages.queries.getUIMessages,
     selectedThread
       ? {
           threadId: selectedThread,
@@ -44,23 +44,23 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (
-      threadMessages &&
+      uiMessages &&
       selectedThread &&
       selectedThread !== prevThreadRef.current
     ) {
       if (status !== "streaming") {
         prevThreadRef.current = selectedThread;
         setMessages(
-          threadMessages.map((message) => ({
-            id: message._id,
-            role: message.role as "user" | "assistant",
-            content: message.content,
-            parts: [{ type: "text", text: message.content }],
-          })),
+          uiMessages.map((message) => ({
+            id: message.id,
+            role: message.role,
+            parts: message.parts,
+            metadata: message.metadata,
+          })) as UIMessage[],
         );
       }
     }
-  }, [threadMessages, setMessages, selectedThread, status]);
+  }, [uiMessages, setMessages, selectedThread, status]);
 
   const [message, setMessage] = useState("");
 

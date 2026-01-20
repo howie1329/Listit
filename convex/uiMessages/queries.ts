@@ -103,6 +103,9 @@ export const getUIMessages = query({
       .query("uiMessages")
       .withIndex("by_threadId", (q) => q.eq("threadId", args.threadId))
       .collect();
-    return uiMessages;
+    return uiMessages.sort(
+      (a, b) =>
+        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+    );
   },
 });
