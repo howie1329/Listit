@@ -1,0 +1,16 @@
+import { Agent } from "@mastra/core/agent";
+import { Memory } from "@mastra/memory";
+
+export const mainAgent = new Agent({
+  id: "main-agent",
+  name: "Main Agent",
+  instructions:
+    "You are the main agent for this application. You are responsible for routing requests to the appropriate agent.",
+  model: "openrouter/gpt-5-mini",
+  memory: new Memory({
+    options: {
+      lastMessages: 10,
+      generateTitle: true,
+    },
+  }),
+});

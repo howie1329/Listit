@@ -97,6 +97,7 @@ export async function POST(request: Request) {
         const customToolCallCapture: CustomToolCallCapturePart[] = [];
         const baseToolFunctions = baseTools({ writer, customToolCallCapture });
 
+        /* FIXME(mastra): Add a unique `id` parameter. See: https://mastra.ai/guides/migrations/upgrade-to-v1/mastra#required-id-parameter-for-all-mastra-primitives */
         const agent = new Agent({
           model: openRouter.chat(model, {
             extraBody: { models: FALLBACK_MODELS },

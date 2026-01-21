@@ -9,14 +9,17 @@ import {
 } from "@mastra/observability";
 import { weatherWorkflow } from "./workflows/weather-workflow";
 import { weatherAgent } from "./agents/weather-agent";
+import { ConvexStore } from "@mastra/convex";
+import { mainAgent } from "./agents/main-agent";
 
 export const mastra = new Mastra({
   workflows: { weatherWorkflow },
-  agents: { weatherAgent },
-  storage: new LibSQLStore({
-    id: "mastra-storage",
-    // stores observability, scores, ... into memory storage, if it needs to persist, change to file:../mastra.db
-    url: ":memory:",
+  agents: { mainAgent },
+  storage: new ConvexStore({
+    id: "convex-storage",
+    deploymentUrl: process.env.NEXT_PUBLIC_CONVEX_URL!,
+    adminAuthToken: process.env.CONVEX_ADMIN_KEY!,
+    storageFunction: "mastra/storage:handle",
   }),
   logger: new PinoLogger({
     name: "Mastra",

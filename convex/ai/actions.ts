@@ -80,6 +80,7 @@ export const generateThreadResponse = action({
 
     const toolFunctions = tools(ctx, args.threadId, assistantMessageId);
 
+    /* FIXME(mastra): Add a unique `id` parameter. See: https://mastra.ai/guides/migrations/upgrade-to-v1/mastra#required-id-parameter-for-all-mastra-primitives */
     const chatAgent = new Agent({
       model: openRouter(modelName, {
         extraBody: {

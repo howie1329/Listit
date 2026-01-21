@@ -58,6 +58,7 @@ export default function MastraPage() {
         { text: input },
         {
           body: {
+            userId: "123",
             threadId: selectedThread,
           },
         },
