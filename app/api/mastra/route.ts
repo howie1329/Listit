@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     agentId: "main-agent",
     params: {
       memory: {
-        resource: params.threadId,
+        resource: params.userId,
         thread: params.threadId,
         options: {
           lastMessages: 10,

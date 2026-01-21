@@ -37,7 +37,6 @@ import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { Observability, SensitiveDataFilter, DefaultExporter, CloudExporter } from '@mastra/observability';
 import { ConvexStore } from '@mastra/convex';
-import { Memory as Memory$1 } from '@mastra/memory';
 import { weatherTool } from './tools/b1320d3d-0977-4cfc-a9ae-827cde968b4e.mjs';
 
 const forecastSchema = z.object({
@@ -194,13 +193,7 @@ const mainAgent = new Agent({
   instructions: "You are the main agent for this application. You are responsible for routing requests to the appropriate agent.",
   model: "openrouter/gpt-5-mini",
   tools: { weatherTool },
-  workflows: { weatherWorkflow },
-  memory: new Memory$1({
-    options: {
-      lastMessages: 10,
-      generateTitle: true
-    }
-  })
+  workflows: { weatherWorkflow }
 });
 
 const mastra = new Mastra({

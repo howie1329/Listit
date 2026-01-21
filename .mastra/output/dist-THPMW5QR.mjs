@@ -37,7 +37,6 @@ import '@mastra/core/mastra';
 import '@mastra/loggers';
 import '@mastra/observability';
 import '@mastra/convex';
-import '@mastra/memory';
 import './tools/b1320d3d-0977-4cfc-a9ae-827cde968b4e.mjs';
 
 function convertToGroqChatMessages(prompt) {
