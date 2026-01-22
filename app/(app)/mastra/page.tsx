@@ -22,8 +22,7 @@ import {
   MessageResponse,
 } from "@/components/ai-elements/message";
 import { toast } from "sonner";
-import { toAISdkV5Messages } from "@mastra/ai-sdk/ui";
-import { convexToMastraDBMessages } from "@/lib/mastra-messages";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export default function MastraPage() {
   const [input, setInput] = useState("");
@@ -39,10 +38,6 @@ export default function MastraPage() {
   const mastraThreads = useQuery(api.thread.queries.getMastraThreads);
   const singleMastraThread = useQuery(
     api.thread.queries.getSingleMastraThread,
-    threadId ? { threadId: threadId } : "skip",
-  );
-  const mastraThreadMessages = useQuery(
-    api.threadMessages.queries.getMastraThreadMessages,
     threadId ? { threadId: threadId } : "skip",
   );
 
@@ -65,30 +60,36 @@ export default function MastraPage() {
             threadId: threadId,
           },
         },
-      );
-      setInput("");
+      ).then(() => {
+        setInput("");
+      });
     } catch (error) {
       toast.error("Error sending message");
       console.error("Error sending message: ", error);
     }
   };
 
+  // Load message history from API route when thread changes
   useEffect(() => {
-    if (threadId && mastraThreadMessages) {
-      try {
-        // Transform Convex messages to MastraDBMessage format
-        const mastraMessages = convexToMastraDBMessages(mastraThreadMessages);
-
-        // Convert to AI SDK V5 format for useChat
-        const uiMessages = toAISdkV5Messages(mastraMessages);
-
-        setMessages(uiMessages);
-      } catch (error) {
-        console.error("Error converting messages:", error);
-        toast.error("Failed to load messages");
-      }
+    if (threadId) {
+      fetch(`/api/mastra/messages?threadId=${threadId}&userId=123`)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setMessages(data.messages);
+        })
+        .catch((err) => {
+          console.error("Error loading messages:", err);
+          toast.error("Failed to load messages");
+        });
+    } else {
+      setMessages([]);
     }
-  }, [threadId, mastraThreadMessages, setMessages]);
+  }, [threadId, setMessages]);
   return (
     <div className="flex flex-row w-full h-full ">
       <div className="flex flex-col w-2/12 h-full items-center border-r px-2">
