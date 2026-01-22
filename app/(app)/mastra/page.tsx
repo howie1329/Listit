@@ -23,6 +23,11 @@ import {
 } from "@/components/ai-elements/message";
 import { toast } from "sonner";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
 
 export default function MastraPage() {
   const [input, setInput] = useState("");
@@ -139,12 +144,20 @@ export default function MastraPage() {
                     <MessageContent>
                       {message.parts.map((part, i) => {
                         switch (part.type) {
+                          case "reasoning":
+                            return (
+                              <Reasoning isStreaming={status === "streaming"}>
+                                <ReasoningTrigger />
+                                <ReasoningContent>{part.text}</ReasoningContent>
+                              </Reasoning>
+                            );
                           case "text": // we don't use any reasoning or tool calls in this example
                             return (
                               <MessageResponse key={`${message.id}-${i}`}>
                                 {part.text}
                               </MessageResponse>
                             );
+
                           default:
                             return null;
                         }
