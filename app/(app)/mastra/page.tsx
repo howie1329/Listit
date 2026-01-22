@@ -22,7 +22,6 @@ import {
   MessageResponse,
 } from "@/components/ai-elements/message";
 import { toast } from "sonner";
-import { getAuthUserId } from "@convex-dev/auth/server";
 
 export default function MastraPage() {
   const [input, setInput] = useState("");
@@ -36,6 +35,7 @@ export default function MastraPage() {
   });
 
   const mastraThreads = useQuery(api.thread.queries.getMastraThreads);
+  const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const singleMastraThread = useQuery(
     api.thread.queries.getSingleMastraThread,
     threadId ? { threadId: threadId } : "skip",
@@ -48,20 +48,26 @@ export default function MastraPage() {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || !threadId) {
+    let currentThreadId: string | null = threadId || null;
+    if (!input.trim() || !userSettings?.userId) {
       return;
+    }
+    if (!currentThreadId) {
+      const newThreadId = crypto.randomUUID();
+      currentThreadId = newThreadId;
     }
     try {
       await sendMessage(
         { text: input },
         {
           body: {
-            userId: "123",
-            threadId: threadId,
+            userId: userSettings.userId,
+            threadId: currentThreadId,
           },
         },
       ).then(() => {
         setInput("");
+        setThreadId(currentThreadId);
       });
     } catch (error) {
       toast.error("Error sending message");
@@ -71,8 +77,10 @@ export default function MastraPage() {
 
   // Load message history from API route when thread changes
   useEffect(() => {
-    if (threadId) {
-      fetch(`/api/mastra/messages?threadId=${threadId}&userId=123`)
+    if (threadId && userSettings?.userId) {
+      fetch(
+        `/api/mastra/messages?threadId=${threadId}&userId=${userSettings.userId}`,
+      )
         .then((res) => {
           if (!res.ok) {
             throw new Error(`HTTP ${res.status}`);
@@ -89,7 +97,7 @@ export default function MastraPage() {
     } else {
       setMessages([]);
     }
-  }, [threadId, setMessages]);
+  }, [threadId, setMessages, userSettings?.userId]);
   return (
     <div className="flex flex-row w-full h-full ">
       <div className="flex flex-col w-2/12 h-full items-center border-r px-2">
@@ -164,8 +172,21 @@ export default function MastraPage() {
       )}
 
       {!threadId && (
-        <div className="flex flex-col w-10/12 h-full items-center ">
-          <p>No thread selected</p>
+        <div className="flex flex-col w-10/12 h-full items-center justify-center px-4">
+          <PromptInputProvider>
+            <div className="flex flex-row w-full gap-2 py-2 border px-2 items-center">
+              <PromptInputTextarea
+                value={input}
+                placeholder="Say something..."
+                onChange={(e) => setInput(e.currentTarget.value)}
+              />
+              <PromptInputSubmit
+                status={status === "streaming" ? "streaming" : "ready"}
+                disabled={!input.trim()}
+                onClick={handleSendMessage}
+              />
+            </div>
+          </PromptInputProvider>
         </div>
       )}
     </div>
