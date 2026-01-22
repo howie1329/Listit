@@ -153,6 +153,46 @@ export const getThreads = query({
 });
 ```
 
+### Converting Mastra Messages to AI SDK Format
+
+Mastra provides conversion utilities in `@mastra/ai-sdk/ui` to convert stored messages to AI SDK format:
+
+```typescript
+import { toAISdkV5Messages } from "@mastra/ai-sdk/ui";
+
+// In your React component:
+const mastraMessages = useQuery(api.mastra.queries.getMastraThreadMessages, 
+  { threadId: selectedThread }
+);
+
+// Convert to AI SDK V5 UIMessage format for useChat
+const aiSdkMessages = mastraMessages ? toAISdkV5Messages(mastraMessages) : [];
+
+// Use with useChat hook
+const { messages, setMessages } = useChat({
+  // ...
+});
+
+// Set initial messages when thread changes
+useEffect(() => {
+  if (aiSdkMessages.length > 0) {
+    setMessages(aiSdkMessages);
+  }
+}, [aiSdkMessages, setMessages]);
+```
+
+**Available conversion functions:**
+
+| Function | Description |
+|----------|-------------|
+| `toAISdkV5Messages(messages)` | Converts to AI SDK V5 `UIMessage[]` format (for `useChat` in ai@5.x) |
+| `toAISdkV4Messages(messages)` | Converts to AI SDK V4 format (for older AI SDK versions) |
+
+These functions accept various input formats:
+- `MastraDBMessage[]` - Messages from Mastra storage (what you get from `mastra_messages`)
+- `string` or `string[]` - Simple text messages
+- AI SDK V4 or V5 messages
+
 ---
 
 ## Approach 2: Manual Message Persistence (Current `/api/chat` Route)
@@ -264,17 +304,63 @@ If you need custom message structure (like your rich `uiMessages` parts schema),
 
 ## Frontend Integration
 
-For **Mastra memory** approach, update your queries to read from Mastra tables:
+For **Mastra memory** approach, update your queries to read from Mastra tables and use the conversion utilities:
 
 ```tsx
-// In your chat page
-const messages = useQuery(api.mastra.queries.getThreadMessages, 
-  selectedThread ? { threadId: selectedThread } : "skip"
-);
+"use client";
+import { useQuery } from "convex/react";
+import { useChat } from "@ai-sdk/react";
+import { toAISdkV5Messages } from "@mastra/ai-sdk/ui";
+import { api } from "@/convex/_generated/api";
+import { useEffect, useRef } from "react";
 
-const threads = useQuery(api.mastra.queries.getThreads,
-  userId ? { resourceId: userId } : "skip"
-);
+export default function MastraChatPage() {
+  const userId = "user-123"; // Get from auth
+  const [selectedThread, setSelectedThread] = useState<string | null>(null);
+
+  // Fetch threads for the user
+  const threads = useQuery(api.mastra.queries.getMastraThreads,
+    userId ? { resourceId: userId } : "skip"
+  );
+
+  // Fetch messages for selected thread
+  const mastraMessages = useQuery(api.mastra.queries.getMastraThreadMessages, 
+    selectedThread ? { threadId: selectedThread } : "skip"
+  );
+
+  // useChat hook
+  const { messages, setMessages, sendMessage, status } = useChat({
+    api: "/api/mastra",  // Use the Mastra endpoint
+  });
+
+  // Convert and sync messages when thread changes
+  const prevThreadRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (mastraMessages && selectedThread && selectedThread !== prevThreadRef.current) {
+      if (status !== "streaming") {
+        prevThreadRef.current = selectedThread;
+        // Convert Mastra messages to AI SDK format
+        const convertedMessages = toAISdkV5Messages(mastraMessages);
+        setMessages(convertedMessages);
+      }
+    }
+  }, [mastraMessages, setMessages, selectedThread, status]);
+
+  const handleSend = async (text: string) => {
+    await sendMessage(
+      { text },
+      {
+        body: {
+          threadId: selectedThread,
+          userId,
+        },
+      }
+    );
+  };
+
+  // ... rest of component
+}
 ```
 
 ---
