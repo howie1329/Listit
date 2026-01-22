@@ -16,6 +16,18 @@ export async function POST(request: Request) {
         options: {
           lastMessages: 10,
           generateTitle: true,
+          workingMemory: {
+            enabled: true,
+            scope: "resource",
+            template: `# User Profile
+            -**Name**:
+            -**Age**:
+            -**Preferences**:
+            -**Location**:
+            -**Interests**: 
+            -**Tendencies**:
+            `,
+          },
         },
       },
       threadId: params.threadId,
