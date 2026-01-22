@@ -22,6 +22,7 @@ import {
   MessageResponse,
 } from "@/components/ai-elements/message";
 import { toast } from "sonner";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 
 export default function MastraPage() {
   const [input, setInput] = useState("");
@@ -152,6 +153,7 @@ export default function MastraPage() {
                   </Message>
                 ))
               )}
+              {status === "streaming" && <Shimmer>Thinking...</Shimmer>}
             </ConversationContent>
           </Conversation>
           <PromptInputProvider>
