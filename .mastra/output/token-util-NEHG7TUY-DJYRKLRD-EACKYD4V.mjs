@@ -39,6 +39,7 @@ import '@mastra/loggers';
 import '@mastra/observability';
 import '@mastra/convex';
 import './tools/b1320d3d-0977-4cfc-a9ae-827cde968b4e.mjs';
+import '@mastra/memory';
 
 // ../agent-builder/dist/token-util-NEHG7TUY-DJYRKLRD.js
 var tokenUtilNEHG7TUY = require_token_util();

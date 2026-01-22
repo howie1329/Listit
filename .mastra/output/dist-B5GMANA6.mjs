@@ -38,6 +38,7 @@ import '@mastra/loggers';
 import '@mastra/observability';
 import '@mastra/convex';
 import './tools/b1320d3d-0977-4cfc-a9ae-827cde968b4e.mjs';
+import '@mastra/memory';
 
 var anthropicErrorDataSchema = z.object({
   type: z.literal("error"),

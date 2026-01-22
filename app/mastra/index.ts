@@ -1,6 +1,5 @@
 import { Mastra } from "@mastra/core/mastra";
 import { PinoLogger } from "@mastra/loggers";
-import { LibSQLStore } from "@mastra/libsql";
 import {
   Observability,
   DefaultExporter,
@@ -8,7 +7,6 @@ import {
   SensitiveDataFilter,
 } from "@mastra/observability";
 import { weatherWorkflow } from "./workflows/weather-workflow";
-import { weatherAgent } from "./agents/weather-agent";
 import { ConvexStore } from "@mastra/convex";
 import { mainAgent } from "./agents/main-agent";
 

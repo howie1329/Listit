@@ -39,6 +39,7 @@ import '@mastra/loggers';
 import '@mastra/observability';
 import '@mastra/convex';
 import './tools/b1320d3d-0977-4cfc-a9ae-827cde968b4e.mjs';
+import '@mastra/memory';
 
 // ../agent-builder/dist/token-6GSAFR2W-KVDFAJ2M.js
 var require_token = __commonJS({

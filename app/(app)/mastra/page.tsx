@@ -1,10 +1,9 @@
 "use client";
 import { useChat } from "@ai-sdk/react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { Id } from "@/convex/_generated/dataModel";
 import { Separator } from "@/components/ui/separator";
 import {
   Conversation,
@@ -17,18 +16,18 @@ import {
   PromptInputProvider,
 } from "@/components/ai-elements/prompt-input";
 import { DefaultChatTransport } from "ai";
-import { UIMessage } from "ai";
 import {
   Message,
   MessageContent,
   MessageResponse,
 } from "@/components/ai-elements/message";
 import { toast } from "sonner";
+import { toAISdkV5Messages } from "@mastra/ai-sdk/ui";
+import { convexToMastraDBMessages } from "@/lib/mastra-messages";
+
 export default function MastraPage() {
   const [input, setInput] = useState("");
-  const [selectedThread, setSelectedThread] = useState<Id<"thread"> | null>(
-    null,
-  );
+  const [threadId, setThreadId] = useState<string | null>(null);
   const { messages, sendMessage, setMessages, status } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/mastra",
@@ -37,20 +36,24 @@ export default function MastraPage() {
     experimental_throttle: 0,
   });
 
-  const threads = useQuery(api.thread.queries.getUserThreads);
-  const uiMessages = useQuery(
-    api.uiMessages.queries.getUIMessages,
-    selectedThread ? { threadId: selectedThread } : "skip",
+  const mastraThreads = useQuery(api.thread.queries.getMastraThreads);
+  const singleMastraThread = useQuery(
+    api.thread.queries.getSingleMastraThread,
+    threadId ? { threadId: threadId } : "skip",
   );
-  const createThread = useMutation(api.thread.mutations.createThread);
-  const handleCreateThread = async () => {
-    const thread = await createThread({
-      title: "New Thread",
-    });
-    setSelectedThread(thread);
+  const mastraThreadMessages = useQuery(
+    api.threadMessages.queries.getMastraThreadMessages,
+    threadId ? { threadId: threadId } : "skip",
+  );
+
+  //const createThread = useMutation(api.thread.mutations.createMastraThread);
+  const handleClearThread = async () => {
+    setThreadId(null);
+    setMessages([]);
   };
+
   const handleSendMessage = async () => {
-    if (!input.trim() || !selectedThread) {
+    if (!input.trim() || !threadId) {
       return;
     }
     try {
@@ -59,26 +62,33 @@ export default function MastraPage() {
         {
           body: {
             userId: "123",
-            threadId: selectedThread,
+            threadId: threadId,
           },
         },
       );
       setInput("");
     } catch (error) {
       toast.error("Error sending message");
+      console.error("Error sending message: ", error);
     }
   };
+
   useEffect(() => {
-    if (uiMessages) {
-      setMessages(
-        uiMessages.map((message) => ({
-          id: message.id,
-          role: message.role,
-          parts: message.parts,
-        })) as UIMessage[],
-      );
+    if (threadId && mastraThreadMessages) {
+      try {
+        // Transform Convex messages to MastraDBMessage format
+        const mastraMessages = convexToMastraDBMessages(mastraThreadMessages);
+
+        // Convert to AI SDK V5 format for useChat
+        const uiMessages = toAISdkV5Messages(mastraMessages);
+
+        setMessages(uiMessages);
+      } catch (error) {
+        console.error("Error converting messages:", error);
+        toast.error("Failed to load messages");
+      }
     }
-  }, [uiMessages, setMessages]);
+  }, [threadId, mastraThreadMessages, setMessages]);
   return (
     <div className="flex flex-row w-full h-full ">
       <div className="flex flex-col w-2/12 h-full items-center border-r px-2">
@@ -86,68 +96,77 @@ export default function MastraPage() {
         <Button
           variant="outline"
           className="w-full"
-          onClick={handleCreateThread}
+          onClick={handleClearThread}
         >
           Create New Thread
         </Button>
         <Separator />
         <div className="flex flex-col w-full gap-2 py-2">
-          {threads &&
-            threads.map((thread) => (
+          {mastraThreads &&
+            mastraThreads.map((thread) => (
               <Button
-                key={thread._id}
+                key={thread.id}
                 className="w-full"
-                onClick={() => setSelectedThread(thread._id)}
+                onClick={() => setThreadId(thread.id)}
               >
                 <p>{thread.title}</p>
               </Button>
             ))}
         </div>
       </div>
-      <div className="flex flex-col w-10/12 h-full items-center ">
-        <p>{selectedThread}</p>
-        <Separator />
-        <Conversation className="w-full h-full">
-          <ConversationContent>
-            {messages.length === 0 ? (
-              <ConversationEmptyState />
-            ) : (
-              messages.map((message) => (
-                <Message from={message.role} key={message.id}>
-                  <MessageContent>
-                    {message.parts.map((part, i) => {
-                      switch (part.type) {
-                        case "text": // we don't use any reasoning or tool calls in this example
-                          return (
-                            <MessageResponse key={`${message.id}-${i}`}>
-                              {part.text}
-                            </MessageResponse>
-                          );
-                        default:
-                          return null;
-                      }
-                    })}
-                  </MessageContent>
-                </Message>
-              ))
-            )}
-          </ConversationContent>
-        </Conversation>
-        <PromptInputProvider>
-          <div className="flex flex-row w-full gap-2 py-2 border px-2 items-center">
-            <PromptInputTextarea
-              value={input}
-              placeholder="Say something..."
-              onChange={(e) => setInput(e.currentTarget.value)}
-            />
-            <PromptInputSubmit
-              status={status === "streaming" ? "streaming" : "ready"}
-              disabled={!input.trim()}
-              onClick={handleSendMessage}
-            />
-          </div>
-        </PromptInputProvider>
-      </div>
+
+      {threadId && (
+        <div className="flex flex-col w-10/12 h-full items-center ">
+          <p>{singleMastraThread?.title}</p>
+          <Separator />
+          <Conversation className="w-full h-full">
+            <ConversationContent>
+              {messages.length === 0 ? (
+                <ConversationEmptyState />
+              ) : (
+                messages.map((message) => (
+                  <Message from={message.role} key={message.id}>
+                    <MessageContent>
+                      {message.parts.map((part, i) => {
+                        switch (part.type) {
+                          case "text": // we don't use any reasoning or tool calls in this example
+                            return (
+                              <MessageResponse key={`${message.id}-${i}`}>
+                                {part.text}
+                              </MessageResponse>
+                            );
+                          default:
+                            return null;
+                        }
+                      })}
+                    </MessageContent>
+                  </Message>
+                ))
+              )}
+            </ConversationContent>
+          </Conversation>
+          <PromptInputProvider>
+            <div className="flex flex-row w-full gap-2 py-2 border px-2 items-center">
+              <PromptInputTextarea
+                value={input}
+                placeholder="Say something..."
+                onChange={(e) => setInput(e.currentTarget.value)}
+              />
+              <PromptInputSubmit
+                status={status === "streaming" ? "streaming" : "ready"}
+                disabled={!input.trim()}
+                onClick={handleSendMessage}
+              />
+            </div>
+          </PromptInputProvider>
+        </div>
+      )}
+
+      {!threadId && (
+        <div className="flex flex-col w-10/12 h-full items-center ">
+          <p>No thread selected</p>
+        </div>
+      )}
     </div>
   );
 }

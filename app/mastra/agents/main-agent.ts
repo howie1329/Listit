@@ -1,6 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import { weatherTool } from "../tools/weather-tool";
 import { weatherWorkflow } from "../workflows/weather-workflow";
+import { Memory } from "@mastra/memory";
 
 export const mainAgent = new Agent({
   id: "main-agent",
@@ -10,4 +11,10 @@ export const mainAgent = new Agent({
   model: "openrouter/gpt-5-mini",
   tools: { weatherTool },
   workflows: { weatherWorkflow },
+  memory: new Memory({
+    options: {
+      lastMessages: 10,
+      generateTitle: true,
+    },
+  }),
 });
