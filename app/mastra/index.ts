@@ -10,9 +10,10 @@ import { weatherWorkflow } from "./workflows/weather-workflow";
 import { ConvexStore } from "@mastra/convex";
 import { mainAgent } from "./agents/main-agent";
 import { websearchTool } from "./tools/websearch-tool";
+import { proWebsearchWorkflow } from "./workflows/prowebsearch-workflow";
 
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow },
+  workflows: { weatherWorkflow, proWebsearchWorkflow },
   agents: { mainAgent },
   tools: { websearchTool },
   storage: new ConvexStore({

@@ -3,6 +3,7 @@ import { weatherTool } from "../tools/weather-tool";
 import { weatherWorkflow } from "../workflows/weather-workflow";
 import { Memory } from "@mastra/memory";
 import { websearchTool } from "../tools/websearch-tool";
+import { proWebsearchWorkflow } from "../workflows/prowebsearch-workflow";
 
 export const mainAgent = new Agent({
   id: "main-agent",
@@ -13,13 +14,16 @@ export const mainAgent = new Agent({
     You can update working memory as needed. You can ask questions to the user to update working memory.
     You can use the websearchTool to search the web for information.
     Only run the websearchTool twice.
+    You have acesss to the proWebsearchWorkflow to do a more detailed websearch.
+    You can use the proWebsearchWorkflow to search the web for information but only run it once.
+    You must ask the user if they want to run the proWebsearchWorkflow before running it.
     `,
   model: "openrouter/gpt-5-mini",
   tools: { weatherTool, websearchTool },
-  workflows: { weatherWorkflow },
+  workflows: { weatherWorkflow, proWebsearchWorkflow },
   memory: new Memory({
     options: {
-      lastMessages: 10,
+      lastMessages: 30,
       generateTitle: true,
       workingMemory: {
         enabled: true,

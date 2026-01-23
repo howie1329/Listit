@@ -31,6 +31,8 @@ export default defineSchema({
     run_id: v.string(),
     resourceId: v.optional(v.string()),
     createdAt: v.string(),
+    updatedAt: v.string(),
+    snapshot: v.any(), 
   })
     .index("by_record_id", ["id"])
     .index("by_workflow_run", ["workflow_name", "run_id"])

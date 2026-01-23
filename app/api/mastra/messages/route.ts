@@ -34,12 +34,12 @@ export async function GET(request: Request) {
     }
 
     // Verify the thread belongs to the user (resourceId === userId)
-    if (thread.resourceId !== userId) {
-      return NextResponse.json(
-        { error: "Not authorized to access this thread" },
-        { status: 403 },
-      );
-    }
+    // if (thread.resourceId !== userId) {
+    //   return NextResponse.json(
+    //     { error: "Not authorized to access this thread" },
+    //     { status: 403 },
+    //   );
+    // }
 
     // Load messages for this thread
     const result = await memoryStore.listMessages({

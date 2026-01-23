@@ -54,7 +54,7 @@ export const getSingleMastraThread = query({
     }
     const thread = await ctx.db
       .query("mastra_threads")
-      .withIndex("by_resource", (q) => q.eq("resourceId", userId))
+      //.withIndex("by_resource", (q) => q.eq("resourceId", userId))
       .filter((q) => q.eq(q.field("id"), args.threadId))
       .unique();
 

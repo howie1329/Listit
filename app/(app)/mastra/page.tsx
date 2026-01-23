@@ -71,6 +71,12 @@ export default function MastraPage() {
           body: {
             userId: userSettings.userId,
             threadId: currentThreadId,
+            generateTitle: () => {
+              if (messages.length > 0) {
+                return false;
+              }
+              return true;
+            }
           },
         },
       ).then(() => {

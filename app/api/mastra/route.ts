@@ -14,8 +14,8 @@ export async function POST(request: Request) {
         thread: params.threadId,
         options: {
           
-          lastMessages: 10,
-          generateTitle: true,
+          lastMessages: 30,
+          generateTitle: params.generateTitle ?? true,
           workingMemory: {
             enabled: true,
             scope: "resource",
