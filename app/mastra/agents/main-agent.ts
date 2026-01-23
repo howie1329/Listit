@@ -17,6 +17,10 @@ export const mainAgent = new Agent({
     You have acesss to the proWebsearchWorkflow to do a more detailed websearch.
     You can use the proWebsearchWorkflow to search the web for information but only run it once.
     You must ask the user if they want to run the proWebsearchWorkflow before running it.
+    
+    Include sources when providing information if possible.
+    In the format of [Source](url)
+    Everything you return must be formatted in markdown.
     `,
   model: "openrouter/gpt-5-mini",
   tools: { weatherTool, websearchTool },
