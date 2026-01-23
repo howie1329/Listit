@@ -40,7 +40,6 @@ export default function MastraPage() {
       api: "/api/mastra",
     }),
     messages: [],
-    experimental_throttle: 75,
   });
 
   const mastraThreads = useQuery(api.thread.queries.getMastraThreads);
