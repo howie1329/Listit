@@ -11,11 +11,8 @@ import {
   ConversationEmptyState,
 } from "@/components/ai-elements/conversation";
 import {
-  PromptInputTextarea,
-  PromptInputSubmit,
-  PromptInputProvider,
-} from "@/components/ai-elements/prompt-input";
-import { DefaultChatTransport } from "ai";
+  DefaultChatTransport, ToolUIPart
+} from "ai";
 import {
   Message,
   MessageContent,
@@ -28,7 +25,13 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
-
+import ChatBaseInput from "@/components/features/mastra/ChatBaseInput";
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
+import { Streamdown } from "streamdown";
+import { code } from "@streamdown/code";
+import { mermaid } from "@streamdown/mermaid";
+import { math } from "@streamdown/math";
+import { cjk } from "@streamdown/cjk";
 export default function MastraPage() {
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -37,7 +40,7 @@ export default function MastraPage() {
       api: "/api/mastra",
     }),
     messages: [],
-    experimental_throttle: 0,
+    experimental_throttle: 75,
   });
 
   const mastraThreads = useQuery(api.thread.queries.getMastraThreads);
@@ -47,7 +50,6 @@ export default function MastraPage() {
     threadId ? { threadId: threadId } : "skip",
   );
 
-  //const createThread = useMutation(api.thread.mutations.createMastraThread);
   const handleClearThread = async () => {
     setThreadId(null);
     setMessages([]);
@@ -72,7 +74,6 @@ export default function MastraPage() {
           },
         },
       ).then(() => {
-        setInput("");
         setThreadId(currentThreadId);
       });
     } catch (error) {
@@ -94,6 +95,7 @@ export default function MastraPage() {
           return res.json();
         })
         .then((data) => {
+          console.log("data", data);
           setMessages(data.messages);
         })
         .catch((err) => {
@@ -105,7 +107,7 @@ export default function MastraPage() {
     }
   }, [threadId, setMessages, userSettings?.userId]);
   return (
-    <div className="flex flex-row w-full h-full ">
+    <div className="flex flex-row w-full h-full overflow-x-hidden ">
       <div className="flex flex-col w-2/12 h-full items-center border-r px-2">
         <p>Your Threads</p>
         <Button
@@ -124,14 +126,14 @@ export default function MastraPage() {
                 className="w-full"
                 onClick={() => setThreadId(thread.id)}
               >
-                <p>{thread.title}</p>
+                <p className="text-left truncate">{thread.title}</p>
               </Button>
             ))}
         </div>
       </div>
 
       {threadId && (
-        <div className="flex flex-col w-10/12 h-full items-center ">
+        <div className="flex flex-col w-10/12 max-w-10/12 h-full items-center">
           <p>{singleMastraThread?.title}</p>
           <Separator />
           <Conversation className="w-full h-full">
@@ -143,24 +145,44 @@ export default function MastraPage() {
                   <Message from={message.role} key={message.id}>
                     <MessageContent>
                       {message.parts.map((part, i) => {
-                        switch (part.type) {
-                          case "reasoning":
-                            return (
-                              <Reasoning isStreaming={status === "streaming"}>
-                                <ReasoningTrigger />
-                                <ReasoningContent>{part.text}</ReasoningContent>
-                              </Reasoning>
-                            );
-                          case "text": // we don't use any reasoning or tool calls in this example
-                            return (
-                              <MessageResponse key={`${message.id}-${i}`}>
-                                {part.text}
-                              </MessageResponse>
-                            );
-
-                          default:
-                            return null;
+                        if (part.type === "step-start") {
+                          return null;
                         }
+                        if (part.type.includes("tool-") && "toolCallId" in part && "state" in part) {
+                          const toolPart = part as ToolUIPart;
+                          return (
+                            <Tool key={toolPart.toolCallId}>
+                              <ToolHeader type={toolPart.type} state={toolPart.state} />
+                              <ToolContent>
+                                <ToolInput input={toolPart.input} />
+                                <ToolOutput
+                                  output={toolPart.output}
+                                  errorText={toolPart.errorText}
+                                />
+                              </ToolContent>
+                            </Tool>
+                          );
+                        }
+                        if (part.type === "reasoning") {
+                          return (
+                            <Reasoning
+                              key={`${message.id}-${i}`}
+                              isStreaming={status === "streaming"}
+                              defaultOpen={false}
+                            >
+                              <ReasoningTrigger />
+                              <ReasoningContent>{part.text}</ReasoningContent>
+                            </Reasoning>
+                          );
+                        }
+                        if (part.type === "text") {
+                          return (
+                            <Streamdown plugins={{ code, mermaid, math, cjk }} isAnimating={status === "streaming"} key={`${message.id}-${i}`}>
+                              {part.text}
+                            </Streamdown>
+                          );
+                        }
+
                       })}
                     </MessageContent>
                   </Message>
@@ -169,40 +191,12 @@ export default function MastraPage() {
               {status === "streaming" && <Shimmer>Thinking...</Shimmer>}
             </ConversationContent>
           </Conversation>
-          <PromptInputProvider>
-            <div className="flex flex-row w-full gap-2 py-2 border px-2 items-center">
-              <PromptInputTextarea
-                value={input}
-                placeholder="Say something..."
-                onChange={(e) => setInput(e.currentTarget.value)}
-              />
-              <PromptInputSubmit
-                status={status === "streaming" ? "streaming" : "ready"}
-                disabled={!input.trim()}
-                onClick={handleSendMessage}
-              />
-            </div>
-          </PromptInputProvider>
+          <ChatBaseInput className="p-4 w-full" onSubmit={() => handleSendMessage()} status={status} setInput={setInput} input={input} />
         </div>
       )}
 
       {!threadId && (
-        <div className="flex flex-col w-10/12 h-full items-center justify-center px-4">
-          <PromptInputProvider>
-            <div className="flex flex-row w-full gap-2 py-2 border px-2 items-center">
-              <PromptInputTextarea
-                value={input}
-                placeholder="Say something..."
-                onChange={(e) => setInput(e.currentTarget.value)}
-              />
-              <PromptInputSubmit
-                status={status === "streaming" ? "streaming" : "ready"}
-                disabled={!input.trim()}
-                onClick={handleSendMessage}
-              />
-            </div>
-          </PromptInputProvider>
-        </div>
+        <ChatBaseInput className="p-4 w-full self-center" onSubmit={() => handleSendMessage()} status={status} setInput={setInput} input={input} />
       )}
     </div>
   );
