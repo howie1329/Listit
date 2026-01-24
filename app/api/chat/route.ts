@@ -106,8 +106,6 @@ export async function POST(request: Request) {
       execute: async ({ writer }) => {
         const customToolCallCapture: CustomToolCallCapturePart[] = [];
         const baseToolFunctions = baseTools({ writer, customToolCallCapture });
-
-        /* FIXME(mastra): Add a unique `id` parameter. See: https://mastra.ai/guides/migrations/upgrade-to-v1/mastra#required-id-parameter-for-all-mastra-primitives */
         const agent = new Agent({
           model: devModel,
           instructions:
@@ -118,6 +116,7 @@ export async function POST(request: Request) {
             Always give a response to the users question but be upfront about short commings of the information.
             Include sources when providing information if possible.
             In the format of [Source](url)
+            Provide the url of the direct link to the source if possible.
             Everything you return must be formatted in markdown.`,
           stopWhen: stepCountIs(10),
           tools: { weather: baseToolFunctions.weatherTool, searchWebTool: baseToolFunctions.searchWebTool },

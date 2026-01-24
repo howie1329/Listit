@@ -61,7 +61,8 @@ export const baseTools = ({
         query: z.string().describe("The query to search the web for"),
       }),
       outputSchema: z.object({
-        results: z.array(z.string()).describe("The results of the search"),
+        results: z.any().describe("The results of the search"),
+
       }),
       execute: async ({ query }) => {
         const firecrawl = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
@@ -74,52 +75,24 @@ export const baseTools = ({
             status: "running",
           },
         });
-        customToolCallCapture.push({
-          type: "data-search-web-tool",
-          id: toolId,
-          data: {
-            query: query,
-            status: "running",
-          },
-        });
 
-        const searchResults = await firecrawl.search(query, {
-          limit: 3,
-          scrapeOptions: { formats: ["summary"] },
-        });
-        const results = searchResults?.web
-          ? searchResults.web.map(
-            (item: {
-              title?: string;
-              url?: string;
-              summary?: string;
-              description?: string;
-            }) => {
-              const title = item.title || item.url || "";
-              const content = item.summary || item.description || "";
-              return `${title}: ${content}`;
+        const result = await firecrawl.agent({ prompt: query, model: "spark-1-mini" })
+        console.log("Result: ", result);
+        if (result.data) {
+          writer.write({
+            type: "data-search-web-tool",
+            id: toolId,
+            data: {
+              query: query,
+              status: "completed",
+              results: result.data,
             },
-          )
-          : [];
-        writer.write({
-          type: "data-search-web-tool",
-          id: toolId,
-          data: {
-            query: query,
-            status: "completed",
-            results: results,
-          },
-        });
-        customToolCallCapture.push({
-          type: "data-search-web-tool",
-          id: toolId,
-          data: {
-            query: query,
-            status: "completed",
-            results: results,
-          },
-        });
-        return { results };
+          });
+          return { results: result.data }
+        }
+
+
+        return { results: [] };
       },
     })
   };
