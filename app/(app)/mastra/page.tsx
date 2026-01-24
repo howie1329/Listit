@@ -16,6 +16,7 @@ import {
 import {
   Message,
   MessageContent,
+  MessageResponse,
 } from "@/components/ai-elements/message";
 import { toast } from "sonner";
 import { Shimmer } from "@/components/ai-elements/shimmer";
@@ -31,6 +32,7 @@ import { code } from "@streamdown/code";
 import { mermaid } from "@streamdown/mermaid";
 import { math } from "@streamdown/math";
 import { cjk } from "@streamdown/cjk";
+import { Loader } from "@/components/ai-elements/loader";
 export default function MastraPage() {
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -64,13 +66,14 @@ export default function MastraPage() {
       currentThreadId = newThreadId;
     }
     try {
+      setThreadId(currentThreadId);
       await sendMessage(
         { text: input },
         {
           body: {
             userId: userSettings.userId,
             threadId: currentThreadId,
-            model: model || "moonshotai/kimi-k2",
+            model: model?.slug || "moonshotai/kimi-k2",
             generateTitle: () => {
               if (messages.length > 0) {
                 return false;
@@ -80,7 +83,7 @@ export default function MastraPage() {
           },
         },
       ).then(() => {
-        setThreadId(currentThreadId);
+        setInput("");
       });
     } catch (error) {
       toast.error("Error sending message");
@@ -151,8 +154,16 @@ export default function MastraPage() {
                   <Message from={message.role} key={message.id}>
                     <MessageContent>
                       {message.parts.map((part, i) => {
-                        if (part.type === "step-start") {
-                          return null;
+                        if (part.type === "reasoning" && part.text !== "") {
+                          return (
+                            <Reasoning
+                              key={`${message.id}-${i}`}
+                              defaultOpen={false}
+                            >
+                              <ReasoningTrigger />
+                              <ReasoningContent>{part.text}</ReasoningContent>
+                            </Reasoning>
+                          );
                         }
                         if (part.type.includes("tool-") && "toolCallId" in part && "state" in part) {
                           const toolPart = part as ToolUIPart;
@@ -169,23 +180,14 @@ export default function MastraPage() {
                             </Tool>
                           );
                         }
-                        if (part.type === "reasoning") {
-                          return (
-                            <Reasoning
-                              key={`${message.id}-${i}`}
-                              isStreaming={status === "streaming"}
-                              defaultOpen={false}
-                            >
-                              <ReasoningTrigger />
-                              <ReasoningContent>{part.text}</ReasoningContent>
-                            </Reasoning>
-                          );
-                        }
+
                         if (part.type === "text") {
                           return (
-                            <Streamdown plugins={{ code, mermaid, math, cjk }} isAnimating={status === "streaming"} key={`${message.id}-${i}`}>
-                              {part.text}
-                            </Streamdown>
+                            <Message from={message.role} key={i}>
+                              <MessageContent>
+                                <MessageResponse>{part.text}</MessageResponse>
+                              </MessageContent>
+                            </Message>
                           );
                         }
 
@@ -194,7 +196,7 @@ export default function MastraPage() {
                   </Message>
                 ))
               )}
-              {status === "streaming" && <Shimmer>Thinking...</Shimmer>}
+              {status === "streaming" && <Loader />}
             </ConversationContent>
           </Conversation>
           <ChatBaseInput className="p-4 w-full" onSubmit={() => handleSendMessage()} status={status} setInput={setInput} input={input} model={model} setModel={setModel} />

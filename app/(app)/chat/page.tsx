@@ -17,6 +17,7 @@ import { ReasoningContent, Reasoning, ReasoningTrigger } from "@/components/ai-e
 import { Loader } from "@/components/ai-elements/loader";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
 import ChatBaseInput, { ModelType } from "@/components/features/mastra/ChatBaseInput";
+import { Task } from "@/components/ai-elements/task";
 
 export default function ChatPage() {
   const [model, setModel] = useState<ModelType | undefined>();
