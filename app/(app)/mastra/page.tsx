@@ -25,7 +25,7 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
-import ChatBaseInput from "@/components/features/mastra/ChatBaseInput";
+import ChatBaseInput, { ModelType } from "@/components/features/mastra/ChatBaseInput";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
 import { Streamdown } from "streamdown";
 import { code } from "@streamdown/code";
@@ -35,6 +35,7 @@ import { cjk } from "@streamdown/cjk";
 export default function MastraPage() {
   const [input, setInput] = useState("");
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [model, setModel] = useState<ModelType | undefined>(undefined);
   const { messages, sendMessage, setMessages, status } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/mastra",
@@ -70,6 +71,7 @@ export default function MastraPage() {
           body: {
             userId: userSettings.userId,
             threadId: currentThreadId,
+            model: model || "moonshotai/kimi-k2",
             generateTitle: () => {
               if (messages.length > 0) {
                 return false;
@@ -196,12 +198,12 @@ export default function MastraPage() {
               {status === "streaming" && <Shimmer>Thinking...</Shimmer>}
             </ConversationContent>
           </Conversation>
-          <ChatBaseInput className="p-4 w-full" onSubmit={() => handleSendMessage()} status={status} setInput={setInput} input={input} />
+          <ChatBaseInput className="p-4 w-full" onSubmit={() => handleSendMessage()} status={status} setInput={setInput} input={input} model={model} setModel={setModel} />
         </div>
       )}
 
       {!threadId && (
-        <ChatBaseInput className="p-4 w-full self-center" onSubmit={() => handleSendMessage()} status={status} setInput={setInput} input={input} />
+        <ChatBaseInput className="p-4 w-full self-center" onSubmit={() => handleSendMessage()} status={status} setInput={setInput} input={input} model={model} setModel={setModel} />
       )}
     </div>
   );
