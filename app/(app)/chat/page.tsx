@@ -11,6 +11,11 @@ import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
 import { mapModelToOpenRouter } from "@/convex/lib/modelMapping";
 import { Streamdown } from "streamdown";
+import { Conversation, ConversationContent, ConversationEmptyState } from "@/components/ai-elements/conversation";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { ReasoningContent, Reasoning, ReasoningTrigger } from "@/components/ai-elements/reasoning";
+import { Loader } from "@/components/ai-elements/loader";
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
 
 export default function ChatPage() {
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
@@ -22,8 +27,8 @@ export default function ChatPage() {
     api.uiMessages.queries.getUIMessages,
     selectedThread
       ? {
-          threadId: selectedThread,
-        }
+        threadId: selectedThread,
+      }
       : "skip",
   );
 
@@ -118,38 +123,59 @@ export default function ChatPage() {
 
       <div className="flex flex-col gap-4 border w-5/6 h-full overflow-y-auto">
         <h1 className="text-center">Chat</h1>
-        {chatMessages &&
-          chatMessages.map((message) => (
-            <div key={message.id}>
-              {message.parts.map((part, index) => {
-                switch (part.type) {
-                  case "data-weather-tool": {
-                    const data = part.data as {
-                      location: string;
-                      status: string;
-                      result: string;
-                    };
+        <Conversation>
+          <ConversationContent>
+            {!chatMessages || chatMessages.length === 0 ? (
+              <ConversationEmptyState />
+            ) : (
+              chatMessages.map((message) => (
+                message.parts.map((part, index) => {
+                  if (part.type === "reasoning") {
                     return (
-                      <div key={index}>
-                        {data.status === "running" && (
-                          <p>Getting weather for {data.location}...</p>
-                        )}
-                        {data.status === "completed" && <p>{data.result}</p>}
-                        {data.status === "error" && (
-                          <p>Error getting weather for {data.location}</p>
-                        )}
-                      </div>
+                      <Reasoning
+                        key={index}
+                        defaultOpen={false}
+                      >
+                        <ReasoningTrigger />
+                        <ReasoningContent>{part.text}</ReasoningContent>
+                      </Reasoning>
                     );
                   }
-                  case "text":
-                    return <Streamdown>{part.text}</Streamdown>;
-                  default:
-                    return null;
-                }
-              })}
-              <p>{message.role}</p>
-            </div>
-          ))}
+                  if (part.type.includes("tool-")) {
+                    if ('toolCallId' in part) {
+                      return (
+                        <Tool key={index}>
+                          <ToolHeader key={index} title={part.type.split("-").slice(1).join("-")} type={part.type as `tool-${string}`} state={part.state} />
+                          <ToolContent>
+                            <ToolInput
+                              key={index}
+                              input={part.input}
+                            />
+                            <ToolOutput
+                              key={index}
+                              output={part.output}
+                              errorText={part.errorText}
+                            />
+                          </ToolContent>
+                        </Tool>
+                      )
+                    }
+                  }
+                  if (part.type === "text") {
+                    return (
+                      <Message from={message.role} key={index}>
+                        <MessageContent>
+                          <MessageResponse>{part.text}</MessageResponse>
+                        </MessageContent>
+                      </Message>
+                    )
+                  }
+                })
+              ))
+            )}
+            {status === "streaming" && <Loader />}
+          </ConversationContent>
+        </Conversation>
         <Input value={message} onChange={(e) => setMessage(e.target.value)} />
         <Button
           onClick={handleSendMessage}
