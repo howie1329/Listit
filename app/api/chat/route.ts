@@ -1,7 +1,7 @@
 import {
   convertToModelMessages,
   stepCountIs,
-  Experimental_Agent as Agent,
+  ToolLoopAgent as Agent,
   LanguageModel,
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     return new Response("Error adding user message", { status: 500 });
   }
 
-  const systemMessages = convertToModelMessages(messages);
+  const systemMessages = await convertToModelMessages(messages);
 
   const response = createUIMessageStreamResponse({
     status: 200,
@@ -102,16 +102,20 @@ export async function POST(request: Request) {
           model: openRouter.chat(model, {
             extraBody: { models: FALLBACK_MODELS },
           }) as LanguageModel,
-          system:
-            "You are a helpful assistant that can answer questions." +
-            "You can use the weather tool to get the weather for a given location." +
-            "Include sources when providing information." +
-            "Everything you return must be formatted in markdown.",
+          instructions:
+            `You are the main agent for this application. You are responsible for routing requests to the appropriate agent.
+            You can use the searchWebTool to search the web for information.
+            Only run the searchWebTool once.
+            Use the information from the searchWebTool to help give the best possible response.
+            Always give a response to the users question but be upfront about short commings of the information.
+            Include sources when providing information if possible.
+            In the format of [Source](url)
+            Everything you return must be formatted in markdown.`,
           stopWhen: stepCountIs(10),
-          tools: { weather: baseToolFunctions.weatherTool },
+          tools: { weather: baseToolFunctions.weatherTool, searchWebTool: baseToolFunctions.searchWebTool },
         });
 
-        const stream = agent.stream({ messages: systemMessages });
+        const stream = await agent.stream({ messages: systemMessages });
 
         writer.merge(
           stream.toUIMessageStream({
@@ -128,11 +132,16 @@ export async function POST(request: Request) {
               console.log("Last message", lastMessage);
 
               try {
+                const combinedParts = [...lastMessage.parts, ...customToolCallCapture];
                 await convex.mutation(api.uiMessages.mutation.addUIMessage, {
                   threadId,
                   id: lastMessage.id,
                   role: lastMessage.role,
-                  parts: [...lastMessage.parts, ...customToolCallCapture],
+                  parts: combinedParts as unknown as Array<{
+                    type: string;
+                    id?: string;
+                    data: unknown;
+                  }>,
                   metadata: lastMessage.metadata,
                 });
               } catch (error) {

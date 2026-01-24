@@ -16,7 +16,6 @@ import {
 import {
   Message,
   MessageContent,
-  MessageResponse,
 } from "@/components/ai-elements/message";
 import { toast } from "sonner";
 import { Shimmer } from "@/components/ai-elements/shimmer";
