@@ -16,8 +16,10 @@ import { Message, MessageContent, MessageResponse } from "@/components/ai-elemen
 import { ReasoningContent, Reasoning, ReasoningTrigger } from "@/components/ai-elements/reasoning";
 import { Loader } from "@/components/ai-elements/loader";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
+import ChatBaseInput, { ModelType } from "@/components/features/mastra/ChatBaseInput";
 
 export default function ChatPage() {
+  const [model, setModel] = useState<ModelType | undefined>();
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const createThread = useMutation(api.thread.mutations.createThread);
   const [selectedThread, setSelectedThread] = useState<Id<"thread"> | null>(
@@ -81,7 +83,7 @@ export default function ChatPage() {
         {
           body: {
             threadId: selectedThread,
-            model: mapModelToOpenRouter(userSettings?.defaultModel ?? "gpt-4o"),
+            model: model?.openrouterslug ?? "openai/gpt-5-mini",
           },
         },
       );
@@ -176,19 +178,8 @@ export default function ChatPage() {
             {status === "streaming" && <Loader />}
           </ConversationContent>
         </Conversation>
-        <Input value={message} onChange={(e) => setMessage(e.target.value)} />
-        <Button
-          onClick={handleSendMessage}
-          disabled={status !== "ready" || userSettings === undefined}
-        >
-          {status === "streaming" ? (
-            <>
-              <Spinner /> <span>Generating...</span>
-            </>
-          ) : (
-            "Send"
-          )}
-        </Button>
+        <ChatBaseInput onSubmit={handleSendMessage} status={status} setInput={setMessage} input={message} model={model} setModel={setModel} />
+
       </div>
     </div>
   );

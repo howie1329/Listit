@@ -5,12 +5,14 @@ import {
   LanguageModel,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  wrapLanguageModel,
 } from "ai";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createOpenRouter, LanguageModelV3 } from "@openrouter/ai-sdk-provider";
 import { FALLBACK_MODELS, OpenRouterModels } from "@/convex/lib/modelMapping";
 import { baseTools } from "@/lib/tools/weather";
+import { devToolsMiddleware } from '@ai-sdk/devtools';
 
 export type CustomToolCallCapturePart = {
   type: string;
@@ -90,6 +92,14 @@ export async function POST(request: Request) {
 
   const systemMessages = await convertToModelMessages(messages);
 
+  const devModel = wrapLanguageModel({
+    model: openRouter.chat(model, {
+      reasoning: { enabled: true, effort: "medium" },
+      extraBody: { models: FALLBACK_MODELS },
+    }) as LanguageModelV3,
+    middleware: devToolsMiddleware()
+  })
+
   const response = createUIMessageStreamResponse({
     status: 200,
     stream: createUIMessageStream({
@@ -99,9 +109,7 @@ export async function POST(request: Request) {
 
         /* FIXME(mastra): Add a unique `id` parameter. See: https://mastra.ai/guides/migrations/upgrade-to-v1/mastra#required-id-parameter-for-all-mastra-primitives */
         const agent = new Agent({
-          model: openRouter.chat(model, {
-            extraBody: { models: FALLBACK_MODELS },
-          }) as LanguageModel,
+          model: devModel,
           instructions:
             `You are the main agent for this application. You are responsible for routing requests to the appropriate agent.
             You can use the searchWebTool to search the web for information.

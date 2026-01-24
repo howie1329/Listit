@@ -10,6 +10,7 @@ export type ModelType = {
     displayName: string;
     slug: string;
     provider: string;
+    openrouterslug: string
 }
 const models: ModelType[] = [
     {
@@ -17,18 +18,21 @@ const models: ModelType[] = [
         displayName: "Kimi K2",
         slug: "openrouter/kimi-k2",
         provider: "moonshotai",
+        openrouterslug: "moonshotai/kimi-k2-0905",
     },
     {
         id: "openai/gpt-5-mini",
         displayName: "GPT-5 Mini",
         slug: "openrouter/gpt-5-mini",
         provider: "openai",
+        openrouterslug: "openai/gpt-5-mini",
     },
     {
         id: "x-ai/grok-4.1-fast",
         displayName: "Grok 4.1 Fast",
         slug: "openrouter/grok-4.1-fast",
         provider: "x-ai",
+        openrouterslug: "x-ai/grok-4.1-fast",
     }
 ]
 
@@ -42,7 +46,7 @@ export const ChatBaseInput = ({ onSubmit, status, setInput, input, model, setMod
                     </PromptInputBody>
                     <PromptInputFooter className="w-full flex flex-row justify-end">
                         <ModelSelector>
-                            <ModelSelectorTrigger asChild>
+                            <ModelSelectorTrigger>
                                 {model && (
                                     <Button variant="outline">{model.displayName}</Button>
                                 )}
@@ -56,7 +60,7 @@ export const ChatBaseInput = ({ onSubmit, status, setInput, input, model, setMod
                                     <ModelSelectorEmpty>No Models Found</ModelSelectorEmpty>
                                     <ModelSelectorGroup>
                                         {models.map((model) => (
-                                            <ModelSelectorItem key={model.id}>
+                                            <ModelSelectorItem key={model.id} onSelect={() => setModel(model)}>
                                                 <ModelSelectorName>{model.displayName}</ModelSelectorName>
                                             </ModelSelectorItem>
                                         ))}
