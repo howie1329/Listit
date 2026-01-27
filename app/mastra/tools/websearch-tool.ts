@@ -9,30 +9,14 @@ export const websearchTool = createTool({
     query: z.string().describe("the query to search the web for"),
   }),
   outputSchema: z.object({
-    results: z.array(z.string()).describe("the results of the search"),
+    results: z.any().describe("the results of the search"),
   }),
   execute: async ({ query }) => {
     const firecrawl = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
-    const searchResults = await firecrawl.search(query, {
-      limit: 3,
-      scrapeOptions: { formats: ["summary"] },
-    });
-
-    const results = searchResults?.web
-      ? searchResults.web.map(
-          (item: {
-            title?: string;
-            url?: string;
-            summary?: string;
-            description?: string;
-          }) => {
-            const title = item.title || item.url || "";
-            const content = item.summary || item.description || "";
-            return `${title}: ${content}`;
-          },
-        )
-      : [];
-
-    return { results };
+    const result = await firecrawl.agent({ prompt: query, model: "spark-1-mini" })
+    if (result.data) {
+      return { results: result.data }
+    }
+    return { results: [] };
   },
 });
