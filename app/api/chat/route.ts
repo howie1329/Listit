@@ -38,6 +38,10 @@ export async function POST(request: Request) {
     return new Response("Invalid JSON in request body", { status: 400 });
   }
 
+  if (!model) {
+    return new Response("model is required", { status: 400 });
+  }
+
   // Validate messages is an array with length > 0
   if (!Array.isArray(messages) || messages.length === 0) {
     return new Response("messages must be a non-empty array", { status: 400 });

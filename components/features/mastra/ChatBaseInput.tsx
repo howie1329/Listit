@@ -1,5 +1,5 @@
 "use client";
-import { PromptInput, PromptInputBody, PromptInputFooter, PromptInputProvider, PromptInputSubmit, PromptInputTextarea } from "@/components/ai-elements/prompt-input";
+import { PromptInput, PromptInputBody, PromptInputFooter, PromptInputProvider, PromptInputSubmit, PromptInputTextarea, PromptInputTools } from "@/components/ai-elements/prompt-input";
 import React from "react";
 import { ChatStatus } from "ai";
 import { ModelSelector, ModelSelectorContent, ModelSelectorEmpty, ModelSelectorGroup, ModelSelectorInput, ModelSelectorItem, ModelSelectorList, ModelSelectorName, ModelSelectorTrigger } from "@/components/ai-elements/model-selector";
@@ -13,6 +13,21 @@ export type ModelType = {
     openrouterslug: string
 }
 const models: ModelType[] = [
+    {
+        id: "arcee-ai/trinity-large-preview:free",
+        displayName: "Trinity Large Preview",
+        slug: "openrouter/trinity-large-preview:free",
+        provider: "arcee-ai",
+        openrouterslug: "arcee-ai/trinity-large-preview:free",
+    },
+
+    {
+        id: "moonshotai/kimi-k2.5",
+        displayName: "Kimi K2.5",
+        slug: "openrouter/kimi-k2.5",
+        provider: "moonshotai",
+        openrouterslug: "moonshotai/kimi-k2.5",
+    },
     {
         id: "moonshotai/kimi-k2",
         displayName: "Kimi K2",
@@ -45,30 +60,29 @@ export const ChatBaseInput = ({ onSubmit, status, setInput, input, model, setMod
                         <PromptInputTextarea value={input} onChange={(e) => setInput(e.currentTarget.value)} />
                     </PromptInputBody>
                     <PromptInputFooter className="w-full flex flex-row justify-end">
-                        <ModelSelector>
-                            <ModelSelectorTrigger>
-                                {model && (
-                                    <Button variant="outline">{model.displayName}</Button>
-                                )}
-                                {!model && (
-                                    <Button variant="outline">Select a model</Button>
-                                )}
-                            </ModelSelectorTrigger>
-                            <ModelSelectorContent>
-                                <ModelSelectorInput placeholder="Search for a model" />
-                                <ModelSelectorList>
-                                    <ModelSelectorEmpty>No Models Found</ModelSelectorEmpty>
-                                    <ModelSelectorGroup>
-                                        {models.map((model) => (
-                                            <ModelSelectorItem key={model.id} onSelect={() => setModel(model)}>
-                                                <ModelSelectorName>{model.displayName}</ModelSelectorName>
-                                            </ModelSelectorItem>
-                                        ))}
-                                    </ModelSelectorGroup>
-                                </ModelSelectorList>
-                            </ModelSelectorContent>
-                        </ModelSelector>
-                        <PromptInputSubmit status={status} />
+                        <PromptInputTools>
+                            <ModelSelector>
+                                <ModelSelectorTrigger>
+                                    <Button type="button" variant="outline">
+                                        {model ? model.displayName : "Select a model"}
+                                    </Button>
+                                </ModelSelectorTrigger>
+                                <ModelSelectorContent>
+                                    <ModelSelectorInput asChild placeholder="Search for a model" />
+                                    <ModelSelectorList>
+                                        <ModelSelectorEmpty>No Models Found</ModelSelectorEmpty>
+                                        <ModelSelectorGroup>
+                                            {models.map((model) => (
+                                                <ModelSelectorItem key={model.id} onSelect={() => setModel(model)}>
+                                                    <ModelSelectorName>{model.displayName}</ModelSelectorName>
+                                                </ModelSelectorItem>
+                                            ))}
+                                        </ModelSelectorGroup>
+                                    </ModelSelectorList>
+                                </ModelSelectorContent>
+                            </ModelSelector>
+                            <PromptInputSubmit disabled={status === "streaming" || model === undefined} status={status} />
+                        </PromptInputTools>
                     </PromptInputFooter>
 
                 </PromptInput>

@@ -75,7 +75,7 @@ export default function ChatPage() {
   const threads = useQuery(api.thread.queries.getUserThreads);
 
   const handleSendMessage = async () => {
-    if (!selectedThread || !message) {
+    if (!(selectedThread || model || message)) {
       return;
     }
     try {
@@ -84,11 +84,12 @@ export default function ChatPage() {
         {
           body: {
             threadId: selectedThread,
-            model: model?.openrouterslug ?? "openai/gpt-5-mini",
+            model: model?.openrouterslug,
           },
         },
-      );
+      )
       setMessage("");
+
     } catch (error) {
       toast.error("Error sending message");
       console.warn("Error sending message: ", error);
