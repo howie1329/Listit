@@ -6,6 +6,7 @@ import { v } from "convex/values";
 import { api } from "@/convex/_generated/api";
 import { ConvexHttpClient } from "convex/browser";
 import { Id } from "@/convex/_generated/dataModel";
+import tavily from "@tavily/tavily-js";
 
 /**
  * Base tools for the application. This is a collection of tools that are used in the application.
@@ -132,6 +133,41 @@ export const baseTools = ({
 
         return { results: [] };
       },
-    })
+    }),
+    tavilySearchTool: tool({
+      description: "Use this tool to search the web for information using tavily",
+      inputSchema: z.object({
+        query: z.string().describe("The query to search the web for using tavily"),
+      }),
+      outputSchema: z.object({
+        results: z.any().describe("The results of the search using tavily"),
+      }),
+      execute: async ({ query }) => {
+        const toolId = crypto.randomUUID();
+        writer.write({
+          type: "data-tavily-search-tool",
+          id: toolId,
+          data: {
+            query,
+            status: "running",
+          },
+        });
+
+        const client = tavily({ apiKey: process.env.TAVILY_API_KEY! });
+        const result = await client.search(query);
+
+        writer.write({
+          type: "data-tavily-search-tool",
+          id: toolId,
+          data: {
+            query,
+            status: "completed",
+            results: result,
+          },
+        });
+
+        return { results: result };
+      },
+    }),
   };
 };

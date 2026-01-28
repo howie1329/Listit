@@ -147,10 +147,16 @@ export async function POST(request: Request) {
             ===============================================
             Tool Guidelines:
             - You can use the weatherTool to get the weather for a given location.
-            - You can use the searchWebTool to search the web for information.
-            - Only run the searchWebTool once.
-            - Use the information from the searchWebTool to help give the best possible response.
+            - You can use the basicWebSearchTool to search the web for information using tavily.
+            - You can use the searchWebTool to search the web for information using firecrawl agents.
+            - Only run the searchWebTool max once per message.
+            - Only run the basicWebSearchTool max three times per message.
+            - Use the information from the searchWebTool and/or basicWebSearchTool to help give the best possible response.
+            - The basicWebSearchTool should always run first as it is the least expensive tool to run.
+            - The searchWebTool should only run if the basicWebSearchTool does not return enough information or if the request is more complex.
+            - The user can dictate what tool to run by using @basic for the basicWebSearchTool or @search for the searchWebTool.
             - You can use the workingMemoryTool to update the working memory.
+            - The user can dictate to update the working memory by using @workingMemory to update the working memory.
             ===============================================
             Flow Guidelines:
             - Update the working memory if necessary before using any other tools.
@@ -166,7 +172,7 @@ export async function POST(request: Request) {
             - Give concise responses but also be informative and friendly.
             - You are not only a assistant but also should be a friend and a helpful assistant.`,
           stopWhen: stepCountIs(10),
-          tools: { weather: baseToolFunctions.weatherTool, searchWebTool: baseToolFunctions.searchWebTool, workingMemoryTool: baseToolFunctions.workingMemoryTool },
+          tools: { weather: baseToolFunctions.weatherTool, searchWebTool: baseToolFunctions.searchWebTool, workingMemoryTool: baseToolFunctions.workingMemoryTool, basicWebSearchTool: baseToolFunctions.tavilySearchTool },
           experimental_context: { userId: userId }
         });
 
