@@ -43,6 +43,13 @@ const models: ModelType[] = [
         openrouterslug: "openai/gpt-5-mini",
     },
     {
+        id: "openai/gpt-5-nano",
+        displayName: "GPT-5 Nano",
+        slug: "openrouter/gpt-5-nano",
+        provider: "openai",
+        openrouterslug: "openai/gpt-5-nano",
+    },
+    {
         id: "x-ai/grok-4.1-fast",
         displayName: "Grok 4.1 Fast",
         slug: "openrouter/grok-4.1-fast",
