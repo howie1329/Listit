@@ -2,7 +2,6 @@ import {
   convertToModelMessages,
   stepCountIs,
   ToolLoopAgent as Agent,
-  LanguageModel,
   createUIMessageStream,
   createUIMessageStreamResponse,
   wrapLanguageModel,
@@ -28,11 +27,12 @@ export async function POST(request: Request) {
 
   const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-  let messages, threadId, model;
+  let messages, threadId, model, userId
   try {
     const body = await request.json();
     messages = body.messages;
     threadId = body.threadId;
+    userId = body.userId;
     model = body.model as OpenRouterModels;
   } catch (error) {
     return new Response("Invalid JSON in request body", { status: 400 });
@@ -40,6 +40,10 @@ export async function POST(request: Request) {
 
   if (!model) {
     return new Response("model is required", { status: 400 });
+  }
+
+  if (!userId) {
+    return new Response("userId is required", { status: 400 });
   }
 
   // Validate messages is an array with length > 0
@@ -94,6 +98,18 @@ export async function POST(request: Request) {
     return new Response("Error adding user message", { status: 500 });
   }
 
+  // Getting the working memory
+  // Working memory is a shared memory of the user to be used between different chats and sessions
+  let workingMemory = null;
+  try {
+    workingMemory = await convex.query(api.chatmemory.queries.getChatMemory, {
+      userId,
+    });
+    console.log("Working memory", workingMemory);
+  } catch (error) {
+    return new Response("Error getting working memory", { status: 500 });
+  }
+
   const systemMessages = await convertToModelMessages(messages);
 
   const devModel = wrapLanguageModel({
@@ -114,16 +130,37 @@ export async function POST(request: Request) {
           model: devModel,
           instructions:
             `You are the main agent for this application. You are responsible for routing requests to the appropriate agent.
-            You can use the searchWebTool to search the web for information.
-            Only run the searchWebTool once.
-            Use the information from the searchWebTool to help give the best possible response.
-            Always give a response to the users question but be upfront about short commings of the information.
-            Include sources when providing information if possible.
-            In the format of [Source](url)
-            Provide the url of the direct link to the source if possible.
-            Everything you return must be formatted in markdown.`,
+            ===============================================
+            Working Memory:
+            ${workingMemory ? JSON.stringify(workingMemory) : "No working memory found"}
+            The working memory is a shared memory of the user to be used between different chats and sessions.
+            Working Memory Guidelines:
+            - Infomation you can update in the working memory is: Name, Age, Preferences, Location, Interests, Tendencies, Notes
+            - If there is no working memory fill in the working memory as best as you can based on the context of the conversation.
+            ===============================================
+            Tool Guidelines:
+            - You can use the weatherTool to get the weather for a given location.
+            - You can use the searchWebTool to search the web for information.
+            - Only run the searchWebTool once.
+            - Use the information from the searchWebTool to help give the best possible response.
+            - You can use the workingMemoryTool to update the working memory.
+            ===============================================
+            Flow Guidelines:
+            - Update the working memory if necessary before using any other tools.
+            - Use the tools to help give the best possible response.
+            - After using the tools, update the working memory if necessary.
+            ===============================================
+            Response Guidelines:
+            - Always give a response to the users question but be upfront about short commings of the information.
+            - Include sources when providing information if possible.
+            - In the format of [Source](url)
+            - Provide the url of the direct link to the source if possible.
+            - Everything you return must be formatted in markdown.
+            - Give concise responses but also be informative and friendly.
+            - You are not only a assistant but also should be a friend and a helpful assistant.`,
           stopWhen: stepCountIs(10),
-          tools: { weather: baseToolFunctions.weatherTool, searchWebTool: baseToolFunctions.searchWebTool },
+          tools: { weather: baseToolFunctions.weatherTool, searchWebTool: baseToolFunctions.searchWebTool, workingMemoryTool: baseToolFunctions.workingMemoryTool },
+          experimental_context: { userId: userId }
         });
 
         const stream = await agent.stream({ messages: systemMessages });

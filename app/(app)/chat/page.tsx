@@ -75,7 +75,7 @@ export default function ChatPage() {
   const threads = useQuery(api.thread.queries.getUserThreads);
 
   const handleSendMessage = async () => {
-    if (!(selectedThread || model || message)) {
+    if (!(selectedThread || model || message || userSettings)) {
       return;
     }
     try {
@@ -83,6 +83,7 @@ export default function ChatPage() {
         { text: message },
         {
           body: {
+            userId: userSettings?.userId,
             threadId: selectedThread,
             model: model?.openrouterslug,
           },

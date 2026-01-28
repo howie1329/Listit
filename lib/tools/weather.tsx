@@ -2,6 +2,10 @@ import { CustomToolCallCapturePart } from "@/app/api/chat/route";
 import { UIMessageStreamWriter, tool } from "ai";
 import Firecrawl from "@mendable/firecrawl-js";
 import z from "zod";
+import { v } from "convex/values";
+import { api } from "@/convex/_generated/api";
+import { ConvexHttpClient } from "convex/browser";
+import { Id } from "@/convex/_generated/dataModel";
 
 /**
  * Base tools for the application. This is a collection of tools that are used in the application.
@@ -16,6 +20,26 @@ export const baseTools = ({
   customToolCallCapture: CustomToolCallCapturePart[];
 }) => {
   return {
+    workingMemoryTool: tool({
+      description: "Use this tool to update the working memory",
+      inputSchema: z.object({
+        data: z.any().describe("The data to update the working memory with"),
+      }),
+      execute: async ({ data }, { experimental_context: context }) => {
+        try {
+          const passedContext = context as { userId: string }
+          const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+          await convex.mutation(api.chatmemory.mutations.setChatMemory, {
+            userId: passedContext.userId as unknown as Id<"users">,
+            data: data,
+          });
+        } catch (error) {
+          console.error("Error updating working memory: ", error);
+          return { success: false, error: "Error updating working memory" };
+        }
+        return { success: true, message: "Working memory updated successfully" };
+      },
+    }),
     weatherTool: tool({
       description: "Use this tool to get the weather for a given location",
       inputSchema: z.object({

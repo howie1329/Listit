@@ -14,6 +14,8 @@ import type * as ai_tools_firecrawlAgent from "../ai/tools/firecrawlAgent.js";
 import type * as auth from "../auth.js";
 import type * as bookmarks_bookmarkCollectionFunctions from "../bookmarks/bookmarkCollectionFunctions.js";
 import type * as bookmarks_bookmarkFunctions from "../bookmarks/bookmarkFunctions.js";
+import type * as chatmemory_mutations from "../chatmemory/mutations.js";
+import type * as chatmemory_queries from "../chatmemory/queries.js";
 import type * as http from "../http.js";
 import type * as items_ai_actions from "../items/ai/actions.js";
 import type * as items_mutations from "../items/mutations.js";
@@ -43,6 +45,8 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "bookmarks/bookmarkCollectionFunctions": typeof bookmarks_bookmarkCollectionFunctions;
   "bookmarks/bookmarkFunctions": typeof bookmarks_bookmarkFunctions;
+  "chatmemory/mutations": typeof chatmemory_mutations;
+  "chatmemory/queries": typeof chatmemory_queries;
   http: typeof http;
   "items/ai/actions": typeof items_ai_actions;
   "items/mutations": typeof items_mutations;

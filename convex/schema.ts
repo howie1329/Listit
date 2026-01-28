@@ -32,7 +32,7 @@ export default defineSchema({
     resourceId: v.optional(v.string()),
     createdAt: v.string(),
     updatedAt: v.string(),
-    snapshot: v.any(), 
+    snapshot: v.any(),
   })
     .index("by_record_id", ["id"])
     .index("by_workflow_run", ["workflow_name", "run_id"])
@@ -40,6 +40,10 @@ export default defineSchema({
     .index("by_resource", ["resourceId"])
     .index("by_created", ["createdAt"]),
   // Matches Vercel AI SDK UIMessage structure: https://v5.ai-sdk.dev/docs/reference/ai-sdk-core/ui-message#uimessage
+  workingMemory: defineTable({
+    userId: v.id("users"),
+    data: v.any(),
+  }).index("by_userId", ["userId"]),
   uiMessages: defineTable({
     threadId: v.id("thread"),
     id: v.string(), // Unique identifier for the message (as per AI SDK spec)
