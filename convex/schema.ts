@@ -42,7 +42,14 @@ export default defineSchema({
   // Matches Vercel AI SDK UIMessage structure: https://v5.ai-sdk.dev/docs/reference/ai-sdk-core/ui-message#uimessage
   workingMemory: defineTable({
     userId: v.id("users"),
-    data: v.any(),
+    name: v.optional(v.string()),
+    age: v.optional(v.number()),
+    preferences: v.optional(v.string()),
+    location: v.optional(v.string()),
+    interests: v.optional(v.string()),
+    tendencies: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    extra: v.optional(v.any()),
   }).index("by_userId", ["userId"]),
   uiMessages: defineTable({
     threadId: v.id("thread"),

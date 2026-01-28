@@ -102,7 +102,7 @@ export async function POST(request: Request) {
   // Working memory is a shared memory of the user to be used between different chats and sessions
   let workingMemory = null;
   try {
-    workingMemory = await convex.query(api.chatmemory.queries.getChatMemory, {
+    workingMemory = await convex.mutation(api.chatmemory.mutations.ensureChatMemory, {
       userId,
     });
     console.log("Working memory", workingMemory);
@@ -135,8 +135,15 @@ export async function POST(request: Request) {
             ${workingMemory ? JSON.stringify(workingMemory) : "No working memory found"}
             The working memory is a shared memory of the user to be used between different chats and sessions.
             Working Memory Guidelines:
-            - Infomation you can update in the working memory is: Name, Age, Preferences, Location, Interests, Tendencies, Notes
-            - If there is no working memory fill in the working memory as best as you can based on the context of the conversation.
+            - Infomation you can update in the working memory is: Name, Age, Preferences, Location, Interests, Tendencies, Notes, Extra
+            - When updating you can retain pervious values of the working memory by not passing a new value for that field, or passing the old value and a new value fo that field.
+            - Example: If the working memory has a name of "John" and you want to update the name to "Jane Doe", you can pass the old value of "John" and a new value of " Doe".
+            - Example: If the working memory has the note of "User is a software engineer" and you want to update the note to "User is a software engineer and likes to code", you can pass the old value of "User is a software engineer" and a new value of "User is a software engineer and likes to code".
+            - You can also update any field by passing in a new value for that field. This will override the previous value for that field.
+            - You can also remove value from a field by passing in an empty string for that field.
+            - Extra is a JSON object that can be used to store any additional information that is not covered by the other fields.
+            - Extra is optional and can be omitted if not needed.
+            - If there is no working memory fill in the working memory with empty values for each of the fields.
             ===============================================
             Tool Guidelines:
             - You can use the weatherTool to get the weather for a given location.

@@ -23,15 +23,29 @@ export const baseTools = ({
     workingMemoryTool: tool({
       description: "Use this tool to update the working memory",
       inputSchema: z.object({
-        data: z.any().describe("The data to update the working memory with"),
+        name: z.optional(z.string()).describe("The name to update the working memory with"),
+        age: z.optional(z.number()).describe("The age to update the working memory with"),
+        preferences: z.optional(z.string()).describe("The preferences to update the working memory with"),
+        location: z.optional(z.string()).describe("The location to update the working memory with"),
+        interests: z.optional(z.string()).describe("The interests to update the working memory with"),
+        tendencies: z.optional(z.string()).describe("The tendencies to update the working memory with"),
+        notes: z.optional(z.string()).describe("The notes to update the working memory with"),
+        extra: z.optional(z.any()).describe("The extra to update the working memory with"),
       }),
-      execute: async ({ data }, { experimental_context: context }) => {
+      execute: async ({ name, age, preferences, location, interests, tendencies, notes, extra }, { experimental_context: context }) => {
         try {
           const passedContext = context as { userId: string }
           const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
           await convex.mutation(api.chatmemory.mutations.setChatMemory, {
             userId: passedContext.userId as unknown as Id<"users">,
-            data: data,
+            name: name,
+            age: age,
+            preferences: preferences,
+            location: location,
+            interests: interests,
+            tendencies: tendencies,
+            notes: notes,
+            extra: extra,
           });
         } catch (error) {
           console.error("Error updating working memory: ", error);
