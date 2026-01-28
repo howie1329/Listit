@@ -1,9 +1,10 @@
 "use client";
 import { PromptInput, PromptInputBody, PromptInputFooter, PromptInputProvider, PromptInputSubmit, PromptInputTextarea, PromptInputTools } from "@/components/ai-elements/prompt-input";
-import React from "react";
+import React, { useMemo } from "react";
 import { ChatStatus } from "ai";
 import { ModelSelector, ModelSelectorContent, ModelSelectorEmpty, ModelSelectorGroup, ModelSelectorInput, ModelSelectorItem, ModelSelectorList, ModelSelectorName, ModelSelectorTrigger } from "@/components/ai-elements/model-selector";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export type ModelType = {
     id: string;
@@ -59,8 +60,65 @@ const models: ModelType[] = [
 ]
 
 export const ChatBaseInput = ({ onSubmit, status, setInput, input, model, setModel, className }: { onSubmit: () => void, status: ChatStatus, setInput: (input: string) => void, input: string, model: ModelType | undefined, setModel: (model: ModelType | undefined) => void, className?: string }) => {
+    // Parse commands from input
+    const detectedCommands = useMemo(() => {
+        const commands: Array<{ type: '@basic' | '@search' | '@workingMemory', index: number }> = [];
+        const text = input.toLowerCase();
+        
+        if (text.includes('@basic')) {
+            commands.push({ type: '@basic', index: text.indexOf('@basic') });
+        }
+        if (text.includes('@search')) {
+            commands.push({ type: '@search', index: text.indexOf('@search') });
+        }
+        if (text.includes('@workingmemory')) {
+            commands.push({ type: '@workingMemory', index: text.indexOf('@workingmemory') });
+        }
+        
+        return commands.sort((a, b) => a.index - b.index);
+    }, [input]);
+
+    const getCommandLabel = (type: string) => {
+        switch (type) {
+            case '@basic':
+                return 'Basic Search';
+            case '@search':
+                return 'Web Search';
+            case '@workingMemory':
+                return 'Update Memory';
+            default:
+                return type;
+        }
+    };
+
+    const getCommandColor = (type: string) => {
+        switch (type) {
+            case '@basic':
+                return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+            case '@search':
+                return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
+            case '@workingMemory':
+                return 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20';
+            default:
+                return '';
+        }
+    };
+
     return (
         <div className={className}>
+            {detectedCommands.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2 px-2">
+                    {detectedCommands.map((cmd, idx) => (
+                        <Badge 
+                            key={idx}
+                            variant="outline"
+                            className={getCommandColor(cmd.type)}
+                        >
+                            {getCommandLabel(cmd.type)}
+                        </Badge>
+                    ))}
+                </div>
+            )}
             <PromptInputProvider>
                 <PromptInput globalDrop onSubmit={() => onSubmit()}>
                     <PromptInputBody>
