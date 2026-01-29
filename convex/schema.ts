@@ -194,7 +194,11 @@ export default defineSchema({
     tags: v.array(v.string()),
     notes: v.optional(v.string()),
     focusState: v.union(v.literal("today"), v.literal("back_burner")),
-  }).index("by_userId", ["userId"]),
+  }).index("by_userId", ["userId"])
+    .searchIndex("search_items", {
+      searchField: "title",
+      filterFields: ["userId", "isDeleted"]
+    }),
   userSettings: defineTable({
     userId: v.id("users"),
     name: v.string(),
@@ -233,7 +237,7 @@ export default defineSchema({
     .index("by_userId_deleted", ["userId", "isDeleted"])
     .index("by_url", ["url"])
     .searchIndex("search_bookmarks", {
-      searchField: "searchText",
+      searchField: "title",
       filterFields: ["userId", "isDeleted", "isArchived"],
     }),
 
