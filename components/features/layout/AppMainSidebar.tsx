@@ -23,9 +23,11 @@ import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { UserSettingsModal } from "../settings/UsersSettingsModal";
 import { useTheme } from "next-themes";
+import { useCommandPalette } from "@/providers/CommandPaletteProvider";
 export const AppMainSidebar = () => {
   const [openSettingsModal, setOpenSettingsModal] = useState(false);
   const { theme, setTheme } = useTheme();
+  const { open: openCommandPalette } = useCommandPalette();
   const items = [
     {
       label: "Items",
@@ -46,10 +48,9 @@ export const AppMainSidebar = () => {
           <SidebarGroupLabel>Main Actions</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              {/* TODO: Create a global command component to handle searching, creating items, etc */}
-              <SidebarMenuButton onClick={() => {}}>
+              <SidebarMenuButton onClick={openCommandPalette}>
                 <HugeiconsIcon icon={PlusSignIcon} />
-                <span>Create New Item</span>
+                <span className="truncate">Open Command Palette</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
