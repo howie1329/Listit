@@ -35,6 +35,7 @@ export function KeyboardShortcutsHelp() {
     {
       title: "Global",
       shortcuts: [
+        { keys: [modKey, "K"], description: "Open command palette" },
         { keys: [modKey, "N"], description: "New item" },
         { keys: ["/"], description: "Focus search / filter" },
         { keys: ["Esc"], description: "Clear selection" },
@@ -58,6 +59,7 @@ export function KeyboardShortcutsHelp() {
         { keys: ["#"], description: "Add tag" },
         { keys: ["P"], description: "Cycle priority" },
         { keys: ["Shift", "Delete"], description: "Delete item" },
+        { keys: ["Shift", "Backspace"], description: "Delete item" },
       ],
     },
   ];
