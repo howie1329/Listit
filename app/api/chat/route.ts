@@ -116,6 +116,8 @@ export async function POST(request: Request) {
     model: openRouter.chat(model, {
       reasoning: { enabled: true, effort: "medium" },
       extraBody: { models: FALLBACK_MODELS },
+      parallelToolCalls: true,
+      usage: { include: true },
     }) as LanguageModelV3,
     middleware: devToolsMiddleware()
   })
