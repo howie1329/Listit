@@ -6,24 +6,32 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
 import { mapModelToOpenRouter } from "@/convex/lib/modelMapping";
 import { Streamdown } from "streamdown";
+import { Conversation, ConversationContent, ConversationEmptyState } from "@/components/ai-elements/conversation";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { ReasoningContent, Reasoning, ReasoningTrigger } from "@/components/ai-elements/reasoning";
+import { Loader } from "@/components/ai-elements/loader";
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
+import ChatBaseInput, { ModelType } from "@/components/features/mastra/ChatBaseInput";
+import { Task } from "@/components/ai-elements/task";
 
 export default function ChatPage() {
+  const [model, setModel] = useState<ModelType | undefined>();
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const createThread = useMutation(api.thread.mutations.createThread);
   const [selectedThread, setSelectedThread] = useState<Id<"thread"> | null>(
     null,
   );
-  const threadMessages = useQuery(
-    api.threadMessages.queries.getThreadMessages,
+  const uiMessages = useQuery(
+    api.uiMessages.queries.getUIMessages,
     selectedThread
       ? {
-          threadId: selectedThread,
-        }
+        threadId: selectedThread,
+      }
       : "skip",
   );
 
@@ -37,37 +45,37 @@ export default function ChatPage() {
       api: "/api/chat",
     }),
     messages: [],
-    experimental_throttle: 0,
+    experimental_throttle: 100,
   });
 
   const prevThreadRef = useRef<Id<"thread"> | null>(null);
 
   useEffect(() => {
     if (
-      threadMessages &&
+      uiMessages &&
       selectedThread &&
       selectedThread !== prevThreadRef.current
     ) {
       if (status !== "streaming") {
         prevThreadRef.current = selectedThread;
         setMessages(
-          threadMessages.map((message) => ({
-            id: message._id,
-            role: message.role as "user" | "assistant",
-            content: message.content,
-            parts: [{ type: "text", text: message.content }],
-          })),
+          uiMessages.map((message) => ({
+            id: message.id,
+            role: message.role,
+            parts: message.parts,
+            metadata: message.metadata,
+          })) as UIMessage[],
         );
       }
     }
-  }, [threadMessages, setMessages, selectedThread, status]);
+  }, [uiMessages, setMessages, selectedThread, status]);
 
   const [message, setMessage] = useState("");
 
   const threads = useQuery(api.thread.queries.getUserThreads);
 
   const handleSendMessage = async () => {
-    if (!selectedThread || !message) {
+    if (!(selectedThread || model || message || userSettings)) {
       return;
     }
     try {
@@ -75,12 +83,14 @@ export default function ChatPage() {
         { text: message },
         {
           body: {
+            userId: userSettings?.userId,
             threadId: selectedThread,
-            model: mapModelToOpenRouter(userSettings?.defaultModel ?? "gpt-4o"),
+            model: model?.openrouterslug,
           },
         },
-      );
+      )
       setMessage("");
+
     } catch (error) {
       toast.error("Error sending message");
       console.warn("Error sending message: ", error);
@@ -118,51 +128,61 @@ export default function ChatPage() {
 
       <div className="flex flex-col gap-4 border w-5/6 h-full overflow-y-auto">
         <h1 className="text-center">Chat</h1>
-        {chatMessages &&
-          chatMessages.map((message) => (
-            <div key={message.id}>
-              {message.parts.map((part, index) => {
-                switch (part.type) {
-                  case "data-weather-tool": {
-                    const data = part.data as {
-                      location: string;
-                      status: string;
-                      result: string;
-                    };
+        <Conversation>
+          <ConversationContent>
+            {!chatMessages || chatMessages.length === 0 ? (
+              <ConversationEmptyState />
+            ) : (
+              chatMessages.map((message) => (
+                message.parts.map((part, index) => {
+                  if (part.type === "reasoning") {
                     return (
-                      <div key={index}>
-                        {data.status === "running" && (
-                          <p>Getting weather for {data.location}...</p>
-                        )}
-                        {data.status === "completed" && <p>{data.result}</p>}
-                        {data.status === "error" && (
-                          <p>Error getting weather for {data.location}</p>
-                        )}
-                      </div>
+                      <Reasoning
+                        key={index}
+                        defaultOpen={false}
+                      >
+                        <ReasoningTrigger />
+                        <ReasoningContent>{part.text}</ReasoningContent>
+                      </Reasoning>
                     );
                   }
-                  case "text":
-                    return <Streamdown>{part.text}</Streamdown>;
-                  default:
-                    return null;
-                }
-              })}
-              <p>{message.role}</p>
-            </div>
-          ))}
-        <Input value={message} onChange={(e) => setMessage(e.target.value)} />
-        <Button
-          onClick={handleSendMessage}
-          disabled={status !== "ready" || userSettings === undefined}
-        >
-          {status === "streaming" ? (
-            <>
-              <Spinner /> <span>Generating...</span>
-            </>
-          ) : (
-            "Send"
-          )}
-        </Button>
+                  if (part.type.includes("tool-")) {
+                    if ('toolCallId' in part) {
+                      return (
+                        <Tool key={index}>
+                          <ToolHeader key={index} title={part.type.split("-").slice(1).join("-")} type={part.type as `tool-${string}`} state={part.state} />
+                          <ToolContent>
+                            <ToolInput
+                              key={index}
+                              input={part.input}
+                            />
+                            <ToolOutput
+                              key={index}
+                              output={part.output}
+                              errorText={part.errorText}
+                            />
+                          </ToolContent>
+                        </Tool>
+                      )
+                    }
+                  }
+                  if (part.type === "text") {
+                    return (
+                      <Message from={message.role} key={index}>
+                        <MessageContent>
+                          <MessageResponse>{part.text}</MessageResponse>
+                        </MessageContent>
+                      </Message>
+                    )
+                  }
+                })
+              ))
+            )}
+            {status === "streaming" && <Loader />}
+          </ConversationContent>
+        </Conversation>
+        <ChatBaseInput onSubmit={handleSendMessage} status={status} setInput={setMessage} input={message} model={model} setModel={setModel} />
+
       </div>
     </div>
   );

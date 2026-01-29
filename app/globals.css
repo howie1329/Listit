@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "shadcn/tailwind.css";
-@source "../node_modules/streamdown/dist/*.js"; 
+@source "../node_modules/streamdown/dist/*.js";
 /* @import "shadcn/tailwind.css"; */
 
 @custom-variant dark (&:is(.dark *));
@@ -83,7 +83,7 @@
   --sidebar-border: oklch(0.9401 0 0);
   --sidebar-ring: oklch(0.7731 0 0);
   --radius: 0.5rem;
-  
+
 }
 
 .dark {
@@ -120,7 +120,7 @@
   --sidebar-border: oklch(0.2739 0.0055 286.0326);
   --sidebar-ring: oklch(0.8711 0.0055 286.2860);
   --radius: 0.5rem;
-  
+
 }
 
 @layer base {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useModifierKey } from "@/hooks/use-keyboard-shortcuts";
 import {
   Dialog,
   DialogContent,
@@ -31,14 +32,22 @@ interface ShortcutGroup {
  * @returns A React element containing the trigger and the keyboard shortcuts dialog.
  */
 export function BookmarkKeyboardShortcutsHelp() {
+  const modKey = useModifierKey();
+
   const shortcutGroups: ShortcutGroup[] = [
+    {
+      title: "Global",
+      shortcuts: [
+        { keys: [modKey, "K"], description: "Open command palette" },
+        { keys: ["/"], description: "Focus search" },
+        { keys: ["Esc"], description: "Clear selection" },
+      ],
+    },
     {
       title: "Navigation",
       shortcuts: [
-        { keys: ["/"], description: "Focus search" },
         { keys: ["↓", "J"], description: "Next bookmark" },
         { keys: ["↑", "K"], description: "Previous bookmark" },
-        { keys: ["Esc"], description: "Clear selection" },
       ],
     },
     {
@@ -47,6 +56,7 @@ export function BookmarkKeyboardShortcutsHelp() {
         { keys: ["Enter"], description: "Open bookmark in new tab" },
         { keys: ["E"], description: "Edit bookmark" },
         { keys: ["Shift", "Delete"], description: "Delete bookmark" },
+        { keys: ["Shift", "Backspace"], description: "Delete bookmark" },
       ],
     },
   ];

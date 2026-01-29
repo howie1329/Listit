@@ -80,13 +80,14 @@ export const generateThreadResponse = action({
 
     const toolFunctions = tools(ctx, args.threadId, assistantMessageId);
 
+    /* FIXME(mastra): Add a unique `id` parameter. See: https://mastra.ai/guides/migrations/upgrade-to-v1/mastra#required-id-parameter-for-all-mastra-primitives */
     const chatAgent = new Agent({
       model: openRouter(modelName, {
         extraBody: {
           models: FALLBACK_MODELS,
         },
       }) as unknown as LanguageModel,
-      system:
+      instructions:
         "You are a helpful assistant that can answer questions." +
         "You can use the firecrawl tool to search the web for information." +
         "Only run the firecrawl tool one time. Do not run it multiple times." +
@@ -96,7 +97,7 @@ export const generateThreadResponse = action({
       temperature: 0.8,
     });
 
-    const response = chatAgent.stream({ messages: modelMessages });
+    const response = await chatAgent.stream({ messages: modelMessages });
     let fullResponse = "";
     let lastResponseTime = Date.now();
     for await (const chunk of response.textStream) {

@@ -2,13 +2,55 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 import { defaultModelValidator } from "./lib/modelMapping";
+import {
+  mastraThreadsTable,
+  mastraMessagesTable,
+  mastraResourcesTable,
+  mastraWorkflowSnapshotsTable,
+  mastraScoresTable,
+  mastraVectorIndexesTable,
+  mastraVectorsTable,
+  mastraDocumentsTable,
+} from "@mastra/convex/schema";
 
 // The schema is normally optional, but Convex Auth
 // requires indexes defined on `authTables`.
 // The schema provides more precise TypeScript types.
 export default defineSchema({
   ...authTables,
+  mastra_threads: mastraThreadsTable,
+  mastra_messages: mastraMessagesTable,
+  mastra_resources: mastraResourcesTable,
+  mastra_scorers: mastraScoresTable,
+  mastra_vector_indexes: mastraVectorIndexesTable,
+  mastra_vectors: mastraVectorsTable,
+  mastra_documents: mastraDocumentsTable,
+  mastra_workflow_snapshots: defineTable({
+    id: v.string(),
+    workflow_name: v.string(),
+    run_id: v.string(),
+    resourceId: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+    snapshot: v.any(),
+  })
+    .index("by_record_id", ["id"])
+    .index("by_workflow_run", ["workflow_name", "run_id"])
+    .index("by_workflow", ["workflow_name"])
+    .index("by_resource", ["resourceId"])
+    .index("by_created", ["createdAt"]),
   // Matches Vercel AI SDK UIMessage structure: https://v5.ai-sdk.dev/docs/reference/ai-sdk-core/ui-message#uimessage
+  workingMemory: defineTable({
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    age: v.optional(v.number()),
+    preferences: v.optional(v.string()),
+    location: v.optional(v.string()),
+    interests: v.optional(v.string()),
+    tendencies: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    extra: v.optional(v.any()),
+  }).index("by_userId", ["userId"]),
   uiMessages: defineTable({
     threadId: v.id("thread"),
     id: v.string(), // Unique identifier for the message (as per AI SDK spec)
@@ -44,6 +86,7 @@ export default defineSchema({
           state: v.literal("input-streaming"),
           input: v.optional(v.any()), // DeepPartial<TOOLS[NAME]['input']> | undefined
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // ToolUIPart - input-available state
         v.object({
@@ -52,6 +95,7 @@ export default defineSchema({
           state: v.literal("input-available"),
           input: v.any(), // TOOLS[NAME]['input']
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // ToolUIPart - output-available state
         v.object({
@@ -61,6 +105,7 @@ export default defineSchema({
           input: v.any(), // TOOLS[NAME]['input']
           output: v.any(), // TOOLS[NAME]['output']
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // ToolUIPart - output-error state
         v.object({
@@ -70,6 +115,7 @@ export default defineSchema({
           input: v.any(), // TOOLS[NAME]['input']
           errorText: v.string(),
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // DataUIPart - for custom data types (e.g., "data-weather-tool")
         v.object({
@@ -148,7 +194,11 @@ export default defineSchema({
     tags: v.array(v.string()),
     notes: v.optional(v.string()),
     focusState: v.union(v.literal("today"), v.literal("back_burner")),
-  }).index("by_userId", ["userId"]),
+  }).index("by_userId", ["userId"])
+    .searchIndex("search_items", {
+      searchField: "title",
+      filterFields: ["userId", "isDeleted"]
+    }),
   userSettings: defineTable({
     userId: v.id("users"),
     name: v.string(),
@@ -187,7 +237,7 @@ export default defineSchema({
     .index("by_userId_deleted", ["userId", "isDeleted"])
     .index("by_url", ["url"])
     .searchIndex("search_bookmarks", {
-      searchField: "searchText",
+      searchField: "title",
       filterFields: ["userId", "isDeleted", "isArchived"],
     }),
 
