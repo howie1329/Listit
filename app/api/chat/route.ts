@@ -11,7 +11,7 @@ import { api } from "@/convex/_generated/api";
 import { createOpenRouter, LanguageModelV3 } from "@openrouter/ai-sdk-provider";
 import { FALLBACK_MODELS, OpenRouterModels } from "@/convex/lib/modelMapping";
 import { baseTools } from "@/lib/tools/weather";
-import { devToolsMiddleware } from '@ai-sdk/devtools';
+import { devToolsMiddleware } from "@ai-sdk/devtools";
 
 export type CustomToolCallCapturePart = {
   type: string;
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 
   const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-  let messages, threadId, model, userId
+  let messages, threadId, model, userId;
   try {
     const body = await request.json();
     messages = body.messages;
@@ -98,13 +98,43 @@ export async function POST(request: Request) {
     return new Response("Error adding user message", { status: 500 });
   }
 
+  // Check if this is the first message and update thread title
+  try {
+    const existingMessages = await convex.query(
+      api.uiMessages.queries.getUIMessages,
+      {
+        threadId,
+      },
+    );
+
+    // If only 1 message (the one we just added), it's the first user message
+    if (existingMessages.length === 1) {
+      // Generate title from first message
+      const generatedTitle =
+        userMessage.length > 40
+          ? userMessage.slice(0, 40) + "..."
+          : userMessage;
+
+      await convex.mutation(api.thread.mutations.updateThreadTitle, {
+        threadId,
+        title: generatedTitle,
+      });
+    }
+  } catch (error) {
+    console.warn("Error updating thread title:", error);
+    // Don't fail the request if title update fails
+  }
+
   // Getting the working memory
   // Working memory is a shared memory of the user to be used between different chats and sessions
   let workingMemory = null;
   try {
-    workingMemory = await convex.mutation(api.chatmemory.mutations.ensureChatMemory, {
-      userId,
-    });
+    workingMemory = await convex.mutation(
+      api.chatmemory.mutations.ensureChatMemory,
+      {
+        userId,
+      },
+    );
     console.log("Working memory", workingMemory);
   } catch (error) {
     return new Response("Error getting working memory", { status: 500 });
@@ -119,8 +149,8 @@ export async function POST(request: Request) {
       parallelToolCalls: true,
       usage: { include: true },
     }) as LanguageModelV3,
-    middleware: devToolsMiddleware()
-  })
+    middleware: devToolsMiddleware(),
+  });
 
   const response = createUIMessageStreamResponse({
     status: 200,
@@ -130,8 +160,7 @@ export async function POST(request: Request) {
         const baseToolFunctions = baseTools({ writer, customToolCallCapture });
         const agent = new Agent({
           model: devModel,
-          instructions:
-            `You are the main agent for this application. You are responsible for routing requests to the appropriate agent.
+          instructions: `You are the main agent for this application. You are responsible for routing requests to the appropriate agent.
             ===============================================
             Working Memory:
             ${workingMemory ? JSON.stringify(workingMemory) : "No working memory found"}
@@ -174,8 +203,13 @@ export async function POST(request: Request) {
             - Give concise responses but also be informative and friendly.
             - You are not only a assistant but also should be a friend and a helpful assistant.`,
           stopWhen: stepCountIs(10),
-          tools: { weather: baseToolFunctions.weatherTool, searchWebTool: baseToolFunctions.searchWebTool, workingMemoryTool: baseToolFunctions.workingMemoryTool, basicWebSearchTool: baseToolFunctions.tavilySearchTool },
-          experimental_context: { userId: userId }
+          tools: {
+            weather: baseToolFunctions.weatherTool,
+            searchWebTool: baseToolFunctions.searchWebTool,
+            workingMemoryTool: baseToolFunctions.workingMemoryTool,
+            basicWebSearchTool: baseToolFunctions.tavilySearchTool,
+          },
+          experimental_context: { userId: userId },
         });
 
         const stream = await agent.stream({ messages: systemMessages });
@@ -195,7 +229,10 @@ export async function POST(request: Request) {
               console.log("Last message", lastMessage);
 
               try {
-                const combinedParts = [...lastMessage.parts, ...customToolCallCapture];
+                const combinedParts = [
+                  ...lastMessage.parts,
+                  ...customToolCallCapture,
+                ];
                 await convex.mutation(api.uiMessages.mutation.addUIMessage, {
                   threadId,
                   id: lastMessage.id,

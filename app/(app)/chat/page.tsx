@@ -3,26 +3,48 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DefaultChatTransport, UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
-import { mapModelToOpenRouter } from "@/convex/lib/modelMapping";
 import { Streamdown } from "streamdown";
-import { Conversation, ConversationContent, ConversationEmptyState } from "@/components/ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import { ReasoningContent, Reasoning, ReasoningTrigger } from "@/components/ai-elements/reasoning";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import {
+  ReasoningContent,
+  Reasoning,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
 import { Loader } from "@/components/ai-elements/loader";
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
-import ChatBaseInput, { ModelType } from "@/components/features/mastra/ChatBaseInput";
-import { Task } from "@/components/ai-elements/task";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
+import ChatBaseInput, {
+  ModelType,
+} from "@/components/features/mastra/ChatBaseInput";
+import { ThreadListItem } from "@/components/features/chat/ThreadListItem";
+import { MessageSquare, Plus } from "lucide-react";
 
 export default function ChatPage() {
   const [model, setModel] = useState<ModelType | undefined>();
   const userSettings = useQuery(api.userFunctions.fetchUserSettings);
   const createThread = useMutation(api.thread.mutations.createThread);
+  const deleteThread = useMutation(api.thread.mutations.deleteThread);
+  const updateThreadTitle = useMutation(api.thread.mutations.updateThreadTitle);
   const [selectedThread, setSelectedThread] = useState<Id<"thread"> | null>(
     null,
   );
@@ -30,8 +52,8 @@ export default function ChatPage() {
     api.uiMessages.queries.getUIMessages,
     selectedThread
       ? {
-        threadId: selectedThread,
-      }
+          threadId: selectedThread,
+        }
       : "skip",
   );
 
@@ -72,7 +94,16 @@ export default function ChatPage() {
 
   const [message, setMessage] = useState("");
 
-  const threads = useQuery(api.thread.queries.getUserThreads);
+  const threads = useQuery(api.thread.queries.getUserThreadsWithPreview);
+
+  // Sort threads by updatedAt (most recent first)
+  const sortedThreads = threads
+    ? [...threads].sort((a, b) => {
+        return (
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+      })
+    : [];
 
   const handleSendMessage = async () => {
     if (!(selectedThread || model || message || userSettings)) {
@@ -88,9 +119,8 @@ export default function ChatPage() {
             model: model?.openrouterslug,
           },
         },
-      )
+      );
       setMessage("");
-
     } catch (error) {
       toast.error("Error sending message");
       console.warn("Error sending message: ", error);
@@ -99,9 +129,7 @@ export default function ChatPage() {
 
   const handleCreateThread = async () => {
     try {
-      const thread = await createThread({
-        title: "New Thread",
-      });
+      const thread = await createThread({});
       setSelectedThread(thread);
     } catch (error) {
       toast.error("Error creating thread");
@@ -109,53 +137,99 @@ export default function ChatPage() {
     }
   };
 
+  const handleDeleteThread = async (threadId: Id<"thread">) => {
+    try {
+      await deleteThread({ threadId });
+      toast.success("Thread deleted");
+
+      // If we deleted the currently selected thread, clear selection
+      if (selectedThread === threadId) {
+        setSelectedThread(null);
+        setMessages([]);
+      }
+    } catch (error) {
+      toast.error("Error deleting thread");
+      console.warn("Error deleting thread: ", error);
+    }
+  };
+
   return (
-    <div className="flex flex-row border-2 border-red-500 w-full h-full p-2 gap-2">
-      <div className="flex flex-col gap-4 border w-1/6">
-        <h1 className="text-center ">Your Threads</h1>
-        <Button onClick={handleCreateThread}>Create New Thread</Button>
-        {threads &&
-          threads.map((thread) => (
-            <div key={thread._id} onClick={() => setSelectedThread(thread._id)}>
-              <p
-                className={`${selectedThread === thread._id ? "text-blue-500" : ""}`}
-              >
-                {thread.title}
+    <div className="flex flex-row w-full h-full p-2 gap-2">
+      <div className="flex flex-col gap-3 w-1/6 min-w-[200px] border-r pr-2">
+        <div className="flex items-center justify-between px-1">
+          <h1 className="text-lg font-semibold">Your Threads</h1>
+        </div>
+
+        <Button onClick={handleCreateThread} className="w-full gap-2">
+          <Plus className="h-4 w-4" />
+          New Thread
+        </Button>
+
+        {sortedThreads.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+            <div className="rounded-full bg-muted p-3">
+              <MessageSquare className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">No conversations yet</p>
+              <p className="text-xs text-muted-foreground">
+                Start a new chat to begin
               </p>
             </div>
-          ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCreateThread}
+              className="gap-2"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Start Chatting
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1 overflow-y-auto flex-1">
+            {sortedThreads.map((thread) => (
+              <ThreadListItem
+                key={thread._id}
+                thread={thread}
+                isSelected={selectedThread === thread._id}
+                onSelect={setSelectedThread}
+                onDelete={handleDeleteThread}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-col gap-4 border w-5/6 h-full overflow-y-auto">
+      <div className="flex flex-col gap-4 w-5/6 h-full overflow-y-auto">
         <h1 className="text-center">Chat</h1>
-        <Conversation>
+        <Conversation className="flex-1">
           <ConversationContent>
             {!chatMessages || chatMessages.length === 0 ? (
               <ConversationEmptyState />
             ) : (
-              chatMessages.map((message) => (
+              chatMessages.map((message) =>
                 message.parts.map((part, index) => {
                   if (part.type === "reasoning") {
                     return (
-                      <Reasoning
-                        key={index}
-                        defaultOpen={false}
-                      >
+                      <Reasoning key={index} defaultOpen={false}>
                         <ReasoningTrigger />
                         <ReasoningContent>{part.text}</ReasoningContent>
                       </Reasoning>
                     );
                   }
                   if (part.type.includes("tool-")) {
-                    if ('toolCallId' in part) {
+                    if ("toolCallId" in part) {
                       return (
                         <Tool key={index}>
-                          <ToolHeader key={index} title={part.type.split("-").slice(1).join("-")} type={part.type as `tool-${string}`} state={part.state} />
+                          <ToolHeader
+                            key={index}
+                            title={part.type.split("-").slice(1).join("-")}
+                            type={part.type as `tool-${string}`}
+                            state={part.state}
+                          />
                           <ToolContent>
-                            <ToolInput
-                              key={index}
-                              input={part.input}
-                            />
+                            <ToolInput key={index} input={part.input} />
                             <ToolOutput
                               key={index}
                               output={part.output}
@@ -163,7 +237,7 @@ export default function ChatPage() {
                             />
                           </ToolContent>
                         </Tool>
-                      )
+                      );
                     }
                   }
                   if (part.type === "text") {
@@ -173,16 +247,23 @@ export default function ChatPage() {
                           <MessageResponse>{part.text}</MessageResponse>
                         </MessageContent>
                       </Message>
-                    )
+                    );
                   }
-                })
-              ))
+                }),
+              )
             )}
             {status === "streaming" && <Loader />}
           </ConversationContent>
+          <ConversationScrollButton />
         </Conversation>
-        <ChatBaseInput onSubmit={handleSendMessage} status={status} setInput={setMessage} input={message} model={model} setModel={setModel} />
-
+        <ChatBaseInput
+          onSubmit={handleSendMessage}
+          status={status}
+          setInput={setMessage}
+          input={message}
+          model={model}
+          setModel={setModel}
+        />
       </div>
     </div>
   );

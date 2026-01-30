@@ -145,3 +145,66 @@ export const getSingleThread = query({
     return thread;
   },
 });
+
+export const getUserThreadsWithPreview = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("thread"),
+      userId: v.id("users"),
+      _creationTime: v.number(),
+      streamingStatus: v.string(),
+      title: v.string(),
+      updatedAt: v.string(),
+      lastMessagePreview: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not found");
+    }
+
+    const threads = await ctx.db
+      .query("thread")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+
+    // For each thread, get the last assistant message for preview
+    const threadsWithPreview = await Promise.all(
+      threads.map(async (thread) => {
+        const messages = await ctx.db
+          .query("uiMessages")
+          .withIndex("by_threadId", (q) => q.eq("threadId", thread._id))
+          .order("desc")
+          .collect();
+
+        // Find the last assistant message with text content
+        let lastMessagePreview: string | null = null;
+        for (const message of messages) {
+          if (message.role === "assistant") {
+            // Find text part in the message
+            const textPart = message.parts.find(
+              (part): part is { type: "text"; text: string } =>
+                part.type === "text" && "text" in part,
+            );
+            if (textPart && textPart.text) {
+              lastMessagePreview = textPart.text.slice(0, 60);
+              if (textPart.text.length > 60) {
+                lastMessagePreview += "...";
+              }
+              break;
+            }
+          }
+        }
+
+        return {
+          ...thread,
+          lastMessagePreview: lastMessagePreview || undefined,
+        };
+      }),
+    );
+
+    return threadsWithPreview;
+  },
+});
