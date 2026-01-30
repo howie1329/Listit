@@ -15,6 +15,13 @@ export type ModelType = {
 }
 const models: ModelType[] = [
     {
+        id: "meta-llama/llama-3.3-70b-instruct:free",
+        displayName: "Llama 3.3 70B Instruct",
+        slug: "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        provider: "meta-llama",
+        openrouterslug: "meta-llama/llama-3.3-70b-instruct:free",
+    },
+    {
         id: "mistralai/ministral-8b",
         displayName: "Mistral Ministral 8B",
         slug: "openrouter/mistralai/ministral-8b",
