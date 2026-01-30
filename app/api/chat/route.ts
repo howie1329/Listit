@@ -214,41 +214,40 @@ export async function POST(request: Request) {
 
   const summaryContextSection = summaries.length
     ? summaries
-        .map((summary, index) => {
-          const timestamp = new Date(summary.createdAt).toLocaleString();
-          const keyPoints = summary.summary.keyPoints.length
-            ? summary.summary.keyPoints.join("; ")
-            : "None";
-          const decisions = summary.summary.decisions.length
-            ? summary.summary.decisions.join("; ")
-            : "None";
-          const actionItems = summary.summary.actionItems.join("; ");
-          const openQuestions = summary.summary.openQuestions.join("; ");
-          const toolResults = summary.summary.toolResults
-            .map(
-              (tool) =>
-                `${tool.toolName}: ${tool.summary} (${tool.importance})`,
-            )
-            .join("; ");
+      .map((summary, index) => {
+        const timestamp = new Date(summary.createdAt).toLocaleString();
+        const keyPoints = summary.summary.keyPoints.length
+          ? summary.summary.keyPoints.join("; ")
+          : "None";
+        const decisions = summary.summary.decisions.length
+          ? summary.summary.decisions.join("; ")
+          : "None";
+        const actionItems = summary.summary.actionItems.join("; ");
+        const openQuestions = summary.summary.openQuestions.join("; ");
+        const toolResults = summary.summary.toolResults
+          .map(
+            (tool) =>
+              `${tool.toolName}: ${tool.summary} (${tool.importance})`,
+          )
+          .join("; ");
 
-          const extras = [
-            actionItems ? `Action Items: ${actionItems}` : "",
-            openQuestions ? `Open Questions: ${openQuestions}` : "",
-            toolResults ? `Tool Results: ${toolResults}` : "",
-          ]
-            .filter(Boolean)
-            .join("\n");
+        const extras = [
+          actionItems ? `Action Items: ${actionItems}` : "",
+          openQuestions ? `Open Questions: ${openQuestions}` : "",
+          toolResults ? `Tool Results: ${toolResults}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n");
 
-          return `Summary ${index + 1} (${timestamp}): ${summary.summary.overview}
+        return `Summary ${index + 1} (${timestamp}): ${summary.summary.overview}
 Key Points: ${keyPoints}
-Decisions: ${decisions}${
-            extras
-              ? `
+Decisions: ${decisions}${extras
+            ? `
 ${extras}`
-              : ""
+            : ""
           }`;
-        })
-        .join("\n\n")
+      })
+      .join("\n\n")
     : "";
   const summarySectionHeader = summaryContextSection
     ? `Conversation Summaries:\n${summaryContextSection}\n\n`
@@ -274,8 +273,14 @@ ${extras}`
           model: devModel,
           instructions: `You are the main agent for this application. You are responsible for routing requests to the appropriate agent.
             ===============================================
-${summarySectionHeader}            Working Memory:
-            ${workingMemory ? JSON.stringify(workingMemory) : "No working memory found"}
+            ${summarySectionHeader}
+            Summary Guidelines:
+            - There may or may not be a summary of a conversation.
+            - The summary is a summary of the conversation and is not the conversation itself.
+            - It is to be used as context for the agent to help give the best possible response.
+            - Prioritize the messages over the summary itself.
+            ===============================================
+            Working Memory: ${workingMemory ? JSON.stringify(workingMemory) : "No working memory found"}
             The working memory is a shared memory of the user to be used between different chats and sessions.
             Working Memory Guidelines:
             - Infomation you can update in the working memory is: Name, Age, Preferences, Location, Interests, Tendencies, Notes, Extra

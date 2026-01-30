@@ -1,8 +1,9 @@
 import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
-import { generateText } from "ai";
+import { generateText, Output } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { z } from "zod";
 
 // Generate summary using AI (with fallback models)
 export const generateSummary = action({
@@ -40,6 +41,7 @@ export const generateSummary = action({
 
       console.log("messages", messages);
 
+
       // Get previous summary for context (if exists)
       const previousSummaries = await ctx.runQuery(
         api.threadSummaries.queries.getLatestSummariesForContext,
@@ -51,7 +53,6 @@ export const generateSummary = action({
       const models = [
         "arcee-ai/trinity-large-preview:free", // Free model
         "deepseek/deepseek-r1-0528:free", // Free model
-        "arcee-ai/trinity-large-preview:free", // Free model
         "mistralai/ministral-8b", // Cheap model
       ];
 
@@ -60,27 +61,23 @@ export const generateSummary = action({
       let generatedSummary = null;
       let cost = 0;
 
-      for (let i = 0; i < models.length; i++) {
-        const model = models[i];
-        try {
-          const result = await generateWithModel(
-            model,
-            messages,
-            previousSummary,
-          );
-          generatedSummary = result.summary;
-          cost = result.cost;
-          usedModel = model;
-          break;
-        } catch (error) {
-          lastError = error as Error;
-          console.warn(
-            `[Summary] Generation failed with model ${model}:`,
-            error,
-          );
-          continue;
-        }
+      try {
+        const result = await generateWithModel(
+          models,
+          messages,
+          previousSummary,
+        );
+        generatedSummary = result.summary;
+        cost = result.cost;
+        usedModel = result.model;
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(
+          `[Summary] Generation failed with all models`,
+          error,
+        );
       }
+
 
       if (!generatedSummary) {
         // All models failed
@@ -122,7 +119,7 @@ export const generateSummary = action({
 
 // Helper function to generate with a specific model
 async function generateWithModel(
-  model: string,
+  models: string[],
   messages: any[],
   previousSummary: any | null,
 ) {
@@ -132,41 +129,39 @@ async function generateWithModel(
 
   const prompt = buildSummaryPrompt(messages, previousSummary);
 
-  const result = await generateText({
-    model: openRouter.chat(model),
+  const { output, usage, response } = await generateText({
+    model: openRouter.chat(models[0], {
+      extraBody: { models: models },
+      usage: { include: true },
+    }),
     prompt,
     temperature: 0.3,
     maxOutputTokens: 2000,
-  });
-
-  // Parse JSON response
-  let summary;
-  try {
-    summary = JSON.parse(result.text);
-  } catch {
-    // Try to extract JSON from markdown code block
-    const jsonMatch = result.text.match(/```json\n?([\s\S]*?)\n?```/);
-    if (jsonMatch) {
-      summary = JSON.parse(jsonMatch[1]);
-    } else {
-      // Try to extract JSON from plain text
-      const jsonStart = result.text.indexOf("{");
-      const jsonEnd = result.text.lastIndexOf("}");
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        summary = JSON.parse(result.text.substring(jsonStart, jsonEnd + 1));
-      } else {
-        throw new Error("Failed to parse summary JSON");
-      }
-    }
-  }
+    output: Output.object({
+      schema: z.object({
+        summary: z.object({
+          overview: z.string(),
+          keyPoints: z.array(z.string()),
+          decisions: z.array(z.string()),
+          actionItems: z.array(z.string()),
+          openQuestions: z.array(z.string()),
+          toolResults: z.array(z.object({
+            toolName: z.string(),
+            summary: z.string(),
+            importance: z.enum(["high", "medium", "low"]),
+          })),
+        }),
+      }),
+    })
+  })
 
   // Validate summary structure
-  if (!summary.overview || !Array.isArray(summary.keyPoints)) {
+  if (!output.summary.overview || !Array.isArray(output.summary.keyPoints)) {
     throw new Error("Invalid summary structure");
   }
 
   // Estimate cost (simplified pricing)
-  const usage = result.usage as {
+  const usageData = usage as {
     promptTokens?: number;
     completionTokens?: number;
     inputTokens?: number;
@@ -174,13 +169,14 @@ async function generateWithModel(
     totalTokens?: number;
   };
 
-  const promptTokens = usage.promptTokens ?? usage.inputTokens ?? 0;
-  const completionTokens = usage.completionTokens ?? usage.outputTokens ?? 0;
+  const promptTokens = usageData.promptTokens ?? usageData.inputTokens ?? 0;
+  const completionTokens = usageData.completionTokens ?? usageData.outputTokens ?? 0;
   const promptCost = promptTokens * 0.0000001; // $0.10 per 1M prompt tokens
   const completionCost = completionTokens * 0.0000004; // $0.40 per 1M completion tokens
   const cost = promptCost + completionCost;
+  const model = response.modelId;
 
-  return { summary, cost };
+  return { summary: output.summary, cost, model };
 }
 
 // Build the summarization prompt
@@ -221,14 +217,16 @@ ${messageTexts}
 
 Create a JSON summary with this exact structure:
 {
-  "overview": "Brief 2-3 sentence overview of the main discussion",
-  "keyPoints": ["Important fact 1", "Important fact 2", ...],
-  "decisions": ["Decision made 1", "Decision made 2", ...],
-  "actionItems": ["Action item with context", ...],
-  "openQuestions": ["Unresolved question", ...],
-  "toolResults": [
-    {"toolName": "toolName", "summary": "What the tool did/returned (max 100 chars)", "importance": "high|medium|low"}
-  ]
+  "summary": {
+    "overview": "Brief 2-3 sentence overview of the main discussion",
+    "keyPoints": ["Important fact 1", "Important fact 2", ...],
+    "decisions": ["Decision made 1", "Decision made 2", ...],
+    "actionItems": ["Action item with context", ...],
+    "openQuestions": ["Unresolved question", ...],
+    "toolResults": [
+      {"toolName": "toolName", "summary": "What the tool did/returned (max 100 chars)", "importance": "high|medium|low"}
+    ]
+  }
 }
 
 Guidelines:
