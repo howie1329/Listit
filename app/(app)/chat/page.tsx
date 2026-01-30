@@ -38,6 +38,7 @@ import ChatBaseInput, {
 } from "@/components/features/mastra/ChatBaseInput";
 import { ThreadListItem } from "@/components/features/chat/ThreadListItem";
 import { MessageSquare, Plus } from "lucide-react";
+import { SummaryDialog } from "@/components/features/chat/SummaryDialog";
 
 export default function ChatPage() {
   const [model, setModel] = useState<ModelType | undefined>();
@@ -202,7 +203,12 @@ export default function ChatPage() {
       </div>
 
       <div className="flex flex-col gap-4 w-5/6 h-full overflow-y-auto">
-        <h1 className="text-center">Chat</h1>
+        <div className="flex items-center justify-between px-2">
+          <h1 className="text-center text-lg font-semibold uppercase tracking-wide">
+            Chat
+          </h1>
+          {selectedThread && <SummaryDialog threadId={selectedThread} />}
+        </div>
         <Conversation className="flex-1">
           <ConversationContent>
             {!chatMessages || chatMessages.length === 0 ? (

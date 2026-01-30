@@ -13,6 +13,59 @@ import {
   mastraDocumentsTable,
 } from "@mastra/convex/schema";
 
+// Thread Summary Validator for queries
+export const threadSummaryValidator = v.object({
+  _id: v.id("threadSummaries"),
+  threadId: v.id("thread"),
+  summary: v.object({
+    overview: v.string(),
+    keyPoints: v.array(v.string()),
+    decisions: v.array(v.string()),
+    actionItems: v.array(v.string()),
+    openQuestions: v.array(v.string()),
+    toolResults: v.array(
+      v.object({
+        toolName: v.string(),
+        summary: v.string(),
+        importance: v.union(
+          v.literal("high"),
+          v.literal("medium"),
+          v.literal("low"),
+        ),
+      }),
+    ),
+  }),
+  messageRange: v.object({
+    fromMessageId: v.string(),
+    toMessageId: v.string(),
+    messageCount: v.number(),
+    fromIndex: v.number(),
+    toIndex: v.number(),
+  }),
+  sourceTokenCount: v.number(),
+  summaryTokenCount: v.number(),
+  costUsd: v.union(v.number(), v.null()),
+  modelUsed: v.string(),
+  triggerType: v.union(v.literal("auto"), v.literal("manual")),
+  status: v.union(
+    v.literal("generating"),
+    v.literal("completed"),
+    v.literal("failed"),
+    v.literal("partial"),
+  ),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+  errorInfo: v.union(
+    v.object({
+      message: v.string(),
+      fallbackAttempts: v.number(),
+      lastAttemptModel: v.string(),
+    }),
+    v.null(),
+  ),
+  _creationTime: v.number(),
+});
+
 // The schema is normally optional, but Convex Auth
 // requires indexes defined on `authTables`.
 // The schema provides more precise TypeScript types.
@@ -175,7 +228,71 @@ export default defineSchema({
       v.literal("error"),
     ),
     updatedAt: v.string(),
+    // Summary tracking
+    summaryCount: v.optional(v.number()),
+    lastSummaryAt: v.optional(v.string()),
+    lastSummaryId: v.optional(v.id("threadSummaries")),
+    // Auto-trigger tracking
+    messagesSinceLastSummary: v.optional(v.number()),
+    tokensSinceLastSummary: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
+  threadSummaries: defineTable({
+    threadId: v.id("thread"),
+    // Summary Content (Structured JSON)
+    summary: v.object({
+      overview: v.string(),
+      keyPoints: v.array(v.string()),
+      decisions: v.array(v.string()),
+      actionItems: v.array(v.string()),
+      openQuestions: v.array(v.string()),
+      toolResults: v.array(
+        v.object({
+          toolName: v.string(),
+          summary: v.string(),
+          importance: v.union(
+            v.literal("high"),
+            v.literal("medium"),
+            v.literal("low"),
+          ),
+        }),
+      ),
+    }),
+    // Message Range
+    messageRange: v.object({
+      fromMessageId: v.string(),
+      toMessageId: v.string(),
+      messageCount: v.number(),
+      fromIndex: v.number(),
+      toIndex: v.number(),
+    }),
+    // Token & Cost Tracking
+    sourceTokenCount: v.number(),
+    summaryTokenCount: v.number(),
+    costUsd: v.union(v.number(), v.null()),
+    modelUsed: v.string(),
+    // Metadata
+    triggerType: v.union(v.literal("auto"), v.literal("manual")),
+    status: v.union(
+      v.literal("generating"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("partial"),
+    ),
+    // Timestamps
+    createdAt: v.string(),
+    updatedAt: v.string(),
+    // Error tracking
+    errorInfo: v.union(
+      v.object({
+        message: v.string(),
+        fallbackAttempts: v.number(),
+        lastAttemptModel: v.string(),
+      }),
+      v.null(),
+    ),
+  })
+    .index("by_threadId", ["threadId"])
+    .index("by_threadId_created", ["threadId", "createdAt"]),
   threadMessage: defineTable({
     threadId: v.id("thread"),
     role: v.union(v.literal("user"), v.literal("assistant")),
@@ -194,10 +311,11 @@ export default defineSchema({
     tags: v.array(v.string()),
     notes: v.optional(v.string()),
     focusState: v.union(v.literal("today"), v.literal("back_burner")),
-  }).index("by_userId", ["userId"])
+  })
+    .index("by_userId", ["userId"])
     .searchIndex("search_items", {
       searchField: "title",
-      filterFields: ["userId", "isDeleted"]
+      filterFields: ["userId", "isDeleted"],
     }),
   userSettings: defineTable({
     userId: v.id("users"),

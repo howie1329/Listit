@@ -79,6 +79,11 @@ export const getUserThreads = query({
       streamingStatus: v.string(),
       title: v.string(),
       updatedAt: v.string(),
+      summaryCount: v.optional(v.number()),
+      lastSummaryAt: v.optional(v.string()),
+      lastSummaryId: v.optional(v.id("threadSummaries")),
+      messagesSinceLastSummary: v.optional(v.number()),
+      tokensSinceLastSummary: v.optional(v.number()),
     }),
   ),
   handler: async (ctx, args) => {
@@ -157,6 +162,11 @@ export const getUserThreadsWithPreview = query({
       title: v.string(),
       updatedAt: v.string(),
       lastMessagePreview: v.optional(v.string()),
+      summaryCount: v.optional(v.number()),
+      lastSummaryAt: v.optional(v.string()),
+      lastSummaryId: v.optional(v.id("threadSummaries")),
+      messagesSinceLastSummary: v.optional(v.number()),
+      tokensSinceLastSummary: v.optional(v.number()),
     }),
   ),
   handler: async (ctx, args) => {

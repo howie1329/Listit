@@ -6,12 +6,17 @@ import {
   createUIMessageStreamResponse,
   wrapLanguageModel,
 } from "ai";
+import type { UIMessage } from "ai";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import { createOpenRouter, LanguageModelV3 } from "@openrouter/ai-sdk-provider";
 import { FALLBACK_MODELS, OpenRouterModels } from "@/convex/lib/modelMapping";
 import { baseTools } from "@/lib/tools/weather";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
+import {
+  getMessagesWithSummaries,
+  triggerBackgroundSummarization,
+} from "@/lib/chat/summary-utils";
 
 export type CustomToolCallCapturePart = {
   type: string;
@@ -74,7 +79,7 @@ export async function POST(request: Request) {
     return new Response("last message must have an id", { status: 400 });
   }
 
-  const userMessage = lastMessage.parts[0].text;
+  let userMessage = lastMessage.parts[0].text;
   const messageId = lastMessage.id;
 
   if (!threadId) {
@@ -125,8 +130,47 @@ export async function POST(request: Request) {
     // Don't fail the request if title update fails
   }
 
+  const lowerCaseMessage = userMessage.toLowerCase();
+  const containsSummarizeCommand = lowerCaseMessage.includes("@summarize");
+
+  if (containsSummarizeCommand) {
+    const cleanedText = userMessage.replace(/@summarize/gi, "").trim();
+    const replacementText =
+      cleanedText.length > 0 ? cleanedText : "Summary request received.";
+
+    if (replacementText !== userMessage) {
+      userMessage = replacementText;
+      lastMessage.parts[0].text = replacementText;
+      try {
+        await convex.mutation(api.uiMessages.mutation.updateUIMessage, {
+          threadId,
+          id: messageId,
+          parts: [
+            {
+              type: "text",
+              text: replacementText,
+            },
+          ],
+        });
+      } catch (error) {
+        console.warn(
+          "Error updating user message after command sanitization",
+          error,
+        );
+      }
+    }
+
+    try {
+      await convex.mutation(api.threadSummaries.mutations.manualSummarize, {
+        threadId,
+      });
+      console.log("Manual summary triggered for thread", threadId);
+    } catch (error) {
+      console.error("Manual summarize command failed", error);
+    }
+  }
+
   // Getting the working memory
-  // Working memory is a shared memory of the user to be used between different chats and sessions
   let workingMemory = null;
   try {
     workingMemory = await convex.mutation(
@@ -140,7 +184,75 @@ export async function POST(request: Request) {
     return new Response("Error getting working memory", { status: 500 });
   }
 
-  const systemMessages = await convertToModelMessages(messages);
+  const {
+    contextMessages,
+    summaries,
+    pendingMessageCount,
+    pendingTokenCount,
+    messageRange,
+  } = await getMessagesWithSummaries(convex, threadId, 4, 10);
+
+  const systemMessages = await convertToModelMessages(
+    contextMessages as unknown as UIMessage[],
+  );
+
+  const shouldAutoSummarize =
+    pendingMessageCount >= 10 || pendingTokenCount >= 2000;
+  const isSummaryInProgress = await convex.query(
+    api.threadSummaries.queries.isSummarizationInProgress,
+    { threadId },
+  );
+
+  if (
+    shouldAutoSummarize &&
+    !isSummaryInProgress &&
+    pendingMessageCount >= 4 &&
+    messageRange.messageCount > 0
+  ) {
+    void triggerBackgroundSummarization(convex, threadId, messageRange);
+  }
+
+  const summaryContextSection = summaries.length
+    ? summaries
+        .map((summary, index) => {
+          const timestamp = new Date(summary.createdAt).toLocaleString();
+          const keyPoints = summary.summary.keyPoints.length
+            ? summary.summary.keyPoints.join("; ")
+            : "None";
+          const decisions = summary.summary.decisions.length
+            ? summary.summary.decisions.join("; ")
+            : "None";
+          const actionItems = summary.summary.actionItems.join("; ");
+          const openQuestions = summary.summary.openQuestions.join("; ");
+          const toolResults = summary.summary.toolResults
+            .map(
+              (tool) =>
+                `${tool.toolName}: ${tool.summary} (${tool.importance})`,
+            )
+            .join("; ");
+
+          const extras = [
+            actionItems ? `Action Items: ${actionItems}` : "",
+            openQuestions ? `Open Questions: ${openQuestions}` : "",
+            toolResults ? `Tool Results: ${toolResults}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n");
+
+          return `Summary ${index + 1} (${timestamp}): ${summary.summary.overview}
+Key Points: ${keyPoints}
+Decisions: ${decisions}${
+            extras
+              ? `
+${extras}`
+              : ""
+          }`;
+        })
+        .join("\n\n")
+    : "";
+  const summarySectionHeader = summaryContextSection
+    ? `Conversation Summaries:\n${summaryContextSection}\n\n`
+    : "";
 
   const devModel = wrapLanguageModel({
     model: openRouter.chat(model, {
@@ -162,7 +274,7 @@ export async function POST(request: Request) {
           model: devModel,
           instructions: `You are the main agent for this application. You are responsible for routing requests to the appropriate agent.
             ===============================================
-            Working Memory:
+${summarySectionHeader}            Working Memory:
             ${workingMemory ? JSON.stringify(workingMemory) : "No working memory found"}
             The working memory is a shared memory of the user to be used between different chats and sessions.
             Working Memory Guidelines:

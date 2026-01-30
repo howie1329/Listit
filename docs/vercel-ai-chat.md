@@ -4,6 +4,14 @@
 **Technology:** Vercel AI SDK v6 + ToolLoopAgent + Convex + Next.js  
 **Location:** `/app/(app)/chat/` and `/app/api/chat/`
 
+## Recent Updates (January 30, 2026)
+
+- ✅ **Modern Thread UI**: Redesigned thread list with message previews, relative timestamps, and clean minimal design
+- ✅ **Auto-Generated Titles**: Thread titles automatically generated from first user message (40 char limit)
+- ✅ **Message Previews**: Thread list shows last assistant message preview (60 chars)
+- ✅ **Enhanced Thread Management**: Delete functionality with confirmation dialog
+- ✅ **Improved Visual Design**: Removed borders, smooth transitions, better spacing
+
 ---
 
 ## Overview
@@ -77,6 +85,8 @@ components/
 │   ├── prompt-input.tsx          # Chat input
 │   └── model-selector.tsx        # Model picker
 └── features/
+    ├── chat/
+    │   └── ThreadListItem.tsx    # Modern thread list item with preview
     └── mastra/
         └── ChatBaseInput.tsx     # Combined input with model selector
 ```
@@ -220,12 +230,12 @@ workingMemory: defineTable({
 
 ### Thread Table
 
-**Purpose:** Chat conversation grouping
+**Purpose:** Chat conversation grouping with auto-generated titles
 
 ```typescript
 thread: defineTable({
   userId: v.id("users"),
-  title: v.string(),
+  title: v.string(),              // Auto-generated from first message (40 chars max)
   streamingStatus: v.union(
     v.literal("idle"),
     v.literal("streaming"),
@@ -233,6 +243,39 @@ thread: defineTable({
   ),
   updatedAt: v.string(),
 }).index("by_userId", ["userId"]),
+```
+
+**Queries:**
+
+| Query                       | Location                   | Description                                     |
+| --------------------------- | -------------------------- | ----------------------------------------------- |
+| `getUserThreads`            | `convex/thread/queries.ts` | Basic thread list                               |
+| `getUserThreadsWithPreview` | `convex/thread/queries.ts` | Thread list with last assistant message preview |
+
+**Mutations:**
+
+| Mutation                      | Location                     | Description                    |
+| ----------------------------- | ---------------------------- | ------------------------------ |
+| `createThread`                | `convex/thread/mutations.ts` | Create thread (title optional) |
+| `updateThreadTitle`           | `convex/thread/mutations.ts` | Update thread title            |
+| `deleteThread`                | `convex/thread/mutations.ts` | Delete thread + all messages   |
+| `updateThreadStreamingStatus` | `convex/thread/mutations.ts` | Update streaming state         |
+
+**Auto-Title Generation:**
+
+Thread titles are automatically generated from the first user message:
+
+```typescript
+// In /app/api/chat/route.ts
+if (existingMessages.length === 1) {
+  const generatedTitle =
+    userMessage.length > 40 ? userMessage.slice(0, 40) + "..." : userMessage;
+
+  await convex.mutation(api.thread.mutations.updateThreadTitle, {
+    threadId,
+    title: generatedTitle,
+  });
+}
 ```
 
 ---
@@ -370,6 +413,57 @@ const detectedCommands = useMemo(() => {
     </PromptInputFooter>
   </PromptInput>
 </PromptInputProvider>
+```
+
+### Thread Components
+
+**ThreadListItem** - Modern thread list item with message preview
+
+```typescript
+<ThreadListItem
+  thread={{
+    _id: threadId,
+    title: "Thread Title",
+    streamingStatus: "idle",
+    updatedAt: "2026-01-30T...",
+    lastMessagePreview: "Last assistant message...",
+  }}
+  isSelected={selectedThread === thread._id}
+  onSelect={setSelectedThread}
+  onDelete={handleDeleteThread}
+/>
+```
+
+**Features:**
+
+- **Modern Design**: Clean, borderless design with subtle hover states
+- **Message Preview**: Shows last assistant message (60 chars max)
+- **Relative Timestamps**: "just now", "5m ago", "2h ago", "3d ago"
+- **Auto-Generated Titles**: Generated from first user message (40 chars max)
+- **Streaming Indicator**: Animated pulse dot when `streamingStatus === "streaming"`
+- **Delete Functionality**: Hover-revealed delete button with confirmation dialog
+- **Keyboard Accessibility**: Full keyboard navigation support
+
+**Visual Design:**
+
+```typescript
+// Container styling
+"group relative flex flex-col gap-0.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150";
+"hover:bg-muted/50";
+"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+
+// Selected state
+"bg-primary/10 hover:bg-primary/10";
+
+// Thread title
+"text-sm font-medium leading-5 truncate";
+
+// Message preview
+"text-xs text-muted-foreground leading-4 truncate";
+// "No messages yet" in italics when empty
+
+// Timestamp
+"text-xs text-muted-foreground/70";
 ```
 
 ---
@@ -648,6 +742,16 @@ const devModel = wrapLanguageModel({
 
 ## Future Enhancements
 
+### Implemented ✅
+
+- [x] **Modern thread UI with message previews** (Jan 30, 2026)
+- [x] **Auto-generated thread titles** from first message (Jan 30, 2026)
+- [x] **Thread delete functionality** with confirmation (Jan 30, 2026)
+- [x] **Relative timestamps** in thread list (Jan 30, 2026)
+- [x] **Streaming indicators** for active conversations (Jan 30, 2026)
+
+### Planned
+
 - [ ] File upload support (images, documents)
 - [ ] Voice input/output
 - [ ] Multi-modal responses
@@ -658,6 +762,9 @@ const devModel = wrapLanguageModel({
 - [ ] Custom tool marketplace
 - [ ] Rate limiting per user
 - [ ] Message streaming optimization
+- [ ] Thread grouping by date (Today, Yesterday, Earlier)
+- [ ] Thread search/filter functionality
+- [ ] Bulk thread operations (multi-select delete)
 
 ---
 
