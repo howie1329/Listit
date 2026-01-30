@@ -6,7 +6,7 @@ import { v } from "convex/values";
 import { api } from "@/convex/_generated/api";
 import { ConvexHttpClient } from "convex/browser";
 import { Id } from "@/convex/_generated/dataModel";
-import tavily from "@tavily/tavily-js";
+import { tavily } from "@tavily/core";
 
 /**
  * Base tools for the application. This is a collection of tools that are used in the application.

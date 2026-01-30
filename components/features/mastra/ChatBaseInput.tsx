@@ -15,6 +15,13 @@ export type ModelType = {
 }
 const models: ModelType[] = [
     {
+        id: "mistralai/ministral-8b",
+        displayName: "Mistral Ministral 8B",
+        slug: "openrouter/mistralai/ministral-8b",
+        provider: "mistralai",
+        openrouterslug: "mistralai/ministral-8b",
+    },
+    {
         id: "arcee-ai/trinity-large-preview:free",
         displayName: "Trinity Large Preview",
         slug: "openrouter/trinity-large-preview:free",
@@ -64,7 +71,7 @@ export const ChatBaseInput = ({ onSubmit, status, setInput, input, model, setMod
     const detectedCommands = useMemo(() => {
         const commands: Array<{ type: '@basic' | '@search' | '@workingMemory', index: number }> = [];
         const text = input.toLowerCase();
-        
+
         if (text.includes('@basic')) {
             commands.push({ type: '@basic', index: text.indexOf('@basic') });
         }
@@ -74,7 +81,7 @@ export const ChatBaseInput = ({ onSubmit, status, setInput, input, model, setMod
         if (text.includes('@workingmemory')) {
             commands.push({ type: '@workingMemory', index: text.indexOf('@workingmemory') });
         }
-        
+
         return commands.sort((a, b) => a.index - b.index);
     }, [input]);
 
@@ -109,7 +116,7 @@ export const ChatBaseInput = ({ onSubmit, status, setInput, input, model, setMod
             {detectedCommands.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2 px-2">
                     {detectedCommands.map((cmd, idx) => (
-                        <Badge 
+                        <Badge
                             key={idx}
                             variant="outline"
                             className={getCommandColor(cmd.type)}
