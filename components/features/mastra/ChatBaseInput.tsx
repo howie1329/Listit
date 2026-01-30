@@ -15,6 +15,13 @@ export type ModelType = {
 }
 const models: ModelType[] = [
     {
+        id: "deepseek/deepseek-r1-0528:free",
+        displayName: "DeepSeek R1 0528",
+        slug: "openrouter/deepseek/deepseek-r1-0528:free",
+        provider: "deepseek",
+        openrouterslug: "deepseek/deepseek-r1-0528:free",
+    },
+    {
         id: "meta-llama/llama-3.3-70b-instruct:free",
         displayName: "Llama 3.3 70B Instruct",
         slug: "openrouter/meta-llama/llama-3.3-70b-instruct:free",
