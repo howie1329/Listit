@@ -740,50 +740,491 @@ const devModel = wrapLanguageModel({
 
 ---
 
-## Future Enhancements
+## Message Summary System
 
-### Implemented ✅
+### Overview
 
-- [x] **Modern thread UI with message previews** (Jan 30, 2026)
-- [x] **Auto-generated thread titles** from first message (Jan 30, 2026)
-- [x] **Thread delete functionality** with confirmation (Jan 30, 2026)
-- [x] **Relative timestamps** in thread list (Jan 30, 2026)
-- [x] **Streaming indicators** for active conversations (Jan 30, 2026)
+The message summary system automatically and manually creates structured summaries of chat conversations to maintain context and improve AI response quality. It uses a sophisticated multi-model fallback system to ensure reliable summary generation.
 
-### Planned
+### Key Features
 
-- [ ] File upload support (images, documents)
-- [ ] Voice input/output
-- [ ] Multi-modal responses
-- [ ] Agent delegation to specialized agents
-- [ ] Message branching and editing
-- [ ] Shared/public threads
-- [ ] Message search within threads
-- [ ] Custom tool marketplace
-- [ ] Rate limiting per user
-- [ ] Message streaming optimization
-- [ ] Thread grouping by date (Today, Yesterday, Earlier)
-- [ ] Thread search/filter functionality
-- [ ] Bulk thread operations (multi-select delete)
+#### Automatic Summarization
 
----
+- **Triggers:** After 10 messages OR 2000 tokens since last summary
+- **Background processing:** Runs without interrupting conversation
+- **Cost-effective:** Uses free/cheap AI models with fallback options
+- **Token reduction:** Reduces 2000 tokens to 200-400 token summaries (80-90% reduction)
 
-## References
+#### Manual Summarization
 
-- [Vercel AI SDK Documentation](https://sdk.vercel.ai/docs)
-- [ToolLoopAgent API](https://sdk.vercel.ai/docs/reference/ai-sdk-core/tool-loop-agent)
-- [OpenRouter Documentation](https://openrouter.ai/docs)
-- [Convex Documentation](https://docs.convex.dev)
-- [Firecrawl Documentation](https://docs.firecrawl.dev)
-- [Tavily Documentation](https://docs.tavily.com)
+- **Command:** Type `@summarize` in chat
+- **On-demand:** Request summaries at any time
+- **Immediate feedback:** Shows progress and results instantly
+
+#### Structured Summary Format
+
+```json
+{
+  "overview": "Brief 2-3 sentence overview",
+  "keyPoints": ["Important fact 1", "Important fact 2"],
+  "decisions": ["Decision made 1", "Decision made 2"],
+  "actionItems": ["Action item with context"],
+  "openQuestions": ["Unresolved question"],
+  "toolResults": [
+    {
+      "toolName": "toolName",
+      "summary": "What the tool did",
+      "importance": "high|medium|low"
+    }
+  ]
+}
+```
+
+### Database Schema
+
+#### `threadSummaries` Table
+
+```typescript
+threadSummaries: defineTable({
+  threadId: v.id("thread"),
+
+  // Summary Content (Structured JSON)
+  summary: v.object({
+    overview: v.string(),           // Brief paragraph
+    keyPoints: v.array(v.string()), // Important facts
+    decisions: v.array(v.string()), // Decisions made
+    actionItems: v.array(v.string()), // Action items with context
+    openQuestions: v.array(v.string()), // Unresolved questions
+    toolResults: v.array(v.object({
+      toolName: v.string(),
+      summary: v.string(),
+      importance: v.union(v.literal("high"), v.literal("medium"), v.literal("low")),
+    })),
+  }),
+
+  // Message Range
+  messageRange: v.object({
+    fromMessageId: v.string(),      // First message ID in range
+    toMessageId: v.string(),        // Last message ID in range
+    messageCount: v.number(),       // Number of messages summarized
+    fromIndex: v.number(),          // Start index in thread
+    toIndex: v.number(),            // End index in thread
+  }),
+
+  // Token & Cost Tracking
+  sourceTokenCount: v.number(),     // Tokens in source messages
+  summaryTokenCount: v.number(),    // Tokens in generated summary
+  costUsd: v.optional(v.number()),  // Cost in USD
+  modelUsed: v.string(),            // Which model generated summary
+
+  // Metadata
+  triggerType: v.union(
+    v.literal("auto"),              // Auto-triggered
+    v.literal("manual")             // User-triggered via @summarize
+  ),
+  status: v.union(
+    v.literal("generating"),        // Currently generating
+    v.literal("completed"),         // Successfully completed
+    v.literal("failed"),            // Failed even with fallbacks
+    v.literal("partial")            // Completed with errors
+  ),
+
+  // Timestamps
+  createdAt: v.string(),
+  updatedAt: v.string(),
+
+  // Error tracking (for failed/partial)
+  errorInfo: v.optional(v.object({
+    message: v.string(),
+    fallbackAttempts: v.number(),
+    lastAttemptModel: v.string(),
+  })),
+})
+.index("by_threadId", ["threadId"])
+.index("by_threadId_created", ["threadId", "createdAt"]),
+```
+
+#### `thread` Table Updates
+
+```typescript
+thread: defineTable({
+  // ... existing fields
+
+  // Summary tracking (for quick checks)
+  summaryCount: v.optional(v.number()), // Number of summaries
+  lastSummaryAt: v.optional(v.string()), // Timestamp of last summary
+  lastSummaryId: v.optional(v.id("threadSummaries")), // Reference to latest
+
+  // Auto-trigger tracking
+  messagesSinceLastSummary: v.optional(v.number()), // Counter for auto-trigger
+  tokensSinceLastSummary: v.optional(v.number()), // Token counter
+});
+```
+
+### Backend Implementation
+
+#### 1. Queries (`convex/threadSummaries/queries.ts`)
+
+```typescript
+// Get all summaries for a thread (newest first)
+export const getThreadSummaries = query({ ... });
+
+// Get latest 2 summaries for context injection
+export const getLatestSummariesForContext = query({ ... });
+
+// Get summary by ID with full details
+export const getSummaryById = query({ ... });
+
+// Check if summarization is in progress
+export const isSummarizationInProgress = query({ ... });
+```
+
+#### 2. Mutations (`convex/threadSummaries/mutations.ts`)
+
+```typescript
+// Create new summary (sets status to "generating")
+export const createSummary = mutation({ ... });
+
+// Update summary after generation
+export const completeSummary = mutation({ ... });
+
+// Mark summary as failed
+export const failSummary = mutation({ ... });
+
+// Update thread counters for auto-trigger
+export const updateThreadCounters = mutation({ ... });
+
+// Manual trigger (for @summarize command)
+export const manualSummarize = mutation({ ... });
+```
+
+#### 3. Actions (`convex/threadSummaries/actions.ts`)
+
+```typescript
+// Generate summary using AI (with fallback models)
+export const generateSummary = action({ ... });
+```
+
+### Frontend Components
+
+#### 1. Summary Dialog (`components/features/chat/SummaryDialog.tsx`)
+
+```typescript
+export function SummaryDialog({ threadId, hasSummary }: SummaryDialogProps) {
+  // UI showing latest summary with overview, key points, decisions, action items
+  // Cost and token tracking display
+  // Previous summary snapshot
+  // Manual "Summarize Now" button
+}
+```
+
+#### 2. Chat Integration (`app/(app)/chat/page.tsx`)
+
+```typescript
+// Add imports
+import { SummaryDialog } from "@/components/features/chat/SummaryDialog";
+
+// Add to the header section
+div className="flex items-center justify-between">
+  <h1 className="text-center">Chat</h1>
+  {selectedThread && (
+    <SummaryDialog
+      threadId={selectedThread}
+      hasSummary={sortedThreads?.find(t => t._id === selectedThread)?.summaryCount > 0}
+    />
+  )}
+</div>
+```
+
+#### 3. Command Detection (`components/features/mastra/ChatBaseInput.tsx`)
+
+```typescript
+// Add to detected commands
+const detectedCommands = useMemo(() => {
+  const commands = [];
+  const text = input.toLowerCase();
+
+  // ... existing commands
+
+  if (text.includes("@summarize")) {
+    commands.push({ type: "@summarize", index: text.indexOf("@summarize") });
+  }
+
+  return commands.sort((a, b) => a.index - b.index);
+}, [input]);
+```
+
+### API Route Modifications (`app/api/chat/route.ts`)
+
+#### 1. Summary Context Injection
+
+```typescript
+// Add imports
+import {
+  estimateTokenCount,
+  getMessagesWithSummaries,
+} from "@/lib/chat/summary-utils";
+
+// Modify the POST handler to include summaries
+export async function POST(request: Request) {
+  // ... existing setup
+
+  // Get messages for context (with summaries)
+  const { recentMessages, summaries, totalTokens } =
+    await getMessagesWithSummaries(
+      convex,
+      threadId,
+      4, // min messages
+      10, // max messages
+    );
+
+  // Build system prompt with summaries
+  const summaryContext =
+    summaries.length > 0
+      ? `## Previous Conversation Context\n\n${summaries
+          .map(
+            (s, i) =>
+              `### Summary ${i + 1} (${new Date(s.createdAt).toLocaleDateString()}):\n${s.summary.overview}\n\nKey points: ${s.summary.keyPoints.join(", ")}`,
+          )
+          .join("\n\n")}\n\n`
+      : "";
+
+  const instructions = `
+    You are the main agent for this application...
+    
+    ${summaryContext}
+    
+    ## Recent Messages (Last ${recentMessages.length}):
+    ${recentMessages.map((m) => `${m.role}: ${m.content}`).join("\n\n")}
+    
+    ===============================================
+    Working Memory:
+    ${workingMemory ? JSON.stringify(workingMemory) : "No working memory found"}
+    ...
+  `;
+
+  // Check if we should auto-trigger summarization
+  const shouldSummarize = await checkAutoSummarizeTrigger(
+    convex,
+    threadId,
+    recentMessages,
+    summaries,
+  );
+
+  if (shouldSummarize.shouldTrigger) {
+    // Trigger background summarization
+    await triggerBackgroundSummarization(
+      convex,
+      threadId,
+      shouldSummarize.messageRange,
+    );
+  }
+
+  // ... rest of existing code
+}
+```
+
+#### 2. Summary Trigger Logic
+
+```typescript
+async function checkAutoSummarizeTrigger(
+  convex: ConvexHttpClient,
+  threadId: string,
+  recentMessages: any[],
+  existingSummaries: any[],
+) {
+  // Get thread info
+  const thread = await convex.query(api.thread.queries.getSingleThread, {
+    threadId,
+  });
+
+  const messagesSinceLastSummary = thread?.messagesSinceLastSummary || 0;
+  const tokensSinceLastSummary = thread?.tokensSinceLastSummary || 0;
+
+  // Calculate tokens in recent messages (excluding summaries)
+  const recentTokens = recentMessages.reduce((acc, m) => {
+    const text = m.parts
+      .filter((p: any) => p.type === "text" || p.type.startsWith("tool-"))
+      .map((p: any) => p.text || JSON.stringify(p.output || p.input))
+      .join(" ");
+    return acc + estimateTokenCount(text);
+  }, 0);
+
+  const totalMessages = messagesSinceLastSummary + recentMessages.length;
+  const totalTokens = tokensSinceLastSummary + recentTokens;
+
+  // Check thresholds
+  const messageThreshold = 10;
+  const tokenThreshold = 2000;
+
+  if (totalMessages >= messageThreshold || totalTokens >= tokenThreshold) {
+    return {
+      shouldTrigger: true,
+      messageRange: {
+        fromIndex:
+          existingSummaries.length > 0
+            ? existingSummaries[0].messageRange.toIndex + 1
+            : 0,
+        toIndex: totalMessages - 1,
+        messageCount: totalMessages,
+      },
+    };
+  }
+
+  // Update counters
+  await convex.mutation(api.threadSummaries.mutations.updateThreadCounters, {
+    threadId: threadId as any,
+    messageCount: recentMessages.length,
+    tokenCount: recentTokens,
+  });
+
+  return { shouldTrigger: false };
+}
+
+async function triggerBackgroundSummarization(
+  convex: ConvexHttpClient,
+  threadId: string,
+  messageRange: any,
+) {
+  // Get the actual message IDs
+  const messages = await convex.query(api.uiMessages.queries.getUIMessages, {
+    threadId,
+  });
+  const messagesToSummarize = messages.slice(
+    messageRange.fromIndex,
+    messageRange.toIndex + 1,
+  );
+
+  if (messagesToSummarize.length < 4) return;
+
+  // Create summary record
+  const summaryId = await convex.mutation(
+    api.threadSummaries.mutations.createSummary,
+    {
+      threadId: threadId as any,
+      triggerType: "auto",
+      messageRange: {
+        fromMessageId: messagesToSummarize[0].id,
+        toMessageId: messagesToSummarize[messagesToSummarize.length - 1].id,
+        messageCount: messagesToSummarize.length,
+        fromIndex: messageRange.fromIndex,
+        toIndex: messageRange.toIndex,
+      },
+      sourceTokenCount:
+        messageRange.tokenCount ||
+        estimateTokenCount(
+          messagesToSummarize
+            .map((m) =>
+              m.parts
+                .filter((p: any) => p.type === "text")
+                .map((p: any) => p.text)
+                .join(" "),
+            )
+            .join(" "),
+        ),
+    },
+  );
+
+  // Trigger background action
+  await convex.action(api.threadSummaries.actions.generateSummary, {
+    summaryId,
+    threadId: threadId as any,
+  });
+}
+```
+
+### Utility Functions (`lib/chat/summary-utils.ts`)
+
+```typescript
+export async function getMessagesWithSummaries(
+  convex: ConvexHttpClient,
+  threadId: string,
+  minMessages: number = 4,
+  maxMessages: number = 10,
+) {
+  // Get all messages
+  const allMessages = await convex.query(api.uiMessages.queries.getUIMessages, {
+    threadId,
+  });
+
+  // Get latest 2 summaries
+  const { summaries } = await convex.query(
+    api.threadSummaries.queries.getLatestSummariesForContext,
+    { threadId },
+  );
+
+  // Determine message range to include
+  let startIndex = 0;
+  if (summaries.length > 0) {
+    const lastSummary = summaries[0];
+    startIndex = lastSummary.messageRange.toIndex + 1;
+  }
+
+  // Calculate how many messages to include
+  const messagesAfterSummary = allMessages.slice(startIndex);
+  const messagesToInclude = Math.max(
+    minMessages,
+    Math.min(maxMessages, messagesAfterSummary.length),
+  );
+
+  // Get the recent messages
+  const recentMessages = allMessages.slice(-messagesToInclude);
+
+  // Calculate total tokens
+  const totalTokens = recentMessages.reduce((acc, m) => {
+    const text = m.parts
+      .filter((p: any) => p.type === "text" || p.type.startsWith("tool-"))
+      .map((p: any) => p.text || JSON.stringify(p.output || p.input))
+      .join(" ");
+    return acc + estimateTokenCount(text);
+  }, 0);
+
+  return {
+    recentMessages,
+    summaries,
+    totalTokens,
+  };
+}
+
+export function estimateTokenCount(text: string): number {
+  const wordCount = text.split(/\s+/).filter((w) => w.length > 0).length;
+  return Math.ceil(wordCount * 1.3);
+}
+```
+
+### Multi-Model Fallback System
+
+The system uses a fallback chain to ensure reliable summary generation:
+
+1. **Trinity** (`arcee-ai/trinity-large-preview:free`) - Primary model
+2. **DeepSeek** (`deepseek/deepseek-r1-0528:free`) - Secondary model
+3. **Mistral** (`mistralai/ministral-8b`) - Final fallback
+
+This ensures summaries are always generated, even if higher-priority models fail.
+
+### Cost Tracking
+
+The system tracks:
+
+- **Source tokens:** Tokens in the original conversation
+- **Summary tokens:** Tokens in the generated summary
+- **Cost:** Estimated cost in USD (using OpenRouter pricing)
+- **Model:** Which model was used for generation
+
+### Integration with AI Responses
+
+Summaries are automatically included in the AI's context, helping maintain conversation continuity without processing all messages. The system includes:
+
+- Latest 2 summaries in conversation context
+- Recent messages (4-10) for immediate context
+- Working memory for cross-session continuity
 
 ---
 
 ## Related Documentation
 
-- `codebase-review.md` - Overall codebase architecture
-- `mastra-chat.md` - Mastra framework chat system (alternative implementation)
-- `convex-schema.md` - Database schema reference
+- `message-summary-user-guide.md` - User-facing documentation for message summary features
+- `conversation-summarization.md` - Detailed implementation plan and technical specifications
 
 ---
 
