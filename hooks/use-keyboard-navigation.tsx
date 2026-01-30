@@ -45,7 +45,8 @@ interface KeyboardNavigationContextType {
   setOpenCreateItem: (open: boolean) => void;
 }
 
-const KeyboardNavigationContext = createContext<KeyboardNavigationContextType | null>(null);
+const KeyboardNavigationContext =
+  createContext<KeyboardNavigationContextType | null>(null);
 
 /**
  * Provides a keyboard-driven navigation and action context for an item list and exposes state and handlers to consumers.
@@ -58,8 +59,14 @@ const KeyboardNavigationContext = createContext<KeyboardNavigationContextType | 
  * @param children - The React node tree that will have access to the keyboard navigation context.
  * @returns A JSX element that provides the KeyboardNavigationContext to its children
  */
-export function KeyboardNavigationProvider({ children }: { children: React.ReactNode }) {
-  const [selectedItemId, setSelectedItemId] = useState<Id<"items"> | null>(null);
+export function KeyboardNavigationProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [selectedItemId, setSelectedItemId] = useState<Id<"items"> | null>(
+    null,
+  );
   const [items, setItems] = useState<Doc<"items">[]>([]);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
@@ -68,7 +75,9 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
 
   // Mutations
   const updateItem = useMutation(api.items.mutations.updateSingleItem);
-  const toggleCompletion = useMutation(api.items.mutations.toogleSingleItemCompletion);
+  const toggleCompletion = useMutation(
+    api.items.mutations.toogleSingleItemCompletion,
+  );
 
   // Get selected item
   const selectedItem = useMemo(() => {
@@ -78,7 +87,7 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
   // Navigation
   const selectNextItem = useCallback(() => {
     if (items.length === 0) return;
-    
+
     const filteredItems = items.filter((item) => !item.isDeleted);
     if (filteredItems.length === 0) return;
 
@@ -87,7 +96,9 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
       return;
     }
 
-    const currentIndex = filteredItems.findIndex((item) => item._id === selectedItemId);
+    const currentIndex = filteredItems.findIndex(
+      (item) => item._id === selectedItemId,
+    );
     const nextIndex = currentIndex + 1;
 
     if (nextIndex < filteredItems.length) {
@@ -97,7 +108,7 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
 
   const selectPreviousItem = useCallback(() => {
     if (items.length === 0) return;
-    
+
     const filteredItems = items.filter((item) => !item.isDeleted);
     if (filteredItems.length === 0) return;
 
@@ -106,7 +117,9 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
       return;
     }
 
-    const currentIndex = filteredItems.findIndex((item) => item._id === selectedItemId);
+    const currentIndex = filteredItems.findIndex(
+      (item) => item._id === selectedItemId,
+    );
     const prevIndex = currentIndex - 1;
 
     if (prevIndex >= 0) {
@@ -123,7 +136,7 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
 
   const moveSelectedToToday = useCallback(async () => {
     if (!selectedItem) return;
-    
+
     try {
       await updateItem({
         itemId: selectedItem._id,
@@ -137,7 +150,7 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
 
   const moveSelectedToBackBurner = useCallback(async () => {
     if (!selectedItem) return;
-    
+
     try {
       await updateItem({
         itemId: selectedItem._id,
@@ -151,12 +164,14 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
 
   const completeSelected = useCallback(async () => {
     if (!selectedItem) return;
-    
+
     try {
       await toggleCompletion({
         itemId: selectedItem._id,
       });
-      toast.success(selectedItem.isCompleted ? "Marked incomplete" : "Marked complete");
+      toast.success(
+        selectedItem.isCompleted ? "Marked incomplete" : "Marked complete",
+      );
     } catch {
       toast.error("Failed to toggle completion");
     }
@@ -164,7 +179,7 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
 
   const archiveSelected = useCallback(async () => {
     if (!selectedItem) return;
-    
+
     try {
       await updateItem({
         itemId: selectedItem._id,
@@ -178,12 +193,12 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
 
   const cyclePriority = useCallback(async () => {
     if (!selectedItem) return;
-    
+
     const priorities: Priority[] = ["low", "medium", "high"];
     const currentIndex = priorities.indexOf(selectedItem.priority);
     const nextIndex = (currentIndex + 1) % priorities.length;
     const nextPriority = priorities[nextIndex];
-    
+
     try {
       await updateItem({
         itemId: selectedItem._id,
@@ -203,15 +218,17 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
 
   const deleteSelected = useCallback(async () => {
     if (!selectedItem) return;
-    
+
     // Compute next item to select synchronously before deletion
     const filteredItems = items.filter((item) => !item.isDeleted);
     let nextItemId: Id<"items"> | null = null;
-    
+
     if (filteredItems.length > 0) {
-      const currentIndex = filteredItems.findIndex((item) => item._id === selectedItem._id);
+      const currentIndex = filteredItems.findIndex(
+        (item) => item._id === selectedItem._id,
+      );
       const nextIndex = currentIndex + 1;
-      
+
       if (nextIndex < filteredItems.length) {
         nextItemId = filteredItems[nextIndex]._id;
       } else if (currentIndex > 0) {
@@ -220,7 +237,7 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
       }
       // If currentIndex is 0 and it's the only item, nextItemId remains null
     }
-    
+
     try {
       await updateItem({
         itemId: selectedItem._id,
@@ -323,9 +340,9 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
           event.preventDefault();
           focusSearch();
           break;
-        case "n":
-        case "N":
-          if (event.metaKey || event.ctrlKey) {
+        case "c":
+        case "C":
+          if ((event.metaKey || event.ctrlKey) && event.shiftKey) {
             event.preventDefault();
             setOpenCreateItem(true);
           }
@@ -397,7 +414,7 @@ export function KeyboardNavigationProvider({ children }: { children: React.React
       isAddingTag,
       focusSearch,
       openCreateItem,
-    ]
+    ],
   );
 
   return (
@@ -417,7 +434,7 @@ export function useKeyboardNavigation() {
   const context = useContext(KeyboardNavigationContext);
   if (!context) {
     throw new Error(
-      "useKeyboardNavigation must be used within a KeyboardNavigationProvider"
+      "useKeyboardNavigation must be used within a KeyboardNavigationProvider",
     );
   }
   return context;

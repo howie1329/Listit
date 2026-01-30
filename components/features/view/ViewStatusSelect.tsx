@@ -2,14 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowDown01Icon, Calendar03Icon } from "@hugeicons/core-free-icons";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { FireIcon, Archive02Icon } from "@hugeicons/core-free-icons";
 
 export type ViewStatus = "today" | "back_burner";
 
@@ -18,6 +14,8 @@ interface ViewStatusSelectProps {
   defaultValue?: ViewStatus;
   onChange?: (value: ViewStatus) => void;
   className?: string;
+  todayCount?: number;
+  backBurnerCount?: number;
 }
 
 export const ViewStatusSelect = ({
@@ -25,6 +23,8 @@ export const ViewStatusSelect = ({
   defaultValue = "today",
   onChange,
   className,
+  todayCount,
+  backBurnerCount,
 }: ViewStatusSelectProps) => {
   const [internalValue, setInternalValue] = useState<ViewStatus>(defaultValue);
   const selected = value ?? internalValue;
@@ -34,42 +34,34 @@ export const ViewStatusSelect = ({
     onChange?.(next);
   };
 
-  const getLabel = (status: ViewStatus) =>
-    status === "today" ? "Today" : "Back Burner";
-
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "gap-2 h-11 px-4 text-base md:h-8 md:px-3 md:text-sm",
-            className,
-          )}
-        >
-          <HugeiconsIcon icon={Calendar03Icon} />
-          <span>{getLabel(selected)}</span>
-          <HugeiconsIcon icon={ArrowDown01Icon} />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-56">
-        <div className="flex flex-col gap-1">
-          <Button
-            variant={selected === "today" ? "secondary" : "ghost"}
-            className="justify-start"
-            onClick={() => handleChange("today")}
-          >
-            Today
-          </Button>
-          <Button
-            variant={selected === "back_burner" ? "secondary" : "ghost"}
-            className="justify-start"
-            onClick={() => handleChange("back_burner")}
-          >
-            Back Burner
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <div className={cn("flex flex-row gap-1", className)}>
+      <Button
+        variant={selected === "today" ? "secondary" : "ghost"}
+        className="justify-start gap-2"
+        onClick={() => handleChange("today")}
+      >
+        <HugeiconsIcon icon={FireIcon} />
+        <span>Today</span>
+        {todayCount !== undefined && todayCount > 0 && (
+          <Badge variant="outline" className="ml-1 h-5 min-w-5 px-1.5">
+            {todayCount}
+          </Badge>
+        )}
+      </Button>
+      <Button
+        variant={selected === "back_burner" ? "secondary" : "ghost"}
+        className="justify-start gap-2"
+        onClick={() => handleChange("back_burner")}
+      >
+        <HugeiconsIcon icon={Archive02Icon} />
+        <span>Back Burner</span>
+        {backBurnerCount !== undefined && backBurnerCount > 0 && (
+          <Badge variant="outline" className="ml-1 h-5 min-w-5 px-1.5">
+            {backBurnerCount}
+          </Badge>
+        )}
+      </Button>
+    </div>
   );
 };

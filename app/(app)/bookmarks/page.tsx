@@ -10,7 +10,10 @@ import { BookmarkSearchBar } from "@/components/features/bookmarks/BookmarkSearc
 import { BookmarksEmptyState } from "@/components/features/bookmarks/BookmarksEmptyState";
 import { BookmarksList } from "@/components/features/bookmarks/BookmarksList";
 import { CreateCollectionDialog } from "@/components/features/bookmarks/CreateCollectionDialog";
-import { BookmarkKeyboardNavigationProvider, useBookmarkKeyboardNavigation } from "@/hooks/use-bookmark-keyboard-navigation";
+import {
+  BookmarkKeyboardNavigationProvider,
+  useBookmarkKeyboardNavigation,
+} from "@/hooks/use-bookmark-keyboard-navigation";
 import { BookmarkKeyboardShortcutsHelp } from "@/components/features/bookmarks/BookmarkKeyboardShortcutsHelp";
 
 /**
@@ -72,9 +75,18 @@ function filterBookmarks<
  * @returns A React element containing BookmarkPageContent wrapped in BookmarkKeyboardNavigationProvider
  */
 export default function BookmarkPage() {
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+
+  const handleBeforeDelete = (bookmarkId: Id<"bookmarks">) => {
+    setDeletingIds((prev) => new Set(prev).add(bookmarkId));
+  };
+
   return (
-    <BookmarkKeyboardNavigationProvider>
-      <BookmarkPageContent />
+    <BookmarkKeyboardNavigationProvider onBeforeDelete={handleBeforeDelete}>
+      <BookmarkPageContent
+        deletingIds={deletingIds}
+        setDeletingIds={setDeletingIds}
+      />
     </BookmarkKeyboardNavigationProvider>
   );
 }
@@ -88,7 +100,13 @@ export default function BookmarkPage() {
  *
  * @returns The BookmarkPageContent React element; shows a loading state until collections and bookmarks are available.
  */
-function BookmarkPageContent() {
+function BookmarkPageContent({
+  deletingIds,
+  setDeletingIds,
+}: {
+  deletingIds: Set<string>;
+  setDeletingIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+}) {
   const [selectedCollectionId, setSelectedCollectionId] =
     useState<Id<"bookmarkCollections"> | null>(null);
   const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
@@ -96,7 +114,7 @@ function BookmarkPageContent() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isCreatingBookmark, setIsCreatingBookmark] = useState(false);
   const { searchInputRef } = useBookmarkKeyboardNavigation();
-  
+
   const createCollection = useMutation(
     api.bookmarks.bookmarkCollectionFunctions.createCollection,
   );
@@ -237,7 +255,12 @@ function BookmarkPageContent() {
               selectedCollection={selectedCollection}
             />
           ) : (
-            <BookmarksList bookmarks={bookmarks} collections={collections} />
+            <BookmarksList
+              bookmarks={bookmarks}
+              collections={collections}
+              deletingIds={deletingIds}
+              setDeletingIds={setDeletingIds}
+            />
           )}
         </div>
       </div>

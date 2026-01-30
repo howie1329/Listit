@@ -36,7 +36,7 @@ export function KeyboardShortcutsHelp() {
       title: "Global",
       shortcuts: [
         { keys: [modKey, "K"], description: "Open command palette" },
-        { keys: [modKey, "N"], description: "New item" },
+        { keys: [modKey, "Shift", "C"], description: "Quick capture" },
         { keys: ["/"], description: "Focus search / filter" },
         { keys: ["Esc"], description: "Clear selection" },
       ],
@@ -67,7 +67,11 @@ export function KeyboardShortcutsHelp() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-2 text-muted-foreground"
+        >
           <HugeiconsIcon icon={KeyboardIcon} size={16} />
           <span className="text-xs">Shortcuts</span>
         </Button>
@@ -100,7 +104,9 @@ export function KeyboardShortcutsHelp() {
                             {key}
                           </kbd>
                           {index < shortcut.keys.length - 1 && (
-                            <span className="mx-0.5 text-muted-foreground">+</span>
+                            <span className="mx-0.5 text-muted-foreground">
+                              +
+                            </span>
                           )}
                         </span>
                       ))}
@@ -125,7 +131,13 @@ export function KeyboardShortcutsHelp() {
  * @param className - Optional CSS classes applied to the wrapper element
  * @returns A JSX element containing the rendered key badges
  */
-export function KeyboardHint({ keys, className }: { keys: string[]; className?: string }) {
+export function KeyboardHint({
+  keys,
+  className,
+}: {
+  keys: string[];
+  className?: string;
+}) {
   return (
     <span className={className}>
       {keys.map((key, index) => (

@@ -13,6 +13,11 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Doc } from "@/convex/_generated/dataModel";
 import { Id } from "@/convex/_generated/dataModel";
+import { motion, AnimatePresence } from "motion/react";
+
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export const CollectionSelector = ({
   selectedCollectionId,
@@ -42,39 +47,99 @@ export const CollectionSelector = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-56">
-        <div className="flex flex-col gap-1">
-          <Button
-            variant={selectedCollectionId === null ? "secondary" : "ghost"}
-            className="justify-start"
-            onClick={() => onCollectionChange(null)}
-          >
-            All Bookmarks
-          </Button>
-          {collections.map((collection) => (
-            <Button
-              key={collection._id}
-              variant={
-                selectedCollectionId === collection._id ? "secondary" : "ghost"
+        <motion.div
+          initial={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+          transition={
+            prefersReducedMotion
+              ? undefined
+              : { duration: 0.3, ease: "easeOut" }
+          }
+          layout
+          className="flex flex-col gap-1"
+        >
+          <AnimatePresence>
+            <motion.div
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+              transition={
+                prefersReducedMotion
+                  ? undefined
+                  : { duration: 0.25, ease: "easeOut", delay: 0 * 0.03 }
               }
-              className="justify-start"
-              onClick={() => onCollectionChange(collection._id)}
+              whileHover={prefersReducedMotion ? undefined : { scale: 1.02 }}
             >
-              <HugeiconsIcon icon={FolderIcon} className="mr-2" />
-              {collection.name}
-            </Button>
-          ))}
-          <div className="border-t my-1" />
-          <Button
-            variant="ghost"
-            className="justify-start"
-            onClick={onCreateCollection}
-          >
-            <HugeiconsIcon icon={PlusSignIcon} className="mr-2" />
-            Create Collection
-          </Button>
-        </div>
+              <Button
+                variant={selectedCollectionId === null ? "secondary" : "ghost"}
+                className="justify-start w-full"
+                onClick={() => onCollectionChange(null)}
+              >
+                All Bookmarks
+              </Button>
+            </motion.div>
+            {collections.map((collection, index) => (
+              <motion.div
+                key={collection._id}
+                initial={
+                  prefersReducedMotion ? undefined : { opacity: 0, y: -8 }
+                }
+                animate={{ opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={
+                  prefersReducedMotion
+                    ? undefined
+                    : {
+                        duration: 0.25,
+                        ease: "easeOut",
+                        delay: (index + 1) * 0.03,
+                      }
+                }
+                whileHover={prefersReducedMotion ? undefined : { scale: 1.02 }}
+              >
+                <Button
+                  variant={
+                    selectedCollectionId === collection._id
+                      ? "secondary"
+                      : "ghost"
+                  }
+                  className="justify-start w-full"
+                  onClick={() => onCollectionChange(collection._id)}
+                >
+                  <HugeiconsIcon icon={FolderIcon} className="mr-2" />
+                  {collection.name}
+                </Button>
+              </motion.div>
+            ))}
+            <div className="border-t my-1" />
+            <motion.div
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+              transition={
+                prefersReducedMotion
+                  ? undefined
+                  : {
+                      duration: 0.25,
+                      ease: "easeOut",
+                      delay: (collections.length + 1) * 0.03,
+                    }
+              }
+              whileHover={prefersReducedMotion ? undefined : { scale: 1.02 }}
+            >
+              <Button
+                variant="ghost"
+                className="justify-start w-full"
+                onClick={onCreateCollection}
+              >
+                <HugeiconsIcon icon={PlusSignIcon} className="mr-2" />
+                Create Collection
+              </Button>
+            </motion.div>
+          </AnimatePresence>
+        </motion.div>
       </PopoverContent>
     </Popover>
   );
 };
-

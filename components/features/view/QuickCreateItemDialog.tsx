@@ -12,27 +12,36 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { KeyboardHint } from "./KeyboardShortcutsHelp";
 import { useModifierKey } from "@/hooks/use-keyboard-shortcuts";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface QuickCreateItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-/**
- * Render a controlled dialog that lets the user quickly create a new item using a single title input.
- *
- * @param open - Whether the dialog is currently open
- * @param onOpenChange - Callback invoked with the updated open state
- * @returns The Dialog element containing the quick-create UI (title input, keyboard hints, and create action)
- */
+type Priority = "low" | "medium" | "high";
+type FocusState = "today" | "back_burner";
+
 export function QuickCreateItemDialog({
   open,
   onOpenChange,
 }: QuickCreateItemDialogProps) {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<Priority>("medium");
+  const [focusState, setFocusState] = useState<FocusState>("today");
+  const [showDetails, setShowDetails] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const modKey = useModifierKey();
@@ -40,7 +49,13 @@ export function QuickCreateItemDialog({
   const createItem = useMutation(api.items.mutations.createSingleItem);
 
   useEffect(() => {
-    if (open && inputRef.current) {
+    if (open) {
+      // Reset form when dialog opens
+      setTitle("");
+      setDescription("");
+      setPriority("medium");
+      setFocusState("today");
+      setShowDetails(false);
       // Small delay to ensure the dialog is mounted
       setTimeout(() => {
         inputRef.current?.focus();
@@ -56,9 +71,13 @@ export function QuickCreateItemDialog({
 
     setIsLoading(true);
     try {
-      await createItem({ title: title.trim(), description: "" });
+      await createItem({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        focusState,
+      });
       toast.success("Item created");
-      setTitle("");
       onOpenChange(false);
     } catch (error) {
       toast.error("Failed to create item");
@@ -80,11 +99,12 @@ export function QuickCreateItemDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            Quick Create Item
-            <KeyboardHint keys={[modKey, "N"]} className="ml-2" />
+            Quick Capture
+            <KeyboardHint keys={[modKey, "Shift", "C"]} className="ml-2" />
           </DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-4">
+          {/* Title input - always visible */}
           <Input
             ref={inputRef}
             placeholder="What do you need to do?"
@@ -94,10 +114,91 @@ export function QuickCreateItemDialog({
             disabled={isLoading}
             className="text-base"
           />
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              Press <KeyboardHint keys={["Enter"]} /> to create
-            </span>
+
+          {/* Expandable details section */}
+          {showDetails && (
+            <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <Textarea
+                placeholder="Add a description (optional)..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={isLoading}
+                className="min-h-[80px] text-sm"
+              />
+
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">
+                    Priority
+                  </label>
+                  <Select
+                    value={priority}
+                    onValueChange={(value: Priority) => setPriority(value)}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">
+                    Focus
+                  </label>
+                  <Select
+                    value={focusState}
+                    onValueChange={(value: FocusState) => setFocusState(value)}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="back_burner">Back Burner</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action bar */}
+          <div className="flex justify-between items-center pt-2">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDetails(!showDetails)}
+                disabled={isLoading}
+                className="text-xs h-7 px-2 text-muted-foreground hover:text-foreground"
+              >
+                {showDetails ? (
+                  <>
+                    <ChevronUp className="w-3 h-3 mr-1" />
+                    Hide Details
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3 h-3 mr-1" />
+                    Add Details
+                  </>
+                )}
+              </Button>
+
+              {!showDetails && (
+                <span className="text-xs text-muted-foreground">
+                  Press <KeyboardHint keys={["Enter"]} /> to create
+                </span>
+              )}
+            </div>
+
             <Button
               onClick={handleCreate}
               disabled={isLoading || title.trim() === ""}

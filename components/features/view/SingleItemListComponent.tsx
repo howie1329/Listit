@@ -50,7 +50,7 @@ interface SingleItemListComponentProps {
   onSelect?: () => void;
 }
 
-export const SingleItemListComponent = ({ 
+export const SingleItemListComponent = ({
   item,
   isSelected = false,
   onSelect,
@@ -63,7 +63,6 @@ export const SingleItemListComponent = ({
     selectedItemId,
   } = useKeyboardNavigation();
 
-  // Local editing state (triggered by keyboard or double-click)
   const isEditingTitle = isSelected && globalIsEditingTitle;
   const isAddingTag = isSelected && globalIsAddingTag;
 
@@ -73,17 +72,16 @@ export const SingleItemListComponent = ({
     item.description || "",
   );
   const [newTag, setNewTag] = useState("");
-  
+  const [isHovered, setIsHovered] = useState(false);
+
   const titleInputRef = useRef<HTMLInputElement>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
 
-  // Mutations
   const toggleCompletion = useMutation(
     api.items.mutations.toogleSingleItemCompletion,
   );
   const updateItem = useMutation(api.items.mutations.updateSingleItem);
 
-  // Focus title input when editing starts
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
       titleInputRef.current.focus();
@@ -91,19 +89,16 @@ export const SingleItemListComponent = ({
     }
   }, [isEditingTitle]);
 
-  // Focus tag input when adding tag
   useEffect(() => {
     if (isAddingTag && tagInputRef.current) {
       tagInputRef.current.focus();
     }
   }, [isAddingTag]);
 
-  // Sync edited title with item title
   useEffect(() => {
     setEditedTitle(item.title);
   }, [item.title]);
 
-  // Handlers
   const handleToggleCompletion = async () => {
     try {
       await toggleCompletion({ itemId: item._id });
@@ -139,7 +134,6 @@ export const SingleItemListComponent = ({
       setGlobalIsAddingTag(false);
       return;
     }
-    // Don't add duplicate tags
     if (item.tags.includes(trimmedTag)) {
       toast.error("Tag already exists");
       setNewTag("");
@@ -183,80 +177,83 @@ export const SingleItemListComponent = ({
       setIsEditingDescription(false);
     }
   };
+
+  const showDescriptionPlaceholder =
+    !item.description && (isSelected || isHovered);
+
   return (
-    <div 
+    <div
       className={cn(
-        "flex flex-col gap-2 rounded-md p-2 border transition-colors cursor-pointer",
-        isSelected 
-          ? "bg-accent border-primary/50 ring-1 ring-primary/30" 
-          : "hover:bg-accent/50 border-transparent"
+        "group flex flex-col gap-2 rounded-lg px-3 py-3 transition-all cursor-pointer",
+        "border border-transparent",
+        isSelected ? "bg-accent/60" : "hover:bg-accent/40",
+        item.priority === "high" && "border-l-[3px] border-l-red-500",
+        item.priority === "medium" && "border-l-[3px] border-l-yellow-500",
+        item.priority === "low" && "border-l-[3px] border-l-green-500",
+        !item.priority && "border-l-[3px] border-l-transparent",
       )}
       onClick={onSelect}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       data-item-id={item._id}
       role="option"
       aria-selected={isSelected}
       tabIndex={isSelected ? 0 : -1}
     >
-      {/* Title */}
-      <div className="flex flex-row items-center gap-1 justify-between">
-        <div className="flex flex-row items-center gap-1 flex-1 min-w-0">
-          <Checkbox
-            checked={item.isCompleted}
-            onCheckedChange={handleToggleCompletion}
+      {/* Title Row */}
+      <div className="flex items-center gap-2">
+        <Checkbox
+          checked={item.isCompleted}
+          onCheckedChange={handleToggleCompletion}
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0"
+        />
+
+        {isEditingTitle ? (
+          <input
+            ref={titleInputRef}
+            type="text"
+            value={editedTitle}
+            className="flex-1 text-sm font-medium bg-background border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring"
+            onChange={(e) => setEditedTitle(e.target.value)}
             onClick={(e) => e.stopPropagation()}
-          />
-          {item.priority && (
-            <Badge 
-              variant="outline" 
-              className={cn(
-                item.priority === "high" && "border-red-500 text-red-500",
-                item.priority === "medium" && "border-yellow-500 text-yellow-500",
-                item.priority === "low" && "border-green-500 text-green-500",
-              )}
-            >
-              {item.priority}
-            </Badge>
-          )}
-          {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={editedTitle}
-              className="text-sm font-medium border focus:ring-0 focus:outline-none bg-background px-1 rounded flex-1"
-              onChange={(e) => setEditedTitle(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              onBlur={() => {
+            onBlur={handleEditTitle}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") {
+                e.preventDefault();
                 handleEditTitle();
-              }}
-              onKeyDown={(e) => {
-                e.stopPropagation();
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleEditTitle();
-                }
-                if (e.key === "Escape") {
-                  setEditedTitle(item.title);
-                  setGlobalIsEditingTitle(false);
-                }
-              }}
-            />
-          ) : (
-            <p
-              className={cn(
-                "text-sm font-medium truncate",
-                item.isCompleted && "line-through text-muted-foreground",
-              )}
-              onDoubleClick={(e) => {
-                e.stopPropagation();
-                handleStartEditingTitle();
-              }}
-            >
-              {item.title}
-            </p>
-          )}
+              }
+              if (e.key === "Escape") {
+                setEditedTitle(item.title);
+                setGlobalIsEditingTitle(false);
+              }
+            }}
+          />
+        ) : (
+          <p
+            className={cn(
+              "flex-1 text-sm font-medium truncate",
+              item.isCompleted && "line-through text-muted-foreground",
+            )}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              handleStartEditingTitle();
+            }}
+          >
+            {item.title}
+          </p>
+        )}
+
+        {/* Tags */}
+        <div className="flex items-center gap-1 shrink-0">
           {item.tags.map((tag) => (
-            <Badge variant="secondary" key={tag} className="text-xs">
-              #{tag}
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="text-[10px] px-1.5 py-0 h-5 font-normal"
+            >
+              {tag}
             </Badge>
           ))}
           {isAddingTag && (
@@ -264,13 +261,11 @@ export const SingleItemListComponent = ({
               ref={tagInputRef}
               type="text"
               value={newTag}
-              placeholder="New tag..."
-              className="h-6 w-24 text-xs"
+              placeholder="tag..."
+              className="h-5 w-16 text-[10px] px-1.5 py-0"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setNewTag(e.target.value)}
-              onBlur={() => {
-                handleAddTag();
-              }}
+              onBlur={handleAddTag}
               onKeyDown={(e) => {
                 e.stopPropagation();
                 if (e.key === "Enter") {
@@ -285,51 +280,57 @@ export const SingleItemListComponent = ({
             />
           )}
         </div>
-        <div className="flex items-center gap-1">
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0">
           {isSelected && (
             <span className="text-[10px] text-muted-foreground hidden sm:flex items-center gap-1">
               <KeyboardHint keys={["Enter"]} />
-              <span>edit</span>
             </span>
           )}
           <OptionsSheet item={item} />
         </div>
       </div>
+
       {/* Description */}
-      {item.description && (
-        <div className="flex flex-row items-center gap-2">
-          {isEditingDescription ? (
-            <input
-              type="text"
-              value={editedDescription}
-              className="text-xs focus:ring-0 focus:outline-none w-full border line-clamp-2"
-              onChange={(e) => setEditedDescription(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              onBlur={() => {
+      <div className="pl-6">
+        {isEditingDescription ? (
+          <input
+            type="text"
+            value={editedDescription}
+            className="w-full text-xs bg-background border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-ring"
+            onChange={(e) => setEditedDescription(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            onBlur={handleEditDescription}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") {
+                e.preventDefault();
                 handleEditDescription();
-              }}
-              onKeyDown={(e) => {
-                e.stopPropagation();
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleEditDescription();
-                }
-                if (e.key === "Escape") {
-                  setEditedDescription(item.description || "");
-                  setIsEditingDescription(false);
-                }
-              }}
-            />
-          ) : (
-            <p
-              className="text-xs text-muted-foreground line-clamp-2 w-full"
-              onDoubleClick={() => setIsEditingDescription(true)}
-            >
-              {item.description}
-            </p>
-          )}
-        </div>
-      )}
+              }
+              if (e.key === "Escape") {
+                setEditedDescription(item.description || "");
+                setIsEditingDescription(false);
+              }
+            }}
+          />
+        ) : (
+          <p
+            className={cn(
+              "text-xs text-muted-foreground line-clamp-2",
+              !item.description && !showDescriptionPlaceholder && "hidden",
+            )}
+            onDoubleClick={() => setIsEditingDescription(true)}
+          >
+            {item.description ||
+              (showDescriptionPlaceholder && (
+                <span className="text-muted-foreground/50 italic">
+                  Add description...
+                </span>
+              ))}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
@@ -406,17 +407,23 @@ const OptionsSheet = ({ item }: { item: Doc<"items"> }) => {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Open item options" onClick={(e) => e.stopPropagation()}>
-            <HugeiconsIcon icon={MoreHorizontalIcon} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            aria-label="Open item options"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <HugeiconsIcon icon={MoreHorizontalIcon} className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setIsSheetOpen(true)}>
-            <HugeiconsIcon icon={PencilIcon} />
+            <HugeiconsIcon icon={PencilIcon} className="mr-2 h-4 w-4" />
             Notes
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleToggleFocusState}>
-            <HugeiconsIcon icon={CenterFocusIcon} />
+            <HugeiconsIcon icon={CenterFocusIcon} className="mr-2 h-4 w-4" />
             {item.focusState === "today"
               ? "Move to Back Burner"
               : "Move to Today"}
@@ -424,8 +431,11 @@ const OptionsSheet = ({ item }: { item: Doc<"items"> }) => {
               {item.focusState === "today" ? "B" : "T"}
             </span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
-            <HugeiconsIcon icon={DeleteIcon} />
+          <DropdownMenuItem
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="text-destructive"
+          >
+            <HugeiconsIcon icon={DeleteIcon} className="mr-2 h-4 w-4" />
             Delete
             <span className="ml-auto text-xs text-muted-foreground">⇧⌫</span>
           </DropdownMenuItem>
@@ -533,7 +543,10 @@ const DeleteItemAlertDialog = ({
         </AlertDialogDescription>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDeleteItem}>
+          <AlertDialogAction
+            onClick={handleDeleteItem}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

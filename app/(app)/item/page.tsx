@@ -39,7 +39,8 @@ export const ViewPageContent = () => {
         .filter((item) => {
           return (
             item.title.toLowerCase().includes(query) &&
-            item.focusState === status
+            item.focusState === status &&
+            !item.isDeleted
           );
         })
         .sort((a, b) => {
@@ -48,20 +49,35 @@ export const ViewPageContent = () => {
     }
     return items
       .filter((item) => {
-        return item.focusState === status;
+        return item.focusState === status && !item.isDeleted;
       })
       .sort((a, b) => {
         return a._creationTime - b._creationTime;
       });
   }, [items, search, status]);
 
+  const todayCount = useMemo(() => {
+    if (!items) return 0;
+    return items.filter(
+      (item) => item.focusState === "today" && !item.isDeleted,
+    ).length;
+  }, [items]);
+
+  const backBurnerCount = useMemo(() => {
+    if (!items) return 0;
+    return items.filter(
+      (item) => item.focusState === "back_burner" && !item.isDeleted,
+    ).length;
+  }, [items]);
+
   return (
     <div className="flex flex-col w-full h-full gap-1">
       <div className="flex flex-row gap-1 w-full h-fit p-1 items-center">
         <ViewStatusSelect
-          className="w-36 h-16"
           value={status}
           onChange={setStatus}
+          todayCount={todayCount}
+          backBurnerCount={backBurnerCount}
         />
         <KeyboardEnabledSearch
           search={search}
