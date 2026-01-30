@@ -10,6 +10,7 @@ import { KeyboardShortcutsHelp } from "@/components/features/view/KeyboardShortc
 import { QuickCreateItemDialog } from "@/components/features/view/QuickCreateItemDialog";
 import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
 import { Input } from "@/components/ui/input";
+import { motion, AnimatePresence } from "motion/react";
 
 /**
  * Render the view page container that hosts the main view content.
@@ -87,7 +88,21 @@ export const ViewPageContent = () => {
         <KeyboardShortcutsHelp />
       </div>
       <Separator />
-      <ItemList items={filteredItems} />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={status}
+          className="flex-1 min-h-0"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{
+            opacity: { duration: 0.25, ease: "easeOut" },
+            y: { duration: 0.25, ease: "easeOut" },
+          }}
+        >
+          <ItemList items={filteredItems} />
+        </motion.div>
+      </AnimatePresence>
       <QuickCreateItemDialog
         open={openCreateItem}
         onOpenChange={setOpenCreateItem}

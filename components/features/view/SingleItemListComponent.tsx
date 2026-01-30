@@ -43,6 +43,12 @@ import {
 import { Streamdown } from "streamdown";
 import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
 import { KeyboardHint } from "./KeyboardShortcutsHelp";
+import { motion } from "motion/react";
+
+// Check for reduced motion preference
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 interface SingleItemListComponentProps {
   item: Doc<"items">;
@@ -182,9 +188,18 @@ export const SingleItemListComponent = ({
     !item.description && (isSelected || isHovered);
 
   return (
-    <div
+    <motion.div
+      animate={{
+        scale: isSelected ? 1.005 : 1,
+      }}
+      transition={{
+        scale: { duration: 0.2, ease: "easeOut" },
+      }}
+      whileHover={
+        prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2 } }
+      }
       className={cn(
-        "group flex flex-col gap-2 rounded-lg px-3 py-3 transition-all cursor-pointer",
+        "group flex flex-col gap-2 rounded-lg px-3 py-3 transition-colors cursor-pointer",
         "border border-transparent",
         isSelected ? "bg-accent/60" : "hover:bg-accent/40",
         item.priority === "high" && "border-l-[3px] border-l-red-500",
@@ -331,7 +346,7 @@ export const SingleItemListComponent = ({
           </p>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
