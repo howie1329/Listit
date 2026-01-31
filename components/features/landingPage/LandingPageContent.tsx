@@ -1,58 +1,73 @@
+import { Button } from "@/components/ui/button";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  TaskEditIcon,
+  BookmarkIcon,
+  RefreshIcon,
+} from "@hugeicons/core-free-icons";
+
 export const LandingPageContent = () => {
   return (
-    <div className="flex flex-col w-full h-full p-8 justify-center gap-8 max-w-xl mx-auto">
+    <div className="flex flex-col w-full h-full p-8 items-center justify-center gap-8 max-w-2xl mx-auto">
       {/* Hero Section */}
-      <div className="flex flex-col gap-4">
-        <h1 className="text-6xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
+      <div className="flex flex-col gap-4 items-center text-center">
+        <h1 className="text-7xl font-bold text-foreground leading-tight">
           List It
         </h1>
-        <p className="text-xl text-slate-600 dark:text-slate-400 leading-relaxed">
+        <p className="text-xl text-muted-foreground leading-relaxed">
           Organize your tasks and bookmarks in one simple place.
         </p>
       </div>
 
-      {/* Description */}
-      <div className="flex flex-col gap-6 pt-4">
-        <p className="text-base text-slate-700 dark:text-slate-300 leading-relaxed">
-          List It helps you stay organized by bringing together your tasks and
-          bookmarks. Create lists, track what needs to get done, and save the
-          links you want to revisit later.
-        </p>
+      {/* CTA Buttons */}
+      <div className="flex flex-row gap-4">
+        <Button size="lg" disabled>
+          Get Started
+        </Button>
+        <Button size="lg" variant="outline" disabled>
+          Learn More
+        </Button>
+      </div>
 
-        <div className="flex flex-col gap-3 pt-2">
-          <FeatureItem
-            title="Task Lists"
-            description="Create lists, add items, and track your progress. Organize by priority and focus on what matters today."
-          />
-          <FeatureItem
-            title="Bookmark Collections"
-            description="Save and organize bookmarks with collections. Keep track of what you've read and find things quickly."
-          />
-          <FeatureItem
-            title="Stay in Sync"
-            description="Your lists and bookmarks sync in real-time across all your devices."
-          />
-        </div>
+      {/* Divider */}
+      <div className="w-full max-w-md border-t border-border" />
+
+      {/* Features Row */}
+      <div className="flex flex-row gap-8 justify-center items-start">
+        <FeatureItem
+          icon={<HugeiconsIcon icon={TaskEditIcon} className="w-8 h-8" />}
+          title="Task Lists"
+          description="Create lists, add items, and track your progress"
+        />
+        <FeatureItem
+          icon={<HugeiconsIcon icon={BookmarkIcon} className="w-8 h-8" />}
+          title="Bookmark Collections"
+          description="Save and organize bookmarks with collections"
+        />
+        <FeatureItem
+          icon={<HugeiconsIcon icon={RefreshIcon} className="w-8 h-8" />}
+          title="Stay in Sync"
+          description="Your data syncs in real-time across all devices"
+        />
       </div>
     </div>
   );
 };
 
 const FeatureItem = ({
+  icon,
   title,
   description,
 }: {
+  icon: React.ReactNode;
   title: string;
   description: string;
 }) => {
   return (
-    <div className="flex flex-col gap-1">
-      <h3 className="font-medium text-slate-900 dark:text-slate-100 text-base">
-        {title}
-      </h3>
-      <p className="text-sm text-slate-600 dark:text-slate-400">
-        {description}
-      </p>
+    <div className="flex flex-col gap-2 items-center text-center max-w-[140px]">
+      <div className="text-foreground">{icon}</div>
+      <h3 className="font-medium text-foreground text-sm">{title}</h3>
+      <p className="text-xs text-muted-foreground">{description}</p>
     </div>
   );
 };
