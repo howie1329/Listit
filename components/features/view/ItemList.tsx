@@ -10,6 +10,12 @@ import { api } from "@/convex/_generated/api";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
+import { motion, AnimatePresence } from "motion/react";
+
+// Check for reduced motion preference
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export const ItemList = ({ items }: { items: Doc<"items">[] }) => {
   const { setItems, selectedItemId, setSelectedItemId } =
@@ -59,14 +65,33 @@ export const ItemList = ({ items }: { items: Doc<"items">[] }) => {
         }
       }}
     >
-      {filteredItems.map((item) => (
-        <SingleItemListComponent
-          key={item._id}
-          item={item}
-          isSelected={selectedItemId === item._id}
-          onSelect={() => setSelectedItemId(item._id)}
-        />
-      ))}
+      <AnimatePresence mode="popLayout">
+        {filteredItems.map((item, index) => (
+          <motion.div
+            key={item._id}
+            initial={
+              prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }
+            }
+            animate={{ opacity: 1, y: 0 }}
+            exit={
+              prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -100 }
+            }
+            transition={{
+              opacity: { duration: 0.35, ease: "easeOut" },
+              y: { duration: 0.35, ease: "easeOut", delay: index * 0.04 },
+              x: { duration: 0.3, ease: "easeOut" },
+            }}
+            layout={!prefersReducedMotion}
+            layoutId={item._id}
+          >
+            <SingleItemListComponent
+              item={item}
+              isSelected={selectedItemId === item._id}
+              onSelect={() => setSelectedItemId(item._id)}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
       <EmptySingleItemComponent />
     </div>
   );

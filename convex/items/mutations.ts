@@ -12,6 +12,9 @@ export const createSingleItem = mutation({
       v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
     ),
     notes: v.optional(v.string()),
+    focusState: v.optional(
+      v.union(v.literal("today"), v.literal("back_burner")),
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -26,10 +29,10 @@ export const createSingleItem = mutation({
       isCompleted: false,
       isDeleted: false,
       isArchived: false,
-      priority: args.priority ?? "low",
+      priority: args.priority ?? "medium",
       tags: args.tags ?? [],
       notes: args.notes ?? "",
-      focusState: "back_burner",
+      focusState: args.focusState ?? "today",
     });
   },
 });

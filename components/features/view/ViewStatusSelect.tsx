@@ -1,15 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowDown01Icon, Calendar03Icon } from "@hugeicons/core-free-icons";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { FireIcon, Archive02Icon } from "@hugeicons/core-free-icons";
+import { motion } from "motion/react";
 
 export type ViewStatus = "today" | "back_burner";
 
@@ -18,6 +15,8 @@ interface ViewStatusSelectProps {
   defaultValue?: ViewStatus;
   onChange?: (value: ViewStatus) => void;
   className?: string;
+  todayCount?: number;
+  backBurnerCount?: number;
 }
 
 export const ViewStatusSelect = ({
@@ -25,51 +24,82 @@ export const ViewStatusSelect = ({
   defaultValue = "today",
   onChange,
   className,
+  todayCount,
+  backBurnerCount,
 }: ViewStatusSelectProps) => {
   const [internalValue, setInternalValue] = useState<ViewStatus>(defaultValue);
   const selected = value ?? internalValue;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (next: ViewStatus) => {
     setInternalValue(next);
     onChange?.(next);
   };
 
-  const getLabel = (status: ViewStatus) =>
-    status === "today" ? "Today" : "Back Burner";
-
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "gap-2 h-11 px-4 text-base md:h-8 md:px-3 md:text-sm",
-            className,
-          )}
-        >
-          <HugeiconsIcon icon={Calendar03Icon} />
-          <span>{getLabel(selected)}</span>
-          <HugeiconsIcon icon={ArrowDown01Icon} />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-56">
-        <div className="flex flex-col gap-1">
-          <Button
-            variant={selected === "today" ? "secondary" : "ghost"}
-            className="justify-start"
-            onClick={() => handleChange("today")}
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative flex flex-row gap-1 p-1 rounded-lg bg-muted/50",
+        className,
+      )}
+    >
+      {/* Animated background indicator */}
+      <motion.div
+        className="absolute inset-y-1 rounded-md bg-background shadow-sm"
+        layoutId="activeTab"
+        initial={false}
+        animate={{
+          x: selected === "today" ? 4 : "calc(100% - 4px)",
+          width: "calc(50% - 8px)",
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 30,
+        }}
+      />
+
+      <Button
+        variant="ghost"
+        className={cn(
+          "relative z-10 justify-start gap-2 flex-1",
+          selected === "today" ? "text-foreground" : "text-muted-foreground",
+        )}
+        onClick={() => handleChange("today")}
+      >
+        <HugeiconsIcon icon={FireIcon} />
+        <span>Today</span>
+        {todayCount !== undefined && todayCount > 0 && (
+          <Badge
+            variant={selected === "today" ? "secondary" : "outline"}
+            className="ml-1 h-5 min-w-5 px-1.5"
           >
-            Today
-          </Button>
-          <Button
-            variant={selected === "back_burner" ? "secondary" : "ghost"}
-            className="justify-start"
-            onClick={() => handleChange("back_burner")}
+            {todayCount}
+          </Badge>
+        )}
+      </Button>
+      <Button
+        variant="ghost"
+        className={cn(
+          "relative z-10 justify-start gap-2 flex-1",
+          selected === "back_burner"
+            ? "text-foreground"
+            : "text-muted-foreground",
+        )}
+        onClick={() => handleChange("back_burner")}
+      >
+        <HugeiconsIcon icon={Archive02Icon} />
+        <span>Back Burner</span>
+        {backBurnerCount !== undefined && backBurnerCount > 0 && (
+          <Badge
+            variant={selected === "back_burner" ? "secondary" : "outline"}
+            className="ml-1 h-5 min-w-5 px-1.5"
           >
-            Back Burner
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+            {backBurnerCount}
+          </Badge>
+        )}
+      </Button>
+    </div>
   );
 };

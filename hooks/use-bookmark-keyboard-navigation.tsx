@@ -47,17 +47,20 @@ const BookmarkKeyboardNavigationContext =
  */
 export function BookmarkKeyboardNavigationProvider({
   children,
+  onBeforeDelete,
 }: {
   children: React.ReactNode;
+  onBeforeDelete?: (bookmarkId: Id<"bookmarks">) => void;
 }) {
-  const [selectedBookmarkId, setSelectedBookmarkId] = useState<Id<"bookmarks"> | null>(null);
+  const [selectedBookmarkId, setSelectedBookmarkId] =
+    useState<Id<"bookmarks"> | null>(null);
   const [bookmarks, setBookmarks] = useState<Doc<"bookmarks">[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   // Mutations
   const softDeleteBookmark = useMutation(
-    api.bookmarks.bookmarkFunctions.softDeleteBookmark
+    api.bookmarks.bookmarkFunctions.softDeleteBookmark,
   );
 
   // Get selected bookmark
@@ -74,7 +77,9 @@ export function BookmarkKeyboardNavigationProvider({
       return;
     }
 
-    const currentIndex = bookmarks.findIndex((b) => b._id === selectedBookmarkId);
+    const currentIndex = bookmarks.findIndex(
+      (b) => b._id === selectedBookmarkId,
+    );
     const nextIndex = currentIndex + 1;
 
     if (nextIndex < bookmarks.length) {
@@ -90,7 +95,9 @@ export function BookmarkKeyboardNavigationProvider({
       return;
     }
 
-    const currentIndex = bookmarks.findIndex((b) => b._id === selectedBookmarkId);
+    const currentIndex = bookmarks.findIndex(
+      (b) => b._id === selectedBookmarkId,
+    );
     const prevIndex = currentIndex - 1;
 
     if (prevIndex >= 0) {
@@ -113,6 +120,12 @@ export function BookmarkKeyboardNavigationProvider({
   const deleteSelectedBookmark = useCallback(async () => {
     if (!selectedBookmark) return;
 
+    // Trigger delete animation first
+    onBeforeDelete?.(selectedBookmark._id);
+
+    // Wait for animation to complete
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
     try {
       await softDeleteBookmark({ bookmarkId: selectedBookmark._id });
       toast.success("Bookmark deleted");
@@ -121,7 +134,12 @@ export function BookmarkKeyboardNavigationProvider({
     } catch {
       toast.error("Failed to delete bookmark");
     }
-  }, [selectedBookmark, softDeleteBookmark, selectNextBookmark]);
+  }, [
+    selectedBookmark,
+    softDeleteBookmark,
+    selectNextBookmark,
+    onBeforeDelete,
+  ]);
 
   const focusSearch = useCallback(() => {
     searchInputRef.current?.focus();
@@ -219,7 +237,7 @@ export function BookmarkKeyboardNavigationProvider({
       deleteSelectedBookmark,
       isEditing,
       focusSearch,
-    ]
+    ],
   );
 
   return (
@@ -239,7 +257,7 @@ export function useBookmarkKeyboardNavigation() {
   const context = useContext(BookmarkKeyboardNavigationContext);
   if (!context) {
     throw new Error(
-      "useBookmarkKeyboardNavigation must be used within a BookmarkKeyboardNavigationProvider"
+      "useBookmarkKeyboardNavigation must be used within a BookmarkKeyboardNavigationProvider",
     );
   }
   return context;

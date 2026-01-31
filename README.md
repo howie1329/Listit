@@ -52,6 +52,8 @@ A keyboard-driven productivity app that combines task management and bookmark or
 - **Responsive Design:** Works seamlessly on desktop and mobile
 - **Real-Time Sync:** Instant updates across devices via Convex
 - **Onboarding:** User setup flow for preferences and AI model selection
+- **AI Chat Integration:** Natural language chat with AI assistance
+- **Message Summarization:** Automatic and manual conversation summaries with structured output
 
 ---
 

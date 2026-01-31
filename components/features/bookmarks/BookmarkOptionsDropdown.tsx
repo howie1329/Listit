@@ -27,17 +27,20 @@ import { useBookmarkKeyboardNavigation } from "@/hooks/use-bookmark-keyboard-nav
 export const BookmarkOptionsDropdown = ({
   bookmark,
   collections,
+  onDelete,
 }: {
   bookmark: Doc<"bookmarks">;
   collections: Doc<"bookmarkCollections">[] | undefined;
+  onDelete?: () => void;
 }) => {
-  const { isEditing, setIsEditing, selectedBookmarkId } = useBookmarkKeyboardNavigation();
+  const { isEditing, setIsEditing, selectedBookmarkId } =
+    useBookmarkKeyboardNavigation();
   const [localEditOpen, setLocalEditOpen] = useState(false);
-  
+
   // Sync with keyboard navigation editing state
   const isCurrentlySelected = selectedBookmarkId === bookmark._id;
   const editOpen = localEditOpen || (isCurrentlySelected && isEditing);
-  
+
   const setEditOpen = (open: boolean) => {
     setLocalEditOpen(open);
     if (!open && isCurrentlySelected) {
@@ -60,6 +63,10 @@ export const BookmarkOptionsDropdown = ({
   );
 
   const handleDelete = async () => {
+    // Trigger delete animation first
+    onDelete?.();
+    // Wait for animation to complete before actual deletion
+    await new Promise((resolve) => setTimeout(resolve, 300));
     try {
       await softDeleteBookmark({ bookmarkId: bookmark._id });
     } catch (error) {
@@ -133,4 +140,3 @@ export const BookmarkOptionsDropdown = ({
     </>
   );
 };
-

@@ -2,13 +2,108 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 import { defaultModelValidator } from "./lib/modelMapping";
+import {
+  mastraThreadsTable,
+  mastraMessagesTable,
+  mastraResourcesTable,
+  mastraWorkflowSnapshotsTable,
+  mastraScoresTable,
+  mastraVectorIndexesTable,
+  mastraVectorsTable,
+  mastraDocumentsTable,
+} from "@mastra/convex/schema";
+
+// Thread Summary Validator for queries
+export const threadSummaryValidator = v.object({
+  _id: v.id("threadSummaries"),
+  threadId: v.id("thread"),
+  summary: v.object({
+    overview: v.string(),
+    keyPoints: v.array(v.string()),
+    decisions: v.array(v.string()),
+    actionItems: v.array(v.string()),
+    openQuestions: v.array(v.string()),
+    toolResults: v.array(
+      v.object({
+        toolName: v.string(),
+        summary: v.string(),
+        importance: v.union(
+          v.literal("high"),
+          v.literal("medium"),
+          v.literal("low"),
+        ),
+      }),
+    ),
+  }),
+  messageRange: v.object({
+    fromMessageId: v.string(),
+    toMessageId: v.string(),
+    messageCount: v.number(),
+    fromIndex: v.number(),
+    toIndex: v.number(),
+  }),
+  sourceTokenCount: v.number(),
+  summaryTokenCount: v.number(),
+  costUsd: v.union(v.number(), v.null()),
+  modelUsed: v.string(),
+  triggerType: v.union(v.literal("auto"), v.literal("manual")),
+  status: v.union(
+    v.literal("generating"),
+    v.literal("completed"),
+    v.literal("failed"),
+    v.literal("partial"),
+  ),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+  errorInfo: v.union(
+    v.object({
+      message: v.string(),
+      fallbackAttempts: v.number(),
+      lastAttemptModel: v.string(),
+    }),
+    v.null(),
+  ),
+  _creationTime: v.number(),
+});
 
 // The schema is normally optional, but Convex Auth
 // requires indexes defined on `authTables`.
 // The schema provides more precise TypeScript types.
 export default defineSchema({
   ...authTables,
+  mastra_threads: mastraThreadsTable,
+  mastra_messages: mastraMessagesTable,
+  mastra_resources: mastraResourcesTable,
+  mastra_scorers: mastraScoresTable,
+  mastra_vector_indexes: mastraVectorIndexesTable,
+  mastra_vectors: mastraVectorsTable,
+  mastra_documents: mastraDocumentsTable,
+  mastra_workflow_snapshots: defineTable({
+    id: v.string(),
+    workflow_name: v.string(),
+    run_id: v.string(),
+    resourceId: v.optional(v.string()),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+    snapshot: v.any(),
+  })
+    .index("by_record_id", ["id"])
+    .index("by_workflow_run", ["workflow_name", "run_id"])
+    .index("by_workflow", ["workflow_name"])
+    .index("by_resource", ["resourceId"])
+    .index("by_created", ["createdAt"]),
   // Matches Vercel AI SDK UIMessage structure: https://v5.ai-sdk.dev/docs/reference/ai-sdk-core/ui-message#uimessage
+  workingMemory: defineTable({
+    userId: v.id("users"),
+    name: v.optional(v.string()),
+    age: v.optional(v.number()),
+    preferences: v.optional(v.string()),
+    location: v.optional(v.string()),
+    interests: v.optional(v.string()),
+    tendencies: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    extra: v.optional(v.any()),
+  }).index("by_userId", ["userId"]),
   uiMessages: defineTable({
     threadId: v.id("thread"),
     id: v.string(), // Unique identifier for the message (as per AI SDK spec)
@@ -44,6 +139,7 @@ export default defineSchema({
           state: v.literal("input-streaming"),
           input: v.optional(v.any()), // DeepPartial<TOOLS[NAME]['input']> | undefined
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // ToolUIPart - input-available state
         v.object({
@@ -52,6 +148,7 @@ export default defineSchema({
           state: v.literal("input-available"),
           input: v.any(), // TOOLS[NAME]['input']
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // ToolUIPart - output-available state
         v.object({
@@ -61,6 +158,7 @@ export default defineSchema({
           input: v.any(), // TOOLS[NAME]['input']
           output: v.any(), // TOOLS[NAME]['output']
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // ToolUIPart - output-error state
         v.object({
@@ -70,6 +168,7 @@ export default defineSchema({
           input: v.any(), // TOOLS[NAME]['input']
           errorText: v.string(),
           providerExecuted: v.optional(v.boolean()),
+          callProviderMetadata: v.optional(v.any()),
         }),
         // DataUIPart - for custom data types (e.g., "data-weather-tool")
         v.object({
@@ -129,7 +228,71 @@ export default defineSchema({
       v.literal("error"),
     ),
     updatedAt: v.string(),
+    // Summary tracking
+    summaryCount: v.optional(v.number()),
+    lastSummaryAt: v.optional(v.string()),
+    lastSummaryId: v.optional(v.id("threadSummaries")),
+    // Auto-trigger tracking
+    messagesSinceLastSummary: v.optional(v.number()),
+    tokensSinceLastSummary: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
+  threadSummaries: defineTable({
+    threadId: v.id("thread"),
+    // Summary Content (Structured JSON)
+    summary: v.object({
+      overview: v.string(),
+      keyPoints: v.array(v.string()),
+      decisions: v.array(v.string()),
+      actionItems: v.array(v.string()),
+      openQuestions: v.array(v.string()),
+      toolResults: v.array(
+        v.object({
+          toolName: v.string(),
+          summary: v.string(),
+          importance: v.union(
+            v.literal("high"),
+            v.literal("medium"),
+            v.literal("low"),
+          ),
+        }),
+      ),
+    }),
+    // Message Range
+    messageRange: v.object({
+      fromMessageId: v.string(),
+      toMessageId: v.string(),
+      messageCount: v.number(),
+      fromIndex: v.number(),
+      toIndex: v.number(),
+    }),
+    // Token & Cost Tracking
+    sourceTokenCount: v.number(),
+    summaryTokenCount: v.number(),
+    costUsd: v.union(v.number(), v.null()),
+    modelUsed: v.string(),
+    // Metadata
+    triggerType: v.union(v.literal("auto"), v.literal("manual")),
+    status: v.union(
+      v.literal("generating"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("partial"),
+    ),
+    // Timestamps
+    createdAt: v.string(),
+    updatedAt: v.string(),
+    // Error tracking
+    errorInfo: v.union(
+      v.object({
+        message: v.string(),
+        fallbackAttempts: v.number(),
+        lastAttemptModel: v.string(),
+      }),
+      v.null(),
+    ),
+  })
+    .index("by_threadId", ["threadId"])
+    .index("by_threadId_created", ["threadId", "createdAt"]),
   threadMessage: defineTable({
     threadId: v.id("thread"),
     role: v.union(v.literal("user"), v.literal("assistant")),
@@ -148,7 +311,12 @@ export default defineSchema({
     tags: v.array(v.string()),
     notes: v.optional(v.string()),
     focusState: v.union(v.literal("today"), v.literal("back_burner")),
-  }).index("by_userId", ["userId"]),
+  })
+    .index("by_userId", ["userId"])
+    .searchIndex("search_items", {
+      searchField: "title",
+      filterFields: ["userId", "isDeleted"],
+    }),
   userSettings: defineTable({
     userId: v.id("users"),
     name: v.string(),
@@ -187,7 +355,7 @@ export default defineSchema({
     .index("by_userId_deleted", ["userId", "isDeleted"])
     .index("by_url", ["url"])
     .searchIndex("search_bookmarks", {
-      searchField: "searchText",
+      searchField: "title",
       filterFields: ["userId", "isDeleted", "isArchived"],
     }),
 
