@@ -9,14 +9,35 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { BookmarkIcon } from "@hugeicons/core-free-icons";
 import { Doc } from "@/convex/_generated/dataModel";
+import { BookmarkView } from "@/components/features/bookmarks/bookmarkView";
 
 export const BookmarksEmptyState = ({
   searchQuery,
+  selectedView,
   selectedCollection,
 }: {
   searchQuery: string;
+  selectedView: BookmarkView;
   selectedCollection: Doc<"bookmarkCollections"> | undefined;
 }) => {
+  const viewEmptyMessage = () => {
+    switch (selectedView.kind) {
+      case "pinned":
+        return "No pinned bookmarks yet.";
+      case "read":
+        return "No read bookmarks yet.";
+      case "archived":
+        return "No archived bookmarks yet.";
+      case "collection":
+        return selectedCollection
+          ? `No bookmarks in "${selectedCollection.name}" collection.`
+          : "No bookmarks in this collection.";
+      case "all":
+      default:
+        return "Start saving your favorite links and articles. Type a URL and press Enter to add your first bookmark.";
+    }
+  };
+
   return (
     <Empty>
       <EmptyHeader>
@@ -29,12 +50,9 @@ export const BookmarksEmptyState = ({
         <EmptyDescription>
           {searchQuery.trim()
             ? `No bookmarks match "${searchQuery}". Press Enter to add it as a new bookmark.`
-            : selectedCollection
-              ? `No bookmarks in "${selectedCollection.name}" collection.`
-              : "Start saving your favorite links and articles. Type a URL and press Enter to add your first bookmark."}
+            : viewEmptyMessage()}
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
   );
 };
-
