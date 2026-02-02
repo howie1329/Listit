@@ -10,39 +10,83 @@ import {
   FolderIcon,
   ArrowDown01Icon,
   PlusSignIcon,
+  PinIcon,
+  EyeIcon,
+  Archive02Icon,
 } from "@hugeicons/core-free-icons";
 import { Doc } from "@/convex/_generated/dataModel";
-import { Id } from "@/convex/_generated/dataModel";
 import { motion, AnimatePresence } from "motion/react";
+import { BookmarkView } from "@/components/features/bookmarks/bookmarkView";
+import { useState } from "react";
 
 const prefersReducedMotion =
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export const CollectionSelector = ({
-  selectedCollectionId,
+  selectedView,
   collections,
   selectedCollection,
-  onCollectionChange,
+  onViewChange,
   onCreateCollection,
 }: {
-  selectedCollectionId: Id<"bookmarkCollections"> | null;
+  selectedView: BookmarkView;
   collections: Doc<"bookmarkCollections">[];
   selectedCollection: Doc<"bookmarkCollections"> | undefined;
-  onCollectionChange: (id: Id<"bookmarkCollections"> | null) => void;
+  onViewChange: (view: BookmarkView) => void;
   onCreateCollection: () => void;
 }) => {
+  const [open, setOpen] = useState(false);
+
+  const virtualViews: Array<{
+    view: BookmarkView;
+    label: string;
+    icon: typeof FolderIcon;
+  }> = [
+    { view: { kind: "all" }, label: "All Bookmarks", icon: FolderIcon },
+    { view: { kind: "pinned" }, label: "Pinned", icon: PinIcon },
+    { view: { kind: "read" }, label: "Read", icon: EyeIcon },
+    { view: { kind: "archived" }, label: "Archived", icon: Archive02Icon },
+  ];
+
+  const isViewSelected = (view: BookmarkView) => {
+    if (view.kind !== selectedView.kind) {
+      return false;
+    }
+    if (view.kind === "collection") {
+      return (
+        selectedView.kind === "collection" &&
+        view.collectionId === selectedView.collectionId
+      );
+    }
+    return true;
+  };
+
+  const triggerLabel =
+    selectedView.kind === "collection"
+      ? selectedCollection?.name ?? "Collection"
+      : virtualViews.find((option) => option.view.kind === selectedView.kind)
+          ?.label ?? "All Bookmarks";
+
+  const handleViewChange = (view: BookmarkView) => {
+    onViewChange(view);
+    setOpen(false);
+  };
+
+  const handleCreateCollection = () => {
+    onCreateCollection();
+    setOpen(false);
+  };
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           className="gap-2 h-11 px-4 text-base md:h-8 md:px-3 md:text-sm"
         >
           <HugeiconsIcon icon={FolderIcon} />
-          <span>
-            {selectedCollection ? selectedCollection.name : "All Bookmarks"}
-          </span>
+          <span>{triggerLabel}</span>
           <HugeiconsIcon icon={ArrowDown01Icon} />
         </Button>
       </PopoverTrigger>
@@ -72,13 +116,50 @@ export const CollectionSelector = ({
               whileHover={prefersReducedMotion ? undefined : { scale: 1.02 }}
             >
               <Button
-                variant={selectedCollectionId === null ? "secondary" : "ghost"}
+                variant={
+                  isViewSelected({ kind: "all" }) ? "secondary" : "ghost"
+                }
                 className="justify-start w-full"
-                onClick={() => onCollectionChange(null)}
+                onClick={() => handleViewChange({ kind: "all" })}
               >
+                <HugeiconsIcon icon={FolderIcon} className="mr-2" />
                 All Bookmarks
               </Button>
             </motion.div>
+            {virtualViews
+              .filter((option) => option.view.kind !== "all")
+              .map((option, index) => (
+                <motion.div
+                  key={option.view.kind}
+                  initial={
+                    prefersReducedMotion ? undefined : { opacity: 0, y: -8 }
+                  }
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+                  transition={
+                    prefersReducedMotion
+                      ? undefined
+                      : {
+                          duration: 0.25,
+                          ease: "easeOut",
+                          delay: (index + 1) * 0.03,
+                        }
+                  }
+                  whileHover={
+                    prefersReducedMotion ? undefined : { scale: 1.02 }
+                  }
+                >
+                  <Button
+                    variant={isViewSelected(option.view) ? "secondary" : "ghost"}
+                    className="justify-start w-full"
+                    onClick={() => handleViewChange(option.view)}
+                  >
+                    <HugeiconsIcon icon={option.icon} className="mr-2" />
+                    {option.label}
+                  </Button>
+                </motion.div>
+              ))}
+            <div className="border-t my-1" />
             {collections.map((collection, index) => (
               <motion.div
                 key={collection._id}
@@ -93,19 +174,27 @@ export const CollectionSelector = ({
                     : {
                         duration: 0.25,
                         ease: "easeOut",
-                        delay: (index + 1) * 0.03,
+                        delay: (index + 1 + virtualViews.length) * 0.03,
                       }
                 }
                 whileHover={prefersReducedMotion ? undefined : { scale: 1.02 }}
               >
                 <Button
                   variant={
-                    selectedCollectionId === collection._id
+                    isViewSelected({
+                      kind: "collection",
+                      collectionId: collection._id,
+                    })
                       ? "secondary"
                       : "ghost"
                   }
                   className="justify-start w-full"
-                  onClick={() => onCollectionChange(collection._id)}
+                  onClick={() =>
+                    handleViewChange({
+                      kind: "collection",
+                      collectionId: collection._id,
+                    })
+                  }
                 >
                   <HugeiconsIcon icon={FolderIcon} className="mr-2" />
                   {collection.name}
@@ -131,7 +220,7 @@ export const CollectionSelector = ({
               <Button
                 variant="ghost"
                 className="justify-start w-full"
-                onClick={onCreateCollection}
+                onClick={handleCreateCollection}
               >
                 <HugeiconsIcon icon={PlusSignIcon} className="mr-2" />
                 Create Collection

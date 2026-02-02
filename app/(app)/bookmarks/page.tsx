@@ -15,6 +15,7 @@ import {
   useBookmarkKeyboardNavigation,
 } from "@/hooks/use-bookmark-keyboard-navigation";
 import { BookmarkKeyboardShortcutsHelp } from "@/components/features/bookmarks/BookmarkKeyboardShortcutsHelp";
+import { BookmarkView } from "@/components/features/bookmarks/bookmarkView";
 
 /**
  * Filters a list of bookmark-like items by a search query across multiple text fields.
@@ -107,8 +108,9 @@ function BookmarkPageContent({
   deletingIds: Set<string>;
   setDeletingIds: React.Dispatch<React.SetStateAction<Set<string>>>;
 }) {
-  const [selectedCollectionId, setSelectedCollectionId] =
-    useState<Id<"bookmarkCollections"> | null>(null);
+  const [selectedView, setSelectedView] = useState<BookmarkView>({
+    kind: "all",
+  });
   const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -128,7 +130,9 @@ function BookmarkPageContent({
   );
   const collectionBookmarks = useQuery(
     api.bookmarks.bookmarkFunctions.getBookmarksByCollection,
-    selectedCollectionId ? { collectionId: selectedCollectionId } : "skip",
+    selectedView.kind === "collection"
+      ? { collectionId: selectedView.collectionId }
+      : "skip",
   );
 
   const createBookmarkAction = useAction(
@@ -144,32 +148,49 @@ function BookmarkPageContent({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Determine which bookmarks to display with client-side filtering
-  const bookmarks = useMemo(() => {
-    const baseBookmarks = selectedCollectionId
-      ? collectionBookmarks
-      : allBookmarks;
+  const baseBookmarks = useMemo(() => {
+    if (selectedView.kind === "collection") {
+      return collectionBookmarks?.filter((bookmark) => !bookmark.isArchived);
+    }
 
+    if (!allBookmarks) {
+      return undefined;
+    }
+
+    switch (selectedView.kind) {
+      case "all":
+        return allBookmarks.filter((bookmark) => !bookmark.isArchived);
+      case "pinned":
+        return allBookmarks.filter(
+          (bookmark) => !bookmark.isArchived && bookmark.isPinned,
+        );
+      case "read":
+        return allBookmarks.filter(
+          (bookmark) => !bookmark.isArchived && bookmark.isRead,
+        );
+      case "archived":
+        return allBookmarks.filter((bookmark) => bookmark.isArchived);
+      default:
+        return allBookmarks;
+    }
+  }, [selectedView, collectionBookmarks, allBookmarks]);
+
+  const bookmarks = useMemo(() => {
     if (!baseBookmarks) {
       return undefined;
     }
 
-    // Apply client-side search filter if there's a search query
     if (debouncedSearchQuery.trim()) {
       return filterBookmarks(baseBookmarks, debouncedSearchQuery);
     }
 
     return baseBookmarks;
-  }, [
-    selectedCollectionId,
-    collectionBookmarks,
-    allBookmarks,
-    debouncedSearchQuery,
-  ]);
+  }, [baseBookmarks, debouncedSearchQuery]);
 
-  const selectedCollection = collections?.find(
-    (c) => c._id === selectedCollectionId,
-  );
+  const selectedCollection =
+    selectedView.kind === "collection"
+      ? collections?.find((c) => c._id === selectedView.collectionId)
+      : undefined;
 
   const handleCreateCollection = async (
     name: string,
@@ -180,7 +201,7 @@ function BookmarkPageContent({
         name,
         description,
       });
-      setSelectedCollectionId(newCollectionId);
+      setSelectedView({ kind: "collection", collectionId: newCollectionId });
       toast.success("Collection created successfully");
       return newCollectionId;
     } catch (error) {
@@ -232,10 +253,10 @@ function BookmarkPageContent({
       <div className="flex flex-col w-full h-full p-2 overflow-hidden">
         <div className="flex items-center px-1 gap-3 md:gap-2 mb-2 ">
           <CollectionSelector
-            selectedCollectionId={selectedCollectionId}
+            selectedView={selectedView}
             collections={collections}
             selectedCollection={selectedCollection}
-            onCollectionChange={setSelectedCollectionId}
+            onViewChange={setSelectedView}
             onCreateCollection={() => setCreateCollectionOpen(true)}
           />
           <BookmarkSearchBar
@@ -252,6 +273,7 @@ function BookmarkPageContent({
           {bookmarks.length === 0 ? (
             <BookmarksEmptyState
               searchQuery={searchQuery}
+              selectedView={selectedView}
               selectedCollection={selectedCollection}
             />
           ) : (
