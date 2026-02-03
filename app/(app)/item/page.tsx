@@ -7,7 +7,6 @@ import { ItemList } from "@/components/features/view/ItemList";
 import { ViewStatus } from "@/components/features/view/ViewStatusSelect";
 import { Separator } from "@/components/ui/separator";
 import { KeyboardShortcutsHelp } from "@/components/features/view/KeyboardShortcutsHelp";
-import { QuickCreateItemDialog } from "@/components/features/view/QuickCreateItemDialog";
 import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "motion/react";
@@ -29,8 +28,7 @@ export const ViewPageContent = () => {
   const items = useQuery(api.items.queries.getUserItems);
   const [status, setStatus] = useState<ViewStatus>("today");
   const [search, setSearch] = useState("");
-  const { openCreateItem, setOpenCreateItem, searchInputRef } =
-    useKeyboardNavigation();
+  const { searchInputRef } = useKeyboardNavigation();
 
   const filteredItems = useMemo(() => {
     if (!items) return [];
@@ -103,10 +101,6 @@ export const ViewPageContent = () => {
           <ItemList items={filteredItems} />
         </motion.div>
       </AnimatePresence>
-      <QuickCreateItemDialog
-        open={openCreateItem}
-        onOpenChange={setOpenCreateItem}
-      />
     </div>
   );
 };
