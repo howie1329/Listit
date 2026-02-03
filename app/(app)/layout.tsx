@@ -4,6 +4,7 @@ import { UserSettingsProvider } from "@/providers/UserSettingsProvider";
 import { KeyboardNavigationProvider } from "@/hooks/use-keyboard-navigation";
 import { CommandPaletteProvider } from "@/providers/CommandPaletteProvider";
 import { Toaster } from "sonner";
+import { GlobalQuickCapture } from "@/components/features/view/GlobalQuickCapture";
 
 /**
  * Composes application-level providers and renders the main app layout with a sidebar and toast container.
@@ -25,6 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {children}
                 <Toaster />
               </main>
+              <GlobalQuickCapture />
             </SidebarProvider>
           </div>
         </CommandPaletteProvider>

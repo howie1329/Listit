@@ -15,6 +15,8 @@ import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
+import { useModifierKey } from "@/hooks/use-keyboard-shortcuts";
 
 export type CommandItemConfig = {
   id: string;
@@ -33,6 +35,8 @@ export const AppCommandPalette = ({ open, onOpenChange }: AppCommandPaletteProps
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const { setOpenCreateItem } = useKeyboardNavigation();
+  const modKey = useModifierKey();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -61,11 +65,9 @@ export const AppCommandPalette = ({ open, onOpenChange }: AppCommandPaletteProps
     {
       id: "create-item",
       label: "Create New Item",
-      shortcut: "Enter",
+      shortcut: `${modKey} Shift C`,
       onSelect: () => {
-        // Placeholder for future “create item” flow.
-        // eslint-disable-next-line no-console
-        console.log("Create New Item command selected");
+        setTimeout(() => setOpenCreateItem(true), 0);
       },
       group: "Quick actions",
     },
@@ -225,5 +227,4 @@ export const AppCommandPalette = ({ open, onOpenChange }: AppCommandPaletteProps
     </CommandDialog>
   );
 };
-
 
