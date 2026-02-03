@@ -49,3 +49,6 @@ next-env.d.ts
 
 # opencode 
 .opencode
+
+# agents
+.agents
