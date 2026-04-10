@@ -163,11 +163,11 @@ export const InlineCitationCarouselIndex = ({
       return;
     }
 
-    setCount(api.scrollSnapList().length);
-    setCurrent(api.selectedScrollSnap() + 1);
+    setCount(api.snapList().length);
+    setCurrent(api.selectedSnap() + 1);
 
     api.on("select", () => {
-      setCurrent(api.selectedScrollSnap() + 1);
+      setCurrent(api.selectedSnap() + 1);
     });
   }, [api]);
 
@@ -194,7 +194,7 @@ export const InlineCitationCarouselPrev = ({
 
   const handleClick = useCallback(() => {
     if (api) {
-      api.scrollPrev();
+      api.goToPrev();
     }
   }, [api]);
 
@@ -221,7 +221,7 @@ export const InlineCitationCarouselNext = ({
 
   const handleClick = useCallback(() => {
     if (api) {
-      api.scrollNext();
+      api.goToNext();
     }
   }, [api]);
 
