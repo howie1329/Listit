@@ -1,10 +1,23 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router"
+import { createFileRoute, Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router"
 import { useState } from "react"
 import { useAuthActions } from "@convex-dev/auth/react"
 import { useConvexAuth } from "convex/react"
 
 import { Button } from "#/components/ui/button"
 import { Input } from "#/components/ui/input"
+import { TooltipProvider } from "#/components/ui/tooltip"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "#/components/ui/sidebar"
 
 export const Route = createFileRoute("/app")({
   component: AppHome,
@@ -13,138 +26,130 @@ export const Route = createFileRoute("/app")({
 function AppHome() {
   const { signOut } = useAuthActions()
   const { isAuthenticated, isLoading } = useConvexAuth()
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const [isReaderOpen, setIsReaderOpen] = useState(true)
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
 
   if (!isLoading && !isAuthenticated) {
     return <Navigate to="/signin" />
   }
 
-  const sidebarItems = ["Bookmarks", "Collections", "Notes", "Settings"]
+  const sidebarItems = [
+    { label: "Bookmarks", to: "/app/bookmarks" as const },
+    { label: "Collections", to: "/app/collections" as const },
+    { label: "Notes", to: "/app/notes" as const },
+    { label: "Settings", to: "/app/settings" as const },
+  ]
 
   return (
-    <div className="min-h-dvh bg-background text-foreground">
-      <header className="fixed inset-x-0 top-0 z-40 h-14 border-b border-border/50 bg-background">
-        <div className="flex h-full items-center justify-between gap-3 px-3 sm:px-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="md:hidden"
-              onClick={() => setIsMobileNavOpen((prev) => !prev)}
-            >
-              Menu
-            </Button>
-            <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Listit Workspace
-            </p>
-          </div>
+    <TooltipProvider>
+      <SidebarProvider>
+        <div className="min-h-dvh bg-background text-foreground">
+          <header className="fixed inset-x-0 top-0 z-40 h-14 border-b border-border/50 bg-background">
+            <div className="flex h-full items-center justify-between gap-2 px-3 sm:px-4">
+              <div className="flex min-w-0 items-center gap-1">
+                <SidebarTrigger className="shrink-0" />
+                <p className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Listit Workspace
+                </p>
+              </div>
 
-          <div className="hidden w-full max-w-md items-center md:flex">
-            <Input placeholder="Search bookmarks (coming soon)" />
-          </div>
+              <div className="hidden w-full max-w-md items-center md:flex">
+                <Input
+                  aria-label="Global search placeholder"
+                  placeholder="Search bookmarks (coming soon)"
+                />
+              </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="hidden md:inline-flex"
-              onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsReaderOpen((prev) => !prev)}
+                >
+                  {isReaderOpen ? "Hide panel" : "Show panel"}
+                </Button>
+                <Button type="button" variant="outline" size="sm">
+                  Profile
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => signOut()}>
+                  Sign out
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          <div className="flex min-h-dvh pt-14">
+            <Sidebar
+              className="top-14 h-[calc(100svh-3.5rem)] border-r border-sidebar-border/80"
+              collapsible="icon"
             >
-              {isSidebarCollapsed ? "Expand" : "Collapse"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsReaderOpen((prev) => !prev)}
-            >
-              {isReaderOpen ? "Hide reader" : "Show reader"}
-            </Button>
-            <Button type="button" variant="outline" size="sm">
-              Profile
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => signOut()}>
-              Sign out
-            </Button>
+              <SidebarHeader className="gap-1 border-b border-sidebar-border/70 p-2">
+                <p className="px-2 text-[11px] font-medium uppercase tracking-wide text-sidebar-foreground/70">
+                  Navigation
+                </p>
+              </SidebarHeader>
+
+              <SidebarContent className="p-1">
+                <SidebarGroup className="px-1 py-1">
+                  <SidebarMenu>
+                    {sidebarItems.map((item) => (
+                      <SidebarMenuItem key={item.to}>
+                        <SidebarMenuButton
+                          asChild
+                          size="sm"
+                          tooltip={item.label}
+                          isActive={pathname === item.to}
+                          className="h-7 rounded-full"
+                        >
+                          <Link to={item.to} aria-label={item.label}>
+                            <span className="inline-flex size-4 items-center justify-center rounded-sm text-[10px] font-medium">
+                              {item.label.charAt(0)}
+                            </span>
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroup>
+              </SidebarContent>
+            </Sidebar>
+
+            <SidebarInset className="min-w-0">
+              <div className="flex min-h-[calc(100dvh-3.5rem)]">
+                <section className="min-w-0 flex-1 p-4 sm:p-6">
+                  <div className="flex items-center justify-end border-b border-border/50 pb-3">
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/">Back to landing</Link>
+                    </Button>
+                  </div>
+
+                  <div className="py-4">
+                    <Outlet />
+                  </div>
+                </section>
+
+                {isReaderOpen ? (
+                  <aside className="hidden w-88 shrink-0 border-l border-border/50 p-4 lg:block">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Reader and notes
+                    </p>
+                    <h2 className="mt-1 text-base font-semibold leading-tight">Preview panel</h2>
+                    <p className="mt-3 text-xs leading-snug text-muted-foreground">
+                      This optional panel is reserved for bookmark reader content and editable
+                      notes.
+                    </p>
+                  </aside>
+                ) : null}
+              </div>
+            </SidebarInset>
           </div>
         </div>
-      </header>
-
-      <aside
-        className={[
-          "fixed bottom-0 left-0 top-14 z-30 border-r border-border/50 bg-background transition-all duration-200",
-          isSidebarCollapsed ? "w-14" : "w-60",
-          isMobileNavOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-        ].join(" ")}
-      >
-        <nav className="flex h-full flex-col gap-2 p-2">
-          {sidebarItems.map((item) => (
-            <Button
-              key={item}
-              type="button"
-              variant="ghost"
-              size="sm"
-              className={isSidebarCollapsed ? "justify-center px-2" : "justify-start"}
-            >
-              {isSidebarCollapsed ? item.charAt(0) : item}
-            </Button>
-          ))}
-        </nav>
-      </aside>
-
-      {isMobileNavOpen ? (
-        <button
-          type="button"
-          aria-label="Close mobile navigation"
-          className="fixed inset-0 top-14 z-20 bg-background/70 md:hidden"
-          onClick={() => setIsMobileNavOpen(false)}
-        />
-      ) : null}
-
-      <main
-        className={[
-          "flex min-h-dvh pt-14 transition-all duration-200",
-          isSidebarCollapsed ? "md:pl-14" : "md:pl-60",
-        ].join(" ")}
-      >
-        <section className="flex-1 min-w-0 p-4 sm:p-6">
-          <div className="flex items-center justify-between border-b border-border/50 pb-3">
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Bookmarks
-              </p>
-              <h1 className="mt-1 text-xl font-semibold leading-tight">Saved items</h1>
-            </div>
-            <Button asChild size="sm" variant="outline">
-              <Link to="/">Back to landing</Link>
-            </Button>
-          </div>
-
-          <div className="mt-4 rounded-md border border-border/50 p-4">
-            <p className="text-sm text-muted-foreground">
-              This is the `/app` shell home. Bookmarks content, filters, and search results will
-              render here next.
-            </p>
-          </div>
-        </section>
-
-        {isReaderOpen ? (
-          <aside className="hidden w-88 shrink-0 border-l border-border/50 p-4 lg:block">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Reader and notes
-            </p>
-            <h2 className="mt-1 text-base font-semibold">Preview panel</h2>
-            <p className="mt-3 text-xs leading-snug text-muted-foreground">
-              This optional panel is reserved for bookmark reader content and editable notes.
-            </p>
-          </aside>
-        ) : null}
-      </main>
-    </div>
+      </SidebarProvider>
+    </TooltipProvider>
   )
 }
 
