@@ -17,7 +17,12 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Listit — capture, organize, and ship',
+      },
+      {
+        name: 'description',
+        content:
+          'A calm workspace for tasks and decisions. One canvas, clear hierarchy, and a keyboard-first flow that keeps momentum.',
       },
     ],
     links: [

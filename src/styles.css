@@ -90,6 +90,7 @@ body {
 }
 
 @theme inline {
+  --font-sans: 'Inter Variable', sans-serif;
   --font-mono: 'Geist Mono Variable', monospace;
   --font-heading: 'Inter Variable', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -140,6 +141,6 @@ body {
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-mono;
+    @apply font-sans;
   }
 }
