@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 
 import { Button } from '#/components/ui/button'
 
@@ -89,7 +89,10 @@ function Home() {
               <a href="#faq">FAQ</a>
             </Button>
             <Button asChild size="sm">
-              <a href="#get-started">Get started</a>
+              <Link to="/signup">Sign up</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/signin">Sign in</Link>
             </Button>
           </nav>
         </div>
@@ -111,7 +114,7 @@ function Home() {
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <Button asChild size="lg">
-                <a href="#get-started">Get started</a>
+                <Link to="/signup">Get started</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
                 <a href="#how-it-works">See how it works</a>
@@ -232,7 +235,7 @@ function Home() {
               </p>
             </div>
             <Button asChild size="lg">
-              <a href="#get-started">Get started</a>
+              <Link to="/signup">Get started</Link>
             </Button>
           </div>
         </section>
