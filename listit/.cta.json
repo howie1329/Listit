@@ -1,0 +1,24 @@
+{
+  "projectName": "listit",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "npm",
+  "includeExamples": false,
+  "tailwind": true,
+  "addOnOptions": {},
+  "envVarValues": {
+    "CONVEX_DEPLOYMENT": "dev:clean-hornet-297",
+    "VITE_CONVEX_URL": "https://clean-hornet-297.convex.cloud"
+  },
+  "git": false,
+  "install": true,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "eslint",
+    "convex",
+    "ai",
+    "store"
+  ]
+}
