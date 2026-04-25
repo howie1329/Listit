@@ -1,48 +1,40 @@
-import { useState } from "react"
-import { createFileRoute, Navigate } from "@tanstack/react-router"
-import { useAuthActions } from "@convex-dev/auth/react"
-import { useConvexAuth } from "convex/react"
+import { useState, type FormEvent } from 'react'
+import { createFileRoute, Navigate } from '@tanstack/react-router'
+import { useAuthActions } from '@convex-dev/auth/react'
+import { useConvexAuth } from 'convex/react'
 
-import { AuthShell } from "#/components/auth/auth-shell"
-import { Button } from "#/components/ui/button"
-import { Input } from "#/components/ui/input"
+import { AuthShell } from '#/components/auth/auth-shell'
+import { EmailPasswordForm } from '#/features/auth/components/email-password-form'
+import { useAuthSubmit } from '#/features/auth/hooks/use-auth-submit'
 
-export const Route = createFileRoute("/signup")({
+export const Route = createFileRoute('/signup')({
   component: SignUpPage,
 })
 
 function SignUpPage() {
   const { signIn } = useAuthActions()
   const { isAuthenticated, isLoading } = useConvexAuth()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  const { error, isSubmitting, submitWithState } = useAuthSubmit({
+    onSubmit: async () => {
+      await signIn('password', {
+        email,
+        password,
+        flow: 'signUp',
+      })
+    },
+    fallbackError: 'Unable to create account. Please try again.',
+  })
 
   if (!isLoading && isAuthenticated) {
     return <Navigate to="/app" />
   }
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setError(null)
-    setIsSubmitting(true)
-
-    try {
-      await signIn("password", {
-        email,
-        password,
-        flow: "signUp",
-      })
-    } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Unable to create account. Please try again."
-      )
-    } finally {
-      setIsSubmitting(false)
-    }
+    await submitWithState()
   }
 
   return (
@@ -53,43 +45,20 @@ function SignUpPage() {
       switchCta="Sign in"
       switchTo="/signin"
     >
-      <form className="grid gap-3" onSubmit={onSubmit}>
-        <label className="grid gap-1.5 text-xs">
-          <span className="text-muted-foreground">Email</span>
-          <Input
-            autoComplete="email"
-            inputMode="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.currentTarget.value)}
-            required
-          />
-        </label>
-
-        <label className="grid gap-1.5 text-xs">
-          <span className="text-muted-foreground">Password</span>
-          <Input
-            autoComplete="new-password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.currentTarget.value)}
-            minLength={8}
-            required
-          />
-        </label>
-
-        {error ? (
-          <p className="text-xs leading-snug text-destructive">{error}</p>
-        ) : (
-          <p className="text-[11px] leading-snug text-muted-foreground">
-            Use at least 8 characters for a stronger password.
-          </p>
-        )}
-
-        <Button type="submit" size="lg" disabled={isSubmitting}>
-          {isSubmitting ? "Creating account..." : "Create account"}
-        </Button>
-      </form>
+      <EmailPasswordForm
+        email={email}
+        password={password}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={onSubmit}
+        isSubmitting={isSubmitting}
+        submitLabel="Create account"
+        submittingLabel="Creating account..."
+        passwordAutoComplete="new-password"
+        passwordMinLength={8}
+        error={error}
+        helperText="Use at least 8 characters for a stronger password."
+      />
     </AuthShell>
   )
 }
