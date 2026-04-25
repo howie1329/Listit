@@ -25,6 +25,7 @@
     "@tanstack/ai-gemini": "latest",
     "@tanstack/ai-ollama": "latest",
     "@tanstack/ai-openai": "latest",
+    "@tanstack/ai-openrouter": "^0.8.2",
     "@tanstack/ai-react": "latest",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-router": "latest",
