@@ -57,6 +57,7 @@
 		"@convex-dev/auth": "^0.0.92",
 		"concurrently": "^9.2.1",
 		"convex": "^1.37.0",
-		"convex-svelte": "^0.0.12"
+		"convex-svelte": "^0.0.12",
+		"runed": "^0.37.1"
 	}
 }
