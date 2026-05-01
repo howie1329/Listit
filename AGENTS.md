@@ -6,6 +6,26 @@ ListIt is a SvelteKit + Convex app for keyboard-driven bookmarking and grounded 
 
 Agents should optimize for fast iteration, low complexity, and MVP delivery.
 
+## Guidelines
+
+- Act like a high-performing senior engineer. Be concise, direct, decisive, and execution-focused.
+- Solve problems with simple, maintainable, production-friendly solutions.
+- Prefer low-complexity code that is easy to read, debug, and modify.
+- Prefer the smallest path.
+- Do not overengineer. Do not introduce heavy abstractions,extra layers, or fallbacks, or large dependencies for small features. Choose the smallest solution that solves the problem well.
+- Keep implementations clean, APIs small, behavior explicit, and naming clear. Avoid cleverness unless it clearly improves the outcome.
+- Write code that another strong engineer can quickly understand, safely extend, and confidently ship.
+- Always assume there are no current users and the database is empty.
+
+## DO NOT
+
+- DO NOT add edge-case logic for scenarios that aren't in the current requirements
+- Do don't create your own components without checking if a component already exists.
+
+## Maintainability
+
+Long term maintainability is a core priority. If you add new functionality, first check if there is shared logic that can be extracted to a separate module. Duplicate logic across multiple files is a code smell and should be avoided. Don't be afraid to change existing code. Don't take shortcuts by just adding local logic to solve a problem.
+
 ## Working Style
 
 - Be concise, direct, and execution-focused.
@@ -26,15 +46,15 @@ Agents should optimize for fast iteration, low complexity, and MVP delivery.
 
 ## Developer Commands
 
-| Command               | Description                                      |
-| --------------------- | ------------------------------------------------ |
-| `npm run dev`         | Start local SvelteKit dev server (`vite dev`)   |
-| `npm run build`       | Build production bundle                          |
-| `npm run preview`     | Preview production build locally                 |
-| `npm run check`       | Run `svelte-kit sync` and type/app checks        |
-| `npm run check:watch` | Run Svelte checks in watch mode                  |
-| `npm run lint`        | Run Prettier check and ESLint                    |
-| `npm run format`      | Format code with Prettier                        |
+| Command               | Description                                   |
+| --------------------- | --------------------------------------------- |
+| `npm run dev`         | Start local SvelteKit dev server (`vite dev`) |
+| `npm run build`       | Build production bundle                       |
+| `npm run preview`     | Preview production build locally              |
+| `npm run check`       | Run `svelte-kit sync` and type/app checks     |
+| `npm run check:watch` | Run Svelte checks in watch mode               |
+| `npm run lint`        | Run Prettier check and ESLint                 |
+| `npm run format`      | Format code with Prettier                     |
 
 ## Environment
 
