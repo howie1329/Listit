@@ -1,244 +1,92 @@
-# 📝 Listit
+# ListIt MVP
 
-**Listit** is a blazing fast, AI-assisted productivity app for managing items and bookmarks with a focus on simplicity and speed. Organize tasks with "Today" and "Back Burner" focus states, create smart bookmark collections, and leverage AI for intelligent content extraction and item generation.
+ListIt is a keyboard-driven personal bookmarking and lightweight knowledge retrieval app. It helps solo users save links quickly and ask grounded questions against what they have already saved.
 
----
+## Problem
 
-## 🎯 One-Line Pitch
+Solo users need a fast way to capture web links and later ask questions grounded in what they saved. Current tooling fragments capture across tools and makes retrieval untrustworthy and slow.
 
-A keyboard-driven productivity app that combines task management and bookmark organization with AI assistance, built for speed and focus.
+## Target User
 
----
+Solo users who want a keyboard-driven personal bookmarking and lightweight knowledge retrieval system.
 
-## 🚀 Tech Stack
+## Goals
 
-- **Next.js 16** - React app framework with App Router and server components
-- **Convex** - Backend/database, serverless logic, real-time sync
-- **Convex Auth** - Secure authentication flows
-- **React 19** - Interactive UI with hooks and context
-- **Tailwind CSS 4** - Utility-first styling
-- **shadcn/ui** - Accessible UI component library
-- **TypeScript** - Type-safe development
-- **Vercel AI SDK** - AI integration for item generation
-- **OpenRouter** - Multi-model AI provider access
-- **Firecrawl** - AI-powered web scraping for bookmarks
-- **Sonner** - Toast notifications
+- Enable instant bookmark capture with deduplication.
+- Organize bookmarks with manual tags and collections.
+- Provide basic auto-organization (AI-generated tags/topics and suggested collections).
+- Support "Ask my bookmarks" with grounded answers and citations.
+- Provide reader view with stored extracted text and per-bookmark notes.
+- Keep UI fast using a background enrichment pipeline.
+- Keep architecture minimal while retaining Convex as backend.
+- Support optional auto note taking per bookmark.
 
----
+## MVP Scope
 
-## ✨ Core Features
+### Core
 
-### Item Management (`/view`)
+- Save bookmark URL and show it immediately with `pending_extraction` status.
+- List bookmarks with filters by collection and manual tags.
+- Manage manual tags and collections.
+- Deduplicate by normalized/canonical URL and record hash.
 
-- **Focus States:** Organize items into "Today" (active focus) and "Back Burner" (read later) views
-- **Rich Item Properties:** Title, description, priority (low/medium/high), tags, notes, completion status
-- **Quick Actions:** Archive, complete, move between focus states, cycle priority
-- **Real-time Search:** Client-side filtering with instant results
-- **Keyboard-Driven:** Full keyboard navigation with vim-style shortcuts (j/k, Enter, t/b/x/a/p/#)
-- **AI Item Generation:** Generate structured items from natural language input
+### Background Enrichment Pipeline
 
-### Bookmarks (`/bookmarks`)
+- Fetch and extract content once in background, truncate to cap, store extracted content.
+- Run AI auto-organization to generate tags/topics and suggested collections (stored as suggestions).
 
-- **Smart Collections:** Organize bookmarks into custom collections
-- **AI-Powered Scraping:** Automatically extract metadata (title, description, summary, favicon, thumbnail) using Firecrawl
-- **Rich Metadata:** Reading time, extracted content, tags, read status, pinned/archived states
-- **Full-Text Search:** Search across title, URL, description, summary, and tags
-- **Keyboard Navigation:** Navigate and manage bookmarks entirely via keyboard
+### Optional AI Auto Note Taking
 
-### User Experience
+- Users can enable/disable auto note taking per bookmark.
+- When enabled and enrichment completes, AI generates a structured note/page from extracted content.
+- Generated notes are editable and stored per bookmark.
+- Notes are used as additional context for "Ask my bookmarks" alongside extracted chunks.
 
-- **Keyboard Shortcuts:** Comprehensive keyboard navigation for power users
-- **Theme Support:** Dark/light mode via next-themes
-- **Responsive Design:** Works seamlessly on desktop and mobile
-- **Real-Time Sync:** Instant updates across devices via Convex
-- **Onboarding:** User setup flow for preferences and AI model selection
-- **AI Chat Integration:** Natural language chat with AI assistance
-- **Message Summarization:** Automatic and manual conversation summaries with structured output
+### Retrieval + Chat
 
----
+- Use embeddings and vector indexing for chunk-based retrieval.
+- Provide Ask-my-bookmarks chat endpoint with grounded answers and bookmark citations.
+- If nothing relevant is retrieved, return an insufficient-information response and suggest saving more bookmarks.
 
-## 🛠️ Getting Started
+### Reader + Editing
 
-### Prerequisites
+- Reader view shows extracted/truncated content and notes.
+- Notes are simple per-bookmark text notes (no highlight/range-based annotation in MVP).
+- Notes can be created/edited and persist across reloads.
 
-- Node.js (v18+)
-- [Convex CLI](https://docs.convex.dev/cli/install)
-- npm or yarn
+### State Behavior
 
-### Installation
+- Bookmark extraction state and auto-note generation state can progress independently.
 
-1. **Clone the repo:**
+## Out Of Scope
 
-   ```bash
-   git clone <your-repo-url>
-   cd Listit
-   ```
+- Highlight/range-based annotation
+- Document/PDF uploads beyond URL bookmarks
+- Complex agentic workflows
+- Multi-user team collaboration
+- Dedicated enterprise search UI
+- Advanced reranking or complex citation formatting
 
-2. **Install dependencies:**
+## Test Scenarios
 
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+- Save a new URL and it appears immediately with `pending_extraction`.
+- Save the same URL twice and verify dedup updates the existing record.
+- Create/edit manual tags and assign bookmarks to collections.
+- Verify enrichment updates status from `pending_extraction` to `enriched`.
+- Verify reader view shows extracted/truncated content after enrichment.
+- Verify AI auto-organize outputs tags/topics and collection suggestions.
+- Enable/disable auto note taking per bookmark.
+- Verify auto note generation when enabled and no generation when disabled.
+- Verify notes are editable and persist across reloads.
+- Verify Ask-my-bookmarks answers are grounded with bookmark citations.
+- Verify notes are included in Ask-my-bookmarks retrieval context.
+- Verify insufficient-information response when no relevant chunks exist.
+- Verify auth-protected routes redirect unauthenticated users and allow authenticated users.
 
-3. **Set up Convex:**
-   - Install Convex CLI (if not yet):
-     ```bash
-     npm install -g convex@latest
-     ```
-   - Init Convex and link your project:
-     ```bash
-     npx convex dev
-     ```
-   - Follow prompts to set up backend and `.env.local`
+## Research Plan
 
-4. **Run the development servers:**
-
-   ```bash
-   npm run dev
-   ```
-
-   - Next.js client: [http://localhost:3000](http://localhost:3000)
-   - Convex backend is auto-loaded in parallel
-
----
-
-## 📁 Project Structure
-
-```
-Listit/
-├── app/                            # Next.js app pages/routes
-│   ├── (app)/                      # Authenticated/inner app pages
-│   │   ├── bookmarks/              # Bookmarks page
-│   │   ├── view/                   # Main items view page
-│   │   └── layout.tsx              # App layout with sidebar
-│   ├── onboarding/                 # User onboarding flow
-│   ├── globals.css                 # Global styles
-│   ├── layout.tsx                  # Root layout
-│   └── page.tsx                    # Landing page
-├── components/
-│   ├── features/
-│   │   ├── bookmarks/              # Bookmark components
-│   │   ├── landingPage/            # Landing/auth UI
-│   │   ├── layout/                 # Sidebar, header
-│   │   ├── settings/               # Settings modals
-│   │   └── view/                   # Item view components
-│   ├── ui/                         # shadcn/ui components
-│   ├── ConvexClientProvider.tsx    # Convex client setup
-│   └── ...
-├── convex/                         # Convex backend
-│   ├── ai/                         # AI actions and tools
-│   │   ├── bookmarks/              # Bookmark AI actions
-│   │   └── tools/                  # AI tools (Firecrawl)
-│   ├── bookmarks/                  # Bookmark functions
-│   ├── items/                      # Item queries/mutations
-│   │   └── ai/                     # Item AI generation
-│   ├── schema.ts                   # Database schema
-│   ├── auth.ts, auth.config.ts     # Authentication
-│   ├── userFunctions.ts            # User settings
-│   ├── lib/modelMapping.ts         # AI model configuration
-│   └── http.ts                     # HTTP endpoints
-├── hooks/                          # Custom React hooks
-│   ├── use-keyboard-navigation.tsx # Item keyboard nav
-│   ├── use-bookmark-keyboard-navigation.tsx
-│   ├── use-keyboard-shortcuts.ts
-│   └── use-mobile.ts
-├── lib/                            # Utilities
-│   ├── utils.ts                    # General utilities
-│   └── tools/                      # Tool components
-├── providers/                      # Context providers
-│   └── UserSettingsProvider.tsx
-├── public/                         # Static assets
-├── middleware.ts                   # Next.js middleware
-├── package.json
-└── README.md
-```
-
----
-
-## 🔧 Available Scripts
-
-- `npm run dev` – Start frontend and Convex backend in parallel
-- `npm run dev:frontend` – Start only Next.js dev server
-- `npm run dev:backend` – Start only Convex dev server
-- `npm run build` – Build Next.js app for production
-- `npm run start` – Run production server
-- `npm run lint` – Lint code using ESLint
-
----
-
-## ⌨️ Keyboard Shortcuts
-
-### Items View (`/view`)
-
-- **Navigation:** `↓`/`j` (next), `↑`/`k` (previous)
-- **Actions:** `Enter` (edit), `T` (move to Today), `B` (move to Back Burner), `X` (toggle complete), `A` (archive), `#` (add tag), `P` (cycle priority), `Shift+Delete` (delete)
-- **Global:** `Cmd/Ctrl+N` (new item), `/` (focus search), `Esc` (clear selection)
-
-### Bookmarks (`/bookmarks`)
-
-- **Navigation:** `↓`/`j` (next), `↑`/`k` (previous)
-- **Actions:** `Enter` (open), `E` (edit), `Shift+Delete` (delete)
-- **Global:** `/` (focus search), `Esc` (clear selection)
-
----
-
-## 🗂️ Key Files
-
-### Backend
-
-- **Schema:** `convex/schema.ts` - Database schema definitions
-- **Items:** `convex/items/queries.ts`, `convex/items/mutations.ts`
-- **Bookmarks:** `convex/bookmarks/bookmarkFunctions.ts`, `convex/bookmarks/bookmarkCollectionFunctions.ts`
-- **AI:** `convex/ai/bookmarks/actions.ts`, `convex/items/ai/actions.ts`
-- **Auth:** `convex/auth.ts`, `convex/auth.config.ts`
-
-### Frontend
-
-- **Pages:** `app/(app)/view/page.tsx`, `app/(app)/bookmarks/page.tsx`
-- **Components:** `components/features/view/`, `components/features/bookmarks/`
-- **Hooks:** `hooks/use-keyboard-navigation.tsx`, `hooks/use-bookmark-keyboard-navigation.tsx`
-
----
-
-## 🔐 Environment Variables
-
-Create a `.env.local` file with:
-
-```env
-CONVEX_DEPLOYMENT=your-deployment-url
-OPENROUTER_AI_KEY=your-openrouter-api-key  # Optional: for AI item generation
-FIRECRAWL_API_KEY=your-firecrawl-api-key   # Required: for bookmark scraping
-```
-
----
-
-## 📚 Resources
-
-- [Convex Docs](https://docs.convex.dev/)
-- [Convex Auth](https://labs.convex.dev/auth)
-- [Next.js Docs](https://nextjs.org/docs)
-- [shadcn/ui](https://ui.shadcn.com/)
-- [Vercel AI SDK](https://sdk.vercel.ai/docs)
-- [OpenRouter](https://openrouter.ai/docs)
-
----
-
-## 🚧 Known Limitations & Future Improvements
-
-- Server-side search for bookmarks (currently client-side only)
-- Public sharing links for items/bookmarks
-- Enhanced collaboration features
-- Browser extension for bookmark capture
-- Import/export functionality (CSV/JSON)
-
----
-
-## 📝 License
-
-This project is private and proprietary.
-
----
-
-**Questions or contributions?** Open an issue or pull request!
+- Confirm TanStack Start integration approach with Convex auth helpers (hosted email/password session).
+- Decide MVP vector search strategy (Convex-only vs dedicated vector store) by complexity/performance tradeoffs.
+- Validate extraction provider behavior/cost limits and define truncation cap.
+- Decide prompting strategy and cost/limits for structured auto note generation.
+- Review existing ListIt code paths to port: routes, keyboard navigation, Convex client setup, and background job triggers.
