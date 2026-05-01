@@ -2,23 +2,23 @@
 	const phases = [
 		{
 			name: 'Capture',
-			description: 'Save a URL instantly, normalize it, and keep duplicates from multiplying.'
+			copy: 'Save a URL instantly and show it in the list before enrichment finishes.'
 		},
 		{
 			name: 'Organize',
-			description: 'Use manual tags and collections without turning setup into a project.'
+			copy: 'Use manual tags and collections without turning the app into a filing cabinet.'
 		},
 		{
 			name: 'Enrich',
-			description: 'Fetch, extract, truncate, and add AI-generated structure in the background.'
+			copy: 'Fetch, extract, truncate, and suggest structure in the background.'
 		},
 		{
 			name: 'Ask',
-			description: 'Retrieve relevant chunks and notes, then answer with bookmark citations.'
+			copy: 'Retrieve the useful parts and answer with bookmark citations.'
 		},
 		{
-			name: 'Read and edit',
-			description: 'Open the reader, review extracted content, and refine notes over time.'
+			name: 'Read',
+			copy: 'Keep editable notes next to extracted content so memory stays usable.'
 		}
 	];
 </script>
@@ -31,32 +31,32 @@
 	/>
 </svelte:head>
 
-<section
-	class="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-5xl items-center px-4 py-10 sm:px-6 lg:px-8"
->
-	<div class="w-full">
-		<p class="text-sm font-medium text-muted-foreground">Public roadmap</p>
-		<h1 class="mt-4 font-heading text-4xl font-semibold text-balance sm:text-5xl">
-			The MVP is five quiet steps, not a sprawling platform.
-		</h1>
-		<p class="mt-4 max-w-2xl text-base leading-6 text-pretty text-muted-foreground sm:text-lg">
-			ListIt starts with fast capture and earns its complexity only where it helps: background
-			enrichment, grounded answers, and a reader that keeps your notes close to the source.
-		</p>
+<section class="mx-auto min-h-[calc(100dvh-3.5rem)] max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+	<div class="grid gap-10 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:items-start">
+		<div class="lg:sticky lg:top-24">
+			<p class="text-sm font-medium text-muted-foreground">Roadmap</p>
+			<h1 class="mt-4 font-heading text-4xl font-semibold text-balance sm:text-5xl">
+				Five moves, then stop.
+			</h1>
+			<p class="mt-4 max-w-md text-base leading-7 text-pretty text-muted-foreground">
+				ListIt is deliberately small. The roadmap is about getting from saved link to useful
+				retrieval without turning the product into a life operating system.
+			</p>
+		</div>
 
-		<div class="mt-10 grid gap-3">
+		<div class="space-y-3">
 			{#each phases as phase, index (phase.name)}
-				<div
-					class="grid gap-3 rounded-2xl border border-border/70 px-4 py-4 sm:grid-cols-[3rem_minmax(0,1fr)] sm:px-5"
-				>
-					<p class="text-sm text-muted-foreground tabular-nums">
-						{String(index + 1).padStart(2, '0')}
-					</p>
-					<div>
-						<h2 class="text-base font-semibold">{phase.name}</h2>
-						<p class="mt-1 text-sm leading-6 text-pretty text-muted-foreground">
-							{phase.description}
+				<div class="rounded-lg border border-border/70 bg-card/80 px-4 py-4 backdrop-blur sm:px-5">
+					<div class="grid gap-3 sm:grid-cols-[3rem_minmax(0,1fr)]">
+						<p class="text-sm text-muted-foreground tabular-nums">
+							{String(index + 1).padStart(2, '0')}
 						</p>
+						<div>
+							<h2 class="text-base font-semibold">{phase.name}</h2>
+							<p class="mt-1 text-sm leading-6 text-pretty text-muted-foreground">
+								{phase.copy}
+							</p>
+						</div>
 					</div>
 				</div>
 			{/each}
