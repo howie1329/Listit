@@ -33,6 +33,9 @@ Long term maintainability is a core priority. If you add new functionality, firs
 - Keep code explicit, maintainable, and easy to modify.
 - Avoid speculative abstractions, edge-case overengineering, and dependency bloat.
 - Improve nearby code when helpful, but avoid unrelated refactors.
+- Use existing shadcn-svelte components before creating custom UI.
+- Do not create reusable custom components unless the task explicitly needs them.
+- Do not change global color tokens or theme colors in `src/routes/layout.css` without explicit approval.
 
 ## Product Focus (MVP)
 
