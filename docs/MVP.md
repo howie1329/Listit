@@ -1,4 +1,4 @@
-# ListIt MVP on TanStack Start + Convex
+# ListIt MVP on SvelteKit + Convex
 
 ## Problem
 
@@ -88,8 +88,8 @@ solo users who want a keyboard-driven personal bookmarking and lightweight knowl
 
 ## Research plan
 
-- Confirm TanStack Start integration approach with Convex auth helpers (hosted email/password session)
+- Confirm SvelteKit integration approach with Convex auth helpers (hosted email/password session)
 - Decide vector search strategy for MVP (Convex-only vs dedicated) based on implementation complexity and performance
 - Validate extraction provider behavior/cost limits for Firecrawl and define truncation cap
 - Decide prompting strategy + cost/limits for generating structured notes/page from extracted content
-- Review current Next-based ListIt code paths to identify what to port: routes, keyboard navigation, Convex client setup, and background job triggers
+- Review current SvelteKit code paths to identify what to build first: routes, keyboard navigation, Convex client setup, and background job triggers
