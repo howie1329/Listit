@@ -4,6 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"dev:all": "concurrently \"convex dev\" \"npm run dev\"",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
@@ -52,6 +53,9 @@
 		"vite": "^8.0.7"
 	},
 	"dependencies": {
+		"@auth/core": "^0.37.0",
+		"@convex-dev/auth": "^0.0.92",
+		"concurrently": "^9.2.1",
 		"convex": "^1.37.0",
 		"convex-svelte": "^0.0.12"
 	}
