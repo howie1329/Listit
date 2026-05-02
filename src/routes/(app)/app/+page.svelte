@@ -3,60 +3,122 @@
 		ArrowRight01Icon,
 		CheckmarkCircle02Icon,
 		Clock01Icon,
+		InformationCircleIcon,
 		Link01Icon,
-		MagicWand01Icon,
 		NoteEditIcon,
 		PlusSignIcon,
 		SearchList01Icon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { useConvexClient, useQuery } from 'convex-svelte';
+	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import { api } from '../../../convex/_generated/api.js';
+	import type { Doc, Id } from '../../../convex/_generated/dataModel';
+	import { applyStoredAuth } from '$lib/convex-auth';
 	import { cn } from '$lib/utils';
 
-	type Bookmark = {
-		title: string;
-		source: string;
-		status: 'Enriched' | 'Pending' | 'Tagged';
-		tags: string[];
-		selected?: boolean;
+	type Bookmark = Doc<'bookmarks'>;
+	type SaveResult = {
+		bookmarkId: Id<'bookmarks'>;
+		created: boolean;
+	};
+	type Feedback = {
+		type: 'success' | 'error' | 'info';
+		message: string;
 	};
 
-	const bookmarks: Bookmark[] = [
-		{
-			title: 'Design notes for route groups',
-			source: 'svelte.dev',
-			status: 'Enriched',
-			tags: ['Svelte', 'Routing'],
-			selected: true
-		},
-		{
-			title: 'Convex auth setup notes',
-			source: 'convex.dev',
-			status: 'Tagged',
-			tags: ['Convex', 'Auth']
-		},
-		{
-			title: 'Reader note draft patterns',
-			source: 'linear.app',
-			status: 'Pending',
-			tags: ['Notes']
-		},
-		{
-			title: 'Grounded retrieval citation examples',
-			source: 'openai.com',
-			status: 'Enriched',
-			tags: ['AI', 'Search']
-		}
-	];
+	const convexUrl = import.meta.env.VITE_CONVEX_URL;
+	const convexClient = convexUrl ? useConvexClient() : null;
+	if (convexClient) {
+		applyStoredAuth(convexClient);
+	}
+	const bookmarksQuery = convexClient ? useQuery(api.bookmarks.list, {}) : null;
+
+	let url = $state('');
+	let isSaving = $state(false);
+	let selectedBookmarkId = $state<Id<'bookmarks'> | null>(null);
+	let feedback = $state<Feedback | null>(null);
+	const bookmarks = $derived(bookmarksQuery?.data ?? []);
+	const selectedBookmark = $derived(
+		bookmarks.find((bookmark) => bookmark._id === selectedBookmarkId) ?? bookmarks[0] ?? null
+	);
 
 	const statusIcon = {
-		Enriched: CheckmarkCircle02Icon,
-		Pending: Clock01Icon,
-		Tagged: MagicWand01Icon
+		enriched: CheckmarkCircle02Icon,
+		pending: Clock01Icon,
+		failed: InformationCircleIcon
 	};
+
+	function titleFor(bookmark: Bookmark) {
+		return bookmark.title || hostnameFor(bookmark.url);
+	}
+
+	function hostnameFor(urlValue: string) {
+		try {
+			return new URL(urlValue).hostname.replace(/^www\./, '');
+		} catch {
+			return urlValue;
+		}
+	}
+
+	function statusLabel(status: Bookmark['extractionStatus']) {
+		if (status === 'enriched') return 'Enriched';
+		if (status === 'failed') return 'Failed';
+		return 'Pending';
+	}
+
+	function getValidUrl(value: string) {
+		try {
+			const parsed = new URL(value.trim());
+			return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : null;
+		} catch {
+			return null;
+		}
+	}
+
+	async function handleSave(event: SubmitEvent) {
+		event.preventDefault();
+		feedback = null;
+
+		if (!convexClient) {
+			const message = 'Add VITE_CONVEX_URL before saving bookmarks locally.';
+			feedback = { type: 'error', message };
+			toast.error(message);
+			return;
+		}
+
+		const validUrl = getValidUrl(url);
+		if (!validUrl) {
+			const message = 'Enter a full http:// or https:// URL.';
+			feedback = { type: 'error', message };
+			toast.error(message);
+			return;
+		}
+
+		isSaving = true;
+
+		try {
+			const result = (await convexClient.mutation(api.bookmarks.saveUrl, {
+				url: validUrl
+			})) as SaveResult;
+			const message = result.created ? 'Bookmark saved.' : 'Already saved. Bookmark updated.';
+
+			selectedBookmarkId = result.bookmarkId;
+			url = '';
+			feedback = { type: 'success', message };
+			toast.success(message);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Unable to save this URL right now.';
+			feedback = { type: 'error', message };
+			toast.error(message);
+		} finally {
+			isSaving = false;
+		}
+	}
 </script>
 
 <div
@@ -77,14 +139,31 @@
 				</Button>
 			</div>
 
-			<form class="mt-4">
+			<form class="mt-4" onsubmit={handleSave}>
 				<InputGroup.InputGroup>
 					<InputGroup.InputGroupAddon>
 						<HugeiconsIcon icon={Link01Icon} strokeWidth={2} />
 					</InputGroup.InputGroupAddon>
-					<InputGroup.InputGroupInput placeholder="Paste a URL to save it..." type="url" />
-					<InputGroup.InputGroupButton type="button" size="sm">Save</InputGroup.InputGroupButton>
+					<InputGroup.InputGroupInput
+						placeholder="Paste a URL to save it..."
+						type="url"
+						bind:value={url}
+						disabled={isSaving}
+					/>
+					<InputGroup.InputGroupButton type="submit" size="sm" disabled={isSaving}>
+						{isSaving ? 'Saving...' : 'Save'}
+					</InputGroup.InputGroupButton>
 				</InputGroup.InputGroup>
+				{#if feedback}
+					<p
+						class={cn(
+							'mt-2 text-xs',
+							feedback.type === 'error' ? 'text-destructive' : 'text-muted-foreground'
+						)}
+					>
+						{feedback.message}
+					</p>
+				{/if}
 			</form>
 		</div>
 
@@ -98,35 +177,55 @@
 
 		<ScrollArea.ScrollArea class="min-h-0 flex-1">
 			<div class="flex flex-col gap-1 p-2">
-				{#each bookmarks as bookmark (bookmark.title)}
-					<button
-						type="button"
-						class={cn(
-							'grid min-h-16 grid-cols-[minmax(0,1fr)] gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-accent sm:grid-cols-[minmax(0,1fr)_7rem] md:grid-cols-[minmax(0,1fr)_7rem_13rem]',
-							bookmark.selected && 'bg-accent text-accent-foreground'
-						)}
-					>
-						<span class="min-w-0">
-							<span class="block truncate text-sm font-medium">{bookmark.title}</span>
-							<span class="mt-1 block truncate text-xs text-muted-foreground"
-								>{bookmark.source}</span
-							>
-						</span>
-						<span class="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-							<HugeiconsIcon icon={statusIcon[bookmark.status]} strokeWidth={2} />
-							{bookmark.status}
-						</span>
-						<span class="hidden min-w-0 items-center gap-1.5 md:flex">
-							{#each bookmark.tags as tag (tag)}
-								<span
-									class="rounded-md bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground"
+				{#if !bookmarksQuery}
+					<p class="px-3 py-6 text-sm text-destructive">
+						Add VITE_CONVEX_URL before loading bookmarks locally.
+					</p>
+				{:else if bookmarksQuery.isLoading}
+					<p class="px-3 py-6 text-sm text-muted-foreground">Loading bookmarks...</p>
+				{:else if bookmarksQuery.error}
+					<p class="px-3 py-6 text-sm text-destructive">
+						{bookmarksQuery.error.message}
+					</p>
+				{:else if bookmarks.length === 0}
+					<p class="px-3 py-6 text-sm text-muted-foreground">
+						Save your first URL to start building your library.
+					</p>
+				{:else}
+					{#each bookmarks as bookmark (bookmark._id)}
+						<button
+							type="button"
+							onclick={() => (selectedBookmarkId = bookmark._id)}
+							class={cn(
+								'grid min-h-16 grid-cols-[minmax(0,1fr)] gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-accent sm:grid-cols-[minmax(0,1fr)_7rem] md:grid-cols-[minmax(0,1fr)_7rem_13rem]',
+								selectedBookmark?._id === bookmark._id && 'bg-accent text-accent-foreground'
+							)}
+						>
+							<span class="min-w-0">
+								<span class="block truncate text-sm font-medium">{titleFor(bookmark)}</span>
+								<span class="mt-1 block truncate text-xs text-muted-foreground"
+									>{hostnameFor(bookmark.url)}</span
 								>
-									{tag}
-								</span>
-							{/each}
-						</span>
-					</button>
-				{/each}
+							</span>
+							<span class="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+								<HugeiconsIcon icon={statusIcon[bookmark.extractionStatus]} strokeWidth={2} />
+								{statusLabel(bookmark.extractionStatus)}
+							</span>
+							<span class="hidden min-w-0 items-center gap-1.5 md:flex">
+								{#each bookmark.suggestedTags.slice(0, 3) as tag (tag)}
+									<span
+										class="rounded-md bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground"
+									>
+										{tag}
+									</span>
+								{/each}
+								{#if bookmark.suggestedTags.length === 0}
+									<span class="text-[11px] text-muted-foreground">No tags yet</span>
+								{/if}
+							</span>
+						</button>
+					{/each}
+				{/if}
 			</div>
 		</ScrollArea.ScrollArea>
 	</section>
@@ -134,8 +233,12 @@
 	<aside class="hidden min-h-0 border-l border-border/60 lg:flex lg:flex-col">
 		<div class="border-b border-border/60 px-4 py-3">
 			<p class="text-[11px] font-medium text-muted-foreground uppercase">Selected bookmark</p>
-			<h2 class="mt-2 text-base font-semibold">Design notes for route groups</h2>
-			<p class="mt-1 text-sm text-muted-foreground">svelte.dev</p>
+			<h2 class="mt-2 text-base font-semibold">
+				{selectedBookmark ? titleFor(selectedBookmark) : 'No bookmark selected'}
+			</h2>
+			<p class="mt-1 text-sm text-muted-foreground">
+				{selectedBookmark ? hostnameFor(selectedBookmark.url) : 'Save a URL to preview it here.'}
+			</p>
 		</div>
 
 		<ScrollArea.ScrollArea class="min-h-0 flex-1">
@@ -150,8 +253,15 @@
 						<h3 class="text-sm font-medium">Reader preview</h3>
 					</div>
 					<p class="mt-3 text-sm leading-6 text-muted-foreground">
-						Route groups keep public marketing pages separate from authenticated product surfaces.
-						The app shell can grow behind one route while the public landing page remains focused.
+						{#if selectedBookmark?.extractedText}
+							{selectedBookmark.extractedText}
+						{:else if selectedBookmark?.extractionStatus === 'failed'}
+							Extraction failed. The original URL is still saved.
+						{:else if selectedBookmark}
+							Extraction is pending for this bookmark.
+						{:else}
+							Saved bookmark content will appear here after enrichment.
+						{/if}
 					</p>
 				</section>
 
@@ -166,7 +276,8 @@
 					</div>
 					<Textarea
 						class="mt-3 min-h-36 resize-none"
-						value="Keep the first authenticated page focused on capture and review. Search can become command-driven later."
+						value={selectedBookmark?.note ?? 'Notes will be editable in a later pass.'}
+						readonly
 					/>
 				</section>
 

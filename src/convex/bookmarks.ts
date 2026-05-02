@@ -32,10 +32,10 @@ export const saveUrl = mutation({
 				updatedAt: now,
 				lastSavedAt: now
 			});
-			return existing._id;
+			return { bookmarkId: existing._id, created: false };
 		}
 
-		return await ctx.db.insert('bookmarks', {
+		const bookmarkId = await ctx.db.insert('bookmarks', {
 			userId,
 			url: args.url.trim(),
 			normalizedUrl,
@@ -51,6 +51,8 @@ export const saveUrl = mutation({
 			updatedAt: now,
 			lastSavedAt: now
 		});
+
+		return { bookmarkId, created: true };
 	}
 });
 

@@ -13,14 +13,19 @@
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	import { useConvexClient } from 'convex-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Separator from '$lib/components/ui/separator';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
+	import { applyStoredAuth } from '$lib/convex-auth';
 	import { cn } from '$lib/utils';
 
 	let { children } = $props();
+	const convexUrl = import.meta.env.VITE_CONVEX_URL;
+	const convexClient = convexUrl ? useConvexClient() : null;
 
 	const primaryItems = [
 		{ href: '/app', label: 'Library', icon: Home05Icon },
@@ -31,6 +36,11 @@
 
 	const collections = ['Reading queue', 'Product research', 'Frontend notes'];
 	const tags = ['AI', 'Svelte', 'Convex'];
+
+	onMount(() => {
+		if (!convexClient) return;
+		applyStoredAuth(convexClient);
+	});
 </script>
 
 <svelte:head>
