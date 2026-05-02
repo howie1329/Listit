@@ -1,4 +1,7 @@
 node_modules
+.agents/
+src/convex/_generated/
+src/lib/components/ui/
 
 # Output
 .output

@@ -7,3 +7,13 @@ bun.lockb
 
 # Miscellaneous
 /static/
+.agents/
+.coderabbit.yaml
+.cursor/
+.opencode/
+convex.json
+skills-lock.json
+src/convex/_generated/
+src/lib/components/ui/
+src/lib/hooks/is-mobile.svelte.ts
+src/lib/utils.ts

@@ -42,12 +42,12 @@
 	let isSaving = $state(false);
 	let selectedBookmarkId = $state<Id<'bookmarks'> | null>(null);
 	let feedback = $state<Feedback | null>(null);
-	const bookmarks = $derived(bookmarksQuery?.data ?? []);
+	const bookmarks: Bookmark[] = $derived((bookmarksQuery?.data ?? []) as Bookmark[]);
 	const selectedBookmark = $derived(
 		bookmarks.find((bookmark) => bookmark._id === selectedBookmarkId) ?? bookmarks[0] ?? null
 	);
 
-	const statusIcon = {
+	const statusIcon: Record<Bookmark['extractionStatus'], typeof CheckmarkCircle02Icon> = {
 		enriched: CheckmarkCircle02Icon,
 		pending: Clock01Icon,
 		failed: InformationCircleIcon
