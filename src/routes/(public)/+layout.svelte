@@ -21,15 +21,6 @@
 </script>
 
 <div class="min-h-dvh bg-background text-foreground">
-	<div
-		aria-hidden="true"
-		class="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(to_right,color-mix(in_oklch,var(--border)_50%,transparent)_1px,transparent_1px),linear-gradient(to_bottom,color-mix(in_oklch,var(--border)_40%,transparent)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30"
-	></div>
-	<div
-		aria-hidden="true"
-		class="pointer-events-none fixed inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top,oklch(0.84_0.08_176_/_0.22),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.48_0.12_176_/_0.25),transparent_60%)]"
-	></div>
-
 	<a
 		class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-sm"
 		href="#main-content"
