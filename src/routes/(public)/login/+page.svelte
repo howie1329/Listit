@@ -14,10 +14,11 @@
 	let password = $state('');
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
-	let signedIn = $state(false);
 
 	onMount(() => {
-		signedIn = hasStoredAuthSession();
+		if (hasStoredAuthSession()) {
+			void goto(resolve('/app'));
+		}
 	});
 
 	async function handleSubmit(event: SubmitEvent) {
@@ -40,8 +41,7 @@
 			const result = await runPasswordAuth(convexClient, 'signIn', email.trim(), password);
 			if (result.tokens) {
 				applyFreshAuth(convexClient, result.tokens);
-				signedIn = true;
-				await goto(resolve('/'));
+				await goto(resolve('/app'));
 				return;
 			}
 
@@ -59,36 +59,34 @@
 	<meta name="description" content="Sign in to ListIt with your email and password." />
 </svelte:head>
 
-<section class="mx-auto min-h-[calc(100dvh-3.5rem)] max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-	<div class="grid gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-center">
-		<div class="max-w-md">
-			<p class="text-sm font-medium text-muted-foreground">Authentication</p>
-			<h1 class="mt-4 font-heading text-4xl font-semibold text-balance sm:text-5xl">
-				Welcome back to ListIt.
-			</h1>
-			<p class="mt-4 text-base leading-7 text-pretty text-muted-foreground">
-				Sign in to get back to saved links, editable notes, and whatever small pile of context you
-				were building.
-			</p>
+<section class="min-h-[calc(100svh-3.5rem)] border-b border-border/60">
+	<div
+		class="mx-auto grid min-h-[calc(100svh-3.5rem)] max-w-7xl gap-0 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(24rem,0.72fr)] lg:px-8"
+	>
+		<div
+			class="flex items-end border-b border-border/60 py-10 lg:border-r lg:border-b-0 lg:py-12 lg:pr-12"
+		>
+			<div class="max-w-xl">
+				<p class="text-sm font-medium text-muted-foreground">Authentication</p>
+				<h1 class="mt-4 font-heading text-5xl leading-tight font-semibold text-balance sm:text-6xl">
+					Sign in to ListIt.
+				</h1>
+				<p class="mt-4 max-w-lg text-base leading-7 text-pretty text-muted-foreground">
+					Return to your saved links, editable notes, and grounded answers.
+				</p>
+			</div>
 		</div>
 
-		<div
-			class="rounded-lg border border-border/70 bg-card/88 p-5 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.35)] backdrop-blur sm:p-6"
-		>
-			{#if signedIn}
-				<div class="space-y-4">
-					<p class="text-sm font-medium">You are already signed in on this device.</p>
-					<p class="text-sm leading-6 text-muted-foreground">
-						The local session is active, so you can head back to the landing page while the rest of
-						the product surface catches up.
+		<div class="flex items-center py-10 lg:pl-12">
+			<div class="w-full max-w-md">
+				<div class="border-b border-border/60 pb-4">
+					<h2 class="text-base font-semibold">Welcome back</h2>
+					<p class="mt-1 text-sm leading-6 text-muted-foreground">
+						Use the email and password connected to this workspace.
 					</p>
-					<div class="flex flex-wrap gap-3">
-						<Button href="/" class="rounded-full">Return home</Button>
-						<Button href="/roadmap" variant="outline" class="rounded-full">See what’s next</Button>
-					</div>
 				</div>
-			{:else}
-				<form class="space-y-4" onsubmit={handleSubmit}>
+
+				<form class="space-y-4 pt-5" onsubmit={handleSubmit}>
 					<div>
 						<label class="mb-2 block text-sm font-medium" for="login-email">Email</label>
 						<Input
@@ -97,6 +95,7 @@
 							placeholder="you@example.com"
 							bind:value={email}
 							autocomplete="email"
+							disabled={isSubmitting}
 						/>
 					</div>
 
@@ -108,21 +107,26 @@
 							placeholder="Your password"
 							bind:value={password}
 							autocomplete="current-password"
+							disabled={isSubmitting}
 						/>
 					</div>
 
 					{#if errorMessage}
-						<p class="text-sm text-destructive">{errorMessage}</p>
+						<p class="border-l border-destructive pl-3 text-sm leading-6 text-destructive">
+							{errorMessage}
+						</p>
 					{/if}
 
-					<div class="flex flex-wrap items-center gap-3 pt-2">
+					<div class="flex flex-wrap items-center gap-3 border-t border-border/60 pt-5">
 						<Button type="submit" disabled={isSubmitting} class="rounded-full">
 							{isSubmitting ? 'Signing in...' : 'Sign in'}
 						</Button>
-						<Button href="/signup" variant="outline" class="rounded-full">Create account</Button>
+						<Button href={resolve('/signup')} variant="ghost" class="rounded-full">
+							Create account
+						</Button>
 					</div>
 				</form>
-			{/if}
+			</div>
 		</div>
 	</div>
 </section>

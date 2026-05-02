@@ -44,6 +44,15 @@ export function applyFreshAuth(client: ConvexClient, tokens: AuthTokens) {
 	client.setAuth(async () => tokens.token);
 }
 
+export function clearStoredAuthSession(client?: ConvexClient | null) {
+	if (canUseStorage()) {
+		localStorage.removeItem(AUTH_TOKEN_KEY);
+		localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
+	}
+
+	client?.setAuth(async () => null);
+}
+
 export async function runPasswordAuth(
 	client: ConvexClient,
 	flow: PasswordFlow,
@@ -54,4 +63,14 @@ export async function runPasswordAuth(
 		provider: 'password',
 		params: { flow, email, password }
 	})) as AuthActionResult;
+}
+
+export async function runSignOutAuth(client: ConvexClient | null) {
+	try {
+		if (client) {
+			await client.action(api.auth.signOut, {});
+		}
+	} finally {
+		clearStoredAuthSession(client);
+	}
 }

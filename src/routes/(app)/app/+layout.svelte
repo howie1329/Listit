@@ -5,12 +5,14 @@
 		Folder01Icon,
 		HelpCircleIcon,
 		Home05Icon,
+		Logout01Icon,
 		NoteEditIcon,
 		Search01Icon,
 		Settings01Icon,
 		Tag01Icon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -20,7 +22,7 @@
 	import * as Separator from '$lib/components/ui/separator';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
-	import { applyStoredAuth } from '$lib/convex-auth';
+	import { applyStoredAuth, runSignOutAuth } from '$lib/convex-auth';
 	import { cn } from '$lib/utils';
 
 	let { children } = $props();
@@ -36,11 +38,20 @@
 
 	const collections = ['Reading queue', 'Product research', 'Frontend notes'];
 	const tags = ['AI', 'Svelte', 'Convex'];
+	let isSigningOut = $state(false);
 
 	onMount(() => {
 		if (!convexClient) return;
 		applyStoredAuth(convexClient);
 	});
+
+	async function handleSignOut() {
+		if (isSigningOut) return;
+		isSigningOut = true;
+		await runSignOutAuth(convexClient);
+		isSigningOut = false;
+		await goto(resolve('/'));
+	}
 </script>
 
 <svelte:head>
@@ -130,6 +141,17 @@
 					<Sidebar.SidebarMenuButton size="sm" tooltipContent="Help">
 						<HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} />
 						<span>Help</span>
+					</Sidebar.SidebarMenuButton>
+				</Sidebar.SidebarMenuItem>
+				<Sidebar.SidebarMenuItem>
+					<Sidebar.SidebarMenuButton
+						size="sm"
+						tooltipContent="Sign out"
+						aria-disabled={isSigningOut}
+						onclick={handleSignOut}
+					>
+						<HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />
+						<span>{isSigningOut ? 'Signing out...' : 'Sign out'}</span>
 					</Sidebar.SidebarMenuButton>
 				</Sidebar.SidebarMenuItem>
 			</Sidebar.SidebarMenu>

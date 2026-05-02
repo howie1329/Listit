@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { useConvexClient } from 'convex-svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
-	import { applyStoredAuth } from '$lib/convex-auth';
+	import { applyStoredAuth, hasStoredAuthSession, runSignOutAuth } from '$lib/convex-auth';
 	import { cn } from '$lib/utils.js';
 
 	let { children } = $props();
@@ -13,11 +14,23 @@
 	const convexUrl = import.meta.env.VITE_CONVEX_URL;
 	const convexClient = convexUrl ? useConvexClient() : null;
 	const navItems = [{ href: '/roadmap', label: 'Roadmap' }] as const;
+	let signedIn = $state(false);
+	let isSigningOut = $state(false);
 
 	onMount(() => {
-		if (!convexClient) return;
-		applyStoredAuth(convexClient);
+		signedIn = hasStoredAuthSession();
+		if (convexClient) {
+			applyStoredAuth(convexClient);
+		}
 	});
+
+	async function handleSignOut() {
+		isSigningOut = true;
+		await runSignOutAuth(convexClient);
+		signedIn = false;
+		isSigningOut = false;
+		await goto(resolve('/'));
+	}
 </script>
 
 <div class="min-h-dvh bg-background text-foreground">
@@ -54,8 +67,21 @@
 
 				<div class="flex items-center gap-2">
 					<ThemeToggle />
-					<Button href="/login" variant="ghost" size="sm" class="rounded-full">Sign In</Button>
-					<Button href="/signup" size="sm" class="rounded-full">Sign Up</Button>
+					{#if signedIn}
+						<Button href="/app" size="sm" class="rounded-full">Open app</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							class="rounded-full"
+							disabled={isSigningOut}
+							onclick={handleSignOut}
+						>
+							{isSigningOut ? 'Signing out...' : 'Sign out'}
+						</Button>
+					{:else}
+						<Button href="/login" variant="ghost" size="sm" class="rounded-full">Sign In</Button>
+						<Button href="/signup" size="sm" class="rounded-full">Sign Up</Button>
+					{/if}
 				</div>
 			</div>
 		</div>

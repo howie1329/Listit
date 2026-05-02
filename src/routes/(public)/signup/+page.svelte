@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { useConvexClient } from 'convex-svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -13,11 +15,11 @@
 	let confirmPassword = $state('');
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
-	let created = $state(false);
-	let signedIn = $state(false);
 
 	onMount(() => {
-		signedIn = hasStoredAuthSession();
+		if (hasStoredAuthSession()) {
+			void goto(resolve('/app'));
+		}
 	});
 
 	async function handleSubmit(event: SubmitEvent) {
@@ -50,8 +52,7 @@
 			const result = await runPasswordAuth(convexClient, 'signUp', email.trim(), password);
 			if (result.tokens) {
 				applyFreshAuth(convexClient, result.tokens);
-				created = true;
-				signedIn = true;
+				await goto(resolve('/app'));
 				return;
 			}
 
@@ -73,47 +74,34 @@
 	/>
 </svelte:head>
 
-<section class="mx-auto min-h-[calc(100dvh-3.5rem)] max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-	<div class="grid gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-center">
-		<div class="max-w-md">
-			<p class="text-sm font-medium text-muted-foreground">Create account</p>
-			<h1 class="mt-4 font-heading text-4xl font-semibold text-balance sm:text-5xl">
-				Start small. Keep what matters.
-			</h1>
-			<p class="mt-4 text-base leading-7 text-pretty text-muted-foreground">
-				ListIt is for the links you mean to come back to. Save quickly, organize lightly, and let
-				the product do the remembering after that.
-			</p>
+<section class="min-h-[calc(100svh-3.5rem)] border-b border-border/60">
+	<div
+		class="mx-auto grid min-h-[calc(100svh-3.5rem)] max-w-7xl gap-0 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(24rem,0.72fr)] lg:px-8"
+	>
+		<div
+			class="flex items-end border-b border-border/60 py-10 lg:border-r lg:border-b-0 lg:py-12 lg:pr-12"
+		>
+			<div class="max-w-xl">
+				<p class="text-sm font-medium text-muted-foreground">Create account</p>
+				<h1 class="mt-4 font-heading text-5xl leading-tight font-semibold text-balance sm:text-6xl">
+					Create your ListIt account.
+				</h1>
+				<p class="mt-4 max-w-lg text-base leading-7 text-pretty text-muted-foreground">
+					Start with a fast bookmark library you can ask later.
+				</p>
+			</div>
 		</div>
 
-		<div
-			class="rounded-lg border border-border/70 bg-card/88 p-5 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.35)] backdrop-blur sm:p-6"
-		>
-			{#if created}
-				<div class="space-y-4">
-					<p class="text-sm font-medium">Your account is ready.</p>
-					<p class="text-sm leading-6 text-muted-foreground">
-						This device now has an active local session. The rest of the product surface is still
-						coming together, but the auth flow is real.
+		<div class="flex items-center py-10 lg:pl-12">
+			<div class="w-full max-w-md">
+				<div class="border-b border-border/60 pb-4">
+					<h2 class="text-base font-semibold">Start saving links</h2>
+					<p class="mt-1 text-sm leading-6 text-muted-foreground">
+						One account keeps capture, notes, and retrieval in the same workspace.
 					</p>
-					<div class="flex flex-wrap gap-3">
-						<Button href="/" class="rounded-full">Return home</Button>
-						<Button href="/roadmap" variant="outline" class="rounded-full">See the roadmap</Button>
-					</div>
 				</div>
-			{:else if signedIn}
-				<div class="space-y-4">
-					<p class="text-sm font-medium">You already have an active session here.</p>
-					<p class="text-sm leading-6 text-muted-foreground">
-						You can sign in again later, but right now this browser already has a ListIt session.
-					</p>
-					<div class="flex flex-wrap gap-3">
-						<Button href="/" class="rounded-full">Return home</Button>
-						<Button href="/login" variant="outline" class="rounded-full">Go to sign in</Button>
-					</div>
-				</div>
-			{:else}
-				<form class="space-y-4" onsubmit={handleSubmit}>
+
+				<form class="space-y-4 pt-5" onsubmit={handleSubmit}>
 					<div>
 						<label class="mb-2 block text-sm font-medium" for="signup-email">Email</label>
 						<Input
@@ -122,6 +110,7 @@
 							placeholder="you@example.com"
 							bind:value={email}
 							autocomplete="email"
+							disabled={isSubmitting}
 						/>
 					</div>
 
@@ -133,36 +122,40 @@
 							placeholder="At least 8 characters"
 							bind:value={password}
 							autocomplete="new-password"
+							disabled={isSubmitting}
 						/>
 					</div>
 
 					<div>
-						<label class="mb-2 block text-sm font-medium" for="signup-confirm"
-							>Confirm password</label
-						>
+						<label class="mb-2 block text-sm font-medium" for="signup-confirm">
+							Confirm password
+						</label>
 						<Input
 							id="signup-confirm"
 							type="password"
 							placeholder="Repeat password"
 							bind:value={confirmPassword}
 							autocomplete="new-password"
+							disabled={isSubmitting}
 						/>
 					</div>
 
 					{#if errorMessage}
-						<p class="text-sm text-destructive">{errorMessage}</p>
+						<p class="border-l border-destructive pl-3 text-sm leading-6 text-destructive">
+							{errorMessage}
+						</p>
 					{/if}
 
-					<div class="flex flex-wrap items-center gap-3 pt-2">
+					<div class="flex flex-wrap items-center gap-3 border-t border-border/60 pt-5">
 						<Button type="submit" disabled={isSubmitting} class="rounded-full">
 							{isSubmitting ? 'Creating account...' : 'Create account'}
 						</Button>
-						<Button href="/login" variant="outline" class="rounded-full"
-							>Already have an account</Button
-						>
+						<Button href={resolve('/login')} variant="ghost" class="rounded-full">
+							Already have an account
+						</Button>
 					</div>
 				</form>
-			{/if}
+			</div>
 		</div>
 	</div>
 </section>
