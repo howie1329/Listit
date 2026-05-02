@@ -10,8 +10,11 @@
 		SearchList01Icon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { useConvexClient, useQuery } from 'convex-svelte';
 	import { toast } from 'svelte-sonner';
+	import { postAppApi } from '$lib/app-api';
 	import { Button } from '$lib/components/ui/button';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
@@ -80,6 +83,24 @@
 		}
 	}
 
+	async function enrichBookmark(bookmarkId: Id<'bookmarks'>) {
+		try {
+			await postAppApi(`/api/bookmarks/${bookmarkId}/enrich`);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Unable to enrich this bookmark.';
+			toast.error(message);
+		}
+	}
+
+	async function askWithBookmark(bookmark: Bookmark) {
+		const params = new URLSearchParams({
+			bookmarkId: bookmark._id,
+			q: `What should I remember from ${titleFor(bookmark)}?`
+		});
+
+		await goto(resolve(`/app/ask?${params.toString()}`));
+	}
+
 	async function handleSave(event: SubmitEvent) {
 		event.preventDefault();
 		feedback = null;
@@ -111,6 +132,9 @@
 			url = '';
 			feedback = { type: 'success', message };
 			toast.success(message);
+			if (result.created) {
+				void enrichBookmark(result.bookmarkId);
+			}
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Unable to save this URL right now.';
 			feedback = { type: 'error', message };
@@ -286,7 +310,13 @@
 					<p class="mt-2 text-sm leading-6 text-muted-foreground">
 						This bookmark is ready to cite in grounded answers once retrieval is wired.
 					</p>
-					<Button variant="ghost" size="sm" class="mt-3 px-0">
+					<Button
+						variant="ghost"
+						size="sm"
+						class="mt-3 px-0"
+						disabled={!selectedBookmark}
+						onclick={() => selectedBookmark && askWithBookmark(selectedBookmark)}
+					>
 						Ask with this bookmark
 						<HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} data-icon="inline-end" />
 					</Button>
