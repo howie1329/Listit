@@ -3,7 +3,6 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { Toaster } from '$lib/components/ui/sonner';
 
 	const convexUrl = import.meta.env.VITE_CONVEX_URL;
 	if (convexUrl) {
@@ -18,6 +17,5 @@
 </svelte:head>
 
 <ModeWatcher defaultMode="system" themeColors={{ light: '#f3f5f2', dark: '#0d1318' }} />
-<Toaster richColors closeButton />
 
 {@render children()}

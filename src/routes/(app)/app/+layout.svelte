@@ -38,6 +38,7 @@
 
 	const collections = ['Reading queue', 'Product research', 'Frontend notes'];
 	const tags = ['AI', 'Svelte', 'Convex'];
+	let sidebarOpen = $state(true);
 	let isSigningOut = $state(false);
 
 	onMount(() => {
@@ -59,7 +60,7 @@
 	<meta name="description" content="Your ListIt workspace for saved links, notes, and retrieval." />
 </svelte:head>
 
-<Sidebar.Provider>
+<Sidebar.Provider bind:open={sidebarOpen}>
 	<Sidebar.Sidebar collapsible="icon">
 		<Sidebar.SidebarHeader>
 			<Sidebar.SidebarMenu>
