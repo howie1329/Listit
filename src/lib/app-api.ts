@@ -1,9 +1,9 @@
-import { getStoredAuthToken } from '$lib/convex-auth';
+import { convexAuth } from '$lib/convex-auth.svelte';
 
 export async function postAppApi<T>(path: string, body?: Record<string, unknown>) {
-	const token = getStoredAuthToken();
+	const token = convexAuth.getAuthToken();
 	if (!token) {
-		throw new Error('Sign in before using this action.');
+		throw new Error('Authentication required');
 	}
 
 	const response = await fetch(path, {

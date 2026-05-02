@@ -21,7 +21,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { api } from '../../../convex/_generated/api.js';
 	import type { Doc, Id } from '../../../convex/_generated/dataModel';
-	import { applyStoredAuth } from '$lib/convex-auth';
+	import { convexAuth } from '$lib/convex-auth.svelte';
 	import { cn } from '$lib/utils';
 
 	type Bookmark = Doc<'bookmarks'>;
@@ -36,10 +36,11 @@
 
 	const convexUrl = import.meta.env.VITE_CONVEX_URL;
 	const convexClient = convexUrl ? useConvexClient() : null;
-	if (convexClient) {
-		applyStoredAuth(convexClient);
-	}
-	const bookmarksQuery = convexClient ? useQuery(api.bookmarks.list, {}) : null;
+	const bookmarksQuery = convexClient
+		? useQuery(api.bookmarks.list, () =>
+				!convexAuth.isLoading && convexAuth.isAuthenticated ? {} : 'skip'
+			)
+		: null;
 
 	let url = $state('');
 	let isSaving = $state(false);
@@ -201,15 +202,19 @@
 
 		<ScrollArea.ScrollArea class="min-h-0 flex-1">
 			<div class="flex flex-col gap-1 p-2">
-				{#if !bookmarksQuery}
+				{#if !convexClient}
 					<p class="px-3 py-6 text-sm text-destructive">
 						Add VITE_CONVEX_URL before loading bookmarks locally.
 					</p>
-				{:else if bookmarksQuery.isLoading}
+				{:else if convexAuth.isLoading}
 					<p class="px-3 py-6 text-sm text-muted-foreground">Loading bookmarks...</p>
-				{:else if bookmarksQuery.error}
+				{:else if !convexAuth.isAuthenticated}
+					<p class="px-3 py-6 text-sm text-muted-foreground">Sign in to load your bookmarks.</p>
+				{:else if bookmarksQuery?.isLoading}
+					<p class="px-3 py-6 text-sm text-muted-foreground">Loading bookmarks...</p>
+				{:else if bookmarksQuery?.error}
 					<p class="px-3 py-6 text-sm text-destructive">
-						{bookmarksQuery.error.message}
+						{bookmarksQuery.error?.message}
 					</p>
 				{:else if bookmarks.length === 0}
 					<p class="px-3 py-6 text-sm text-muted-foreground">

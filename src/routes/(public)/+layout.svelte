@@ -1,33 +1,28 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
-	import { useConvexClient } from 'convex-svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
-	import { applyStoredAuth, hasStoredAuthSession, runSignOutAuth } from '$lib/convex-auth';
+	import { convexAuth } from '$lib/convex-auth.svelte';
 	import { cn } from '$lib/utils.js';
 
 	let { children } = $props();
 
-	const convexUrl = import.meta.env.VITE_CONVEX_URL;
-	const convexClient = convexUrl ? useConvexClient() : null;
 	const navItems = [{ href: '/roadmap', label: 'Roadmap' }] as const;
-	let signedIn = $state(false);
 	let isSigningOut = $state(false);
+	const signedIn = $derived(convexAuth.isAuthenticated);
 
-	onMount(() => {
-		signedIn = hasStoredAuthSession();
-		if (convexClient) {
-			applyStoredAuth(convexClient);
+	$effect(() => {
+		if (convexAuth.isLoading || !convexAuth.isAuthenticated) return;
+		if (page.url.pathname === '/login' || page.url.pathname === '/signup') {
+			void goto(resolve('/app'));
 		}
 	});
 
 	async function handleSignOut() {
 		isSigningOut = true;
-		await runSignOutAuth(convexClient);
-		signedIn = false;
+		await convexAuth.signOut();
 		isSigningOut = false;
 		await goto(resolve('/'));
 	}

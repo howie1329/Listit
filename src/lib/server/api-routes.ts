@@ -52,13 +52,15 @@ export async function runApiAction<T>(event: RequestEvent, action: () => Promise
 		const status =
 			message.includes('Authentication required') || message.includes('Not authenticated')
 				? 401
-				: message.includes('not found')
-					? 404
-					: message.includes('required') ||
-						  message.includes('disabled') ||
-						  message.includes('must be enriched')
-						? 400
-						: 500;
+				: message.includes('Unauthorized')
+					? 403
+					: message.includes('not found')
+						? 404
+						: message.includes('required') ||
+							  message.includes('disabled') ||
+							  message.includes('must be enriched')
+							? 400
+							: 500;
 
 		return json({ error: message }, { status });
 	}

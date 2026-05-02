@@ -16,7 +16,7 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { api } from '../../../../convex/_generated/api.js';
 	import type { Doc, Id } from '../../../../convex/_generated/dataModel';
-	import { applyStoredAuth } from '$lib/convex-auth';
+	import { convexAuth } from '$lib/convex-auth.svelte';
 
 	type Bookmark = Doc<'bookmarks'>;
 	type Citation = {
@@ -34,14 +34,13 @@
 
 	const convexUrl = import.meta.env.VITE_CONVEX_URL;
 	const convexClient = convexUrl ? useConvexClient() : null;
-	if (convexClient) {
-		applyStoredAuth(convexClient);
-	}
 
 	const bookmarkId = $derived(page.url.searchParams.get('bookmarkId') as Id<'bookmarks'> | null);
 	const initialQuestion = page.url.searchParams.get('q') ?? '';
 	const bookmarkQuery = convexClient
-		? useQuery(api.bookmarks.get, () => (bookmarkId ? { bookmarkId } : 'skip'))
+		? useQuery(api.bookmarks.get, () =>
+				!convexAuth.isLoading && convexAuth.isAuthenticated && bookmarkId ? { bookmarkId } : 'skip'
+			)
 		: null;
 	const bookmark: Bookmark | null = $derived((bookmarkQuery?.data?.bookmark as Bookmark) ?? null);
 

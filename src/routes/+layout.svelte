@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { setupConvex } from 'convex-svelte';
+	import { onMount } from 'svelte';
+	import { useConvexClient } from 'convex-svelte';
 	import { ModeWatcher } from 'mode-watcher';
+	import { convexAuth } from '$lib/convex-auth.svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 
@@ -8,6 +11,11 @@
 	if (convexUrl) {
 		setupConvex(convexUrl);
 	}
+	const convexClient = convexUrl ? useConvexClient() : null;
+
+	onMount(() => {
+		convexAuth.initAuth(convexClient);
+	});
 
 	let { children } = $props();
 </script>

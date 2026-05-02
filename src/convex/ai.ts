@@ -261,7 +261,7 @@ export const saveChatMessage = mutation({
 	handler: async (ctx, args) => {
 		const userId = await requireUserId(ctx);
 		const thread = await ctx.db.get(args.threadId);
-		if (!thread || thread.userId !== userId) throw new Error('Chat thread not found');
+		if (!thread || thread.userId !== userId) throw new Error('Unauthorized');
 
 		const now = Date.now();
 		const messageId = await ctx.db.insert('chatMessages', {

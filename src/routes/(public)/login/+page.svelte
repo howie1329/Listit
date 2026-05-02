@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { onMount } from 'svelte';
 	import { useConvexClient } from 'convex-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { applyFreshAuth, hasStoredAuthSession, runPasswordAuth } from '$lib/convex-auth';
+	import { convexAuth } from '$lib/convex-auth.svelte';
 
 	const convexUrl = import.meta.env.VITE_CONVEX_URL;
 	const convexClient = convexUrl ? useConvexClient() : null;
@@ -15,8 +14,8 @@
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 
-	onMount(() => {
-		if (hasStoredAuthSession()) {
+	$effect(() => {
+		if (!convexAuth.isLoading && convexAuth.isAuthenticated) {
 			void goto(resolve('/app'));
 		}
 	});
@@ -38,9 +37,8 @@
 		isSubmitting = true;
 
 		try {
-			const result = await runPasswordAuth(convexClient, 'signIn', email.trim(), password);
+			const result = await convexAuth.signIn(convexClient, email.trim(), password);
 			if (result.tokens) {
-				applyFreshAuth(convexClient, result.tokens);
 				await goto(resolve('/app'));
 				return;
 			}

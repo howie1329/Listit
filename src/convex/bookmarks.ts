@@ -71,7 +71,7 @@ export const list = query({
 		if (args.tagId) {
 			const tag = await ctx.db.get(args.tagId);
 			if (!tag || tag.userId !== userId) {
-				throw new Error('Tag not found');
+				throw new Error('Unauthorized');
 			}
 
 			const joins = await ctx.db

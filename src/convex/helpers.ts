@@ -32,7 +32,7 @@ export async function requireOwnedBookmark(ctx: AuthedCtx, bookmarkId: Id<'bookm
 	const userId = await requireUserId(ctx);
 	const bookmark = await ctx.db.get(bookmarkId);
 	if (!bookmark || bookmark.userId !== userId) {
-		throw new Error('Bookmark not found');
+		throw new Error('Unauthorized');
 	}
 	return { userId, bookmark };
 }
@@ -41,7 +41,7 @@ export async function requireOwnedCollection(ctx: AuthedCtx, collectionId: Id<'c
 	const userId = await requireUserId(ctx);
 	const collection = await ctx.db.get(collectionId);
 	if (!collection || collection.userId !== userId) {
-		throw new Error('Collection not found');
+		throw new Error('Unauthorized');
 	}
 	return { userId, collection };
 }
@@ -50,7 +50,7 @@ export async function requireOwnedTag(ctx: AuthedCtx, tagId: Id<'tags'>) {
 	const userId = await requireUserId(ctx);
 	const tag = await ctx.db.get(tagId);
 	if (!tag || tag.userId !== userId) {
-		throw new Error('Tag not found');
+		throw new Error('Unauthorized');
 	}
 	return { userId, tag };
 }
