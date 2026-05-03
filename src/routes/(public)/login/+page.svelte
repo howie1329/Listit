@@ -5,7 +5,7 @@
 	import { useConvexClient } from 'convex-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { applyFreshAuth, hasStoredAuthSession, runPasswordAuth } from '$lib/convex-auth';
+	import { restoreAuthSession, signInWithPassword } from '$lib/convex-auth';
 
 	const convexUrl = import.meta.env.VITE_CONVEX_URL;
 	const convexClient = convexUrl ? useConvexClient() : null;
@@ -13,11 +13,20 @@
 	let email = $state('');
 	let password = $state('');
 	let isSubmitting = $state(false);
+	let isCheckingSession = $state(true);
 	let errorMessage = $state('');
-	let signedIn = $state(false);
 
 	onMount(() => {
-		signedIn = hasStoredAuthSession();
+		async function checkSession() {
+			if (convexClient && (await restoreAuthSession(convexClient))) {
+				await goto(resolve('/app'));
+				return;
+			}
+
+			isCheckingSession = false;
+		}
+
+		void checkSession();
 	});
 
 	async function handleSubmit(event: SubmitEvent) {
@@ -37,15 +46,8 @@
 		isSubmitting = true;
 
 		try {
-			const result = await runPasswordAuth(convexClient, 'signIn', email.trim(), password);
-			if (result.tokens) {
-				applyFreshAuth(convexClient, result.tokens);
-				signedIn = true;
-				await goto(resolve('/'));
-				return;
-			}
-
-			errorMessage = 'Sign in did not finish. Please try again.';
+			await signInWithPassword(convexClient, email, password);
+			await goto(resolve('/app'));
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'Unable to sign in right now.';
 		} finally {
@@ -59,38 +61,23 @@
 	<meta name="description" content="Sign in to ListIt with your email and password." />
 </svelte:head>
 
-<section class="mx-auto min-h-[calc(100dvh-3.5rem)] max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-	<div class="grid gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-center">
-		<div class="max-w-md">
-			<p class="text-sm font-medium text-muted-foreground">Authentication</p>
-			<h1 class="mt-4 font-heading text-4xl font-semibold text-balance sm:text-5xl">
-				Welcome back to ListIt.
-			</h1>
-			<p class="mt-4 text-base leading-7 text-pretty text-muted-foreground">
-				Sign in to get back to saved links, editable notes, and whatever small pile of context you
-				were building.
+<section class="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-5xl px-4 py-10 sm:px-6">
+	<div class="grid w-full gap-10 self-center lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+		<div class="max-w-xl pt-2">
+			<p class="text-[11px] font-medium text-muted-foreground uppercase">ListIt account</p>
+			<h1 class="mt-3 font-heading text-xl font-semibold">Sign in to your workspace</h1>
+			<p class="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+				Get back to saved links, notes, and grounded retrieval from one focused product surface.
 			</p>
 		</div>
 
-		<div
-			class="rounded-lg border border-border/70 bg-card/88 p-5 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.35)] backdrop-blur sm:p-6"
-		>
-			{#if signedIn}
-				<div class="space-y-4">
-					<p class="text-sm font-medium">You are already signed in on this device.</p>
-					<p class="text-sm leading-6 text-muted-foreground">
-						The local session is active, so you can head back to the landing page while the rest of
-						the product surface catches up.
-					</p>
-					<div class="flex flex-wrap gap-3">
-						<Button href="/" class="rounded-full">Return home</Button>
-						<Button href="/roadmap" variant="outline" class="rounded-full">See what’s next</Button>
-					</div>
-				</div>
+		<div class="border-l border-border/60 pl-0 lg:pl-8">
+			{#if isCheckingSession}
+				<p class="text-sm text-muted-foreground">Checking session...</p>
 			{:else}
 				<form class="space-y-4" onsubmit={handleSubmit}>
 					<div>
-						<label class="mb-2 block text-sm font-medium" for="login-email">Email</label>
+						<label class="mb-1.5 block text-xs font-medium" for="login-email">Email</label>
 						<Input
 							id="login-email"
 							type="email"
@@ -101,7 +88,7 @@
 					</div>
 
 					<div>
-						<label class="mb-2 block text-sm font-medium" for="login-password">Password</label>
+						<label class="mb-1.5 block text-xs font-medium" for="login-password">Password</label>
 						<Input
 							id="login-password"
 							type="password"
@@ -112,14 +99,14 @@
 					</div>
 
 					{#if errorMessage}
-						<p class="text-sm text-destructive">{errorMessage}</p>
+						<p class="text-xs text-destructive">{errorMessage}</p>
 					{/if}
 
-					<div class="flex flex-wrap items-center gap-3 pt-2">
-						<Button type="submit" disabled={isSubmitting} class="rounded-full">
+					<div class="flex flex-wrap items-center gap-2 pt-1">
+						<Button type="submit" disabled={isSubmitting}>
 							{isSubmitting ? 'Signing in...' : 'Sign in'}
 						</Button>
-						<Button href="/signup" variant="outline" class="rounded-full">Create account</Button>
+						<Button href="/signup" variant="ghost">Create account</Button>
 					</div>
 				</form>
 			{/if}

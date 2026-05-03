@@ -5,22 +5,43 @@
 		Folder01Icon,
 		HelpCircleIcon,
 		Home05Icon,
+		Loading03Icon,
+		Logout01Icon,
 		NoteEditIcon,
 		Search01Icon,
 		Settings01Icon,
-		Tag01Icon
+		Tag01Icon,
+		UserCircle02Icon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	import { useConvexClient, useQuery } from 'convex-svelte';
+	import { api } from '../../../convex/_generated/api.js';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Separator from '$lib/components/ui/separator';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
+	import { restoreAuthSession, signOut } from '$lib/convex-auth';
 	import { cn } from '$lib/utils';
 
 	let { children } = $props();
+
+	const convexUrl = import.meta.env.VITE_CONVEX_URL;
+	const convexClient = convexUrl ? useConvexClient() : null;
+	let authReady = $state(false);
+	let isAuthenticated = $state(false);
+	let isSigningOut = $state(false);
+
+	const currentUserResponse = useQuery(api.auth.currentUser, () =>
+		authReady && isAuthenticated ? {} : 'skip'
+	);
+	const currentUser = $derived(currentUserResponse.data);
+	const userLabel = $derived(currentUser?.name || currentUser?.email || 'Signed in');
+	const userMeta = $derived(currentUser?.email && currentUser?.name ? currentUser.email : 'ListIt account');
 
 	const primaryItems = [
 		{ href: '/app', label: 'Library', icon: Home05Icon },
@@ -31,6 +52,37 @@
 
 	const collections = ['Reading queue', 'Product research', 'Frontend notes'];
 	const tags = ['AI', 'Svelte', 'Convex'];
+
+	onMount(() => {
+		async function protectAppRoute() {
+			if (!convexClient) {
+				await goto(resolve('/login'));
+				return;
+			}
+
+			const restored = await restoreAuthSession(convexClient);
+			const authenticated =
+				restored || (await convexClient.query(api.auth.isAuthenticated, {}).catch(() => false));
+
+			if (!authenticated) {
+				await goto(resolve('/login'));
+				return;
+			}
+
+			isAuthenticated = true;
+			authReady = true;
+		}
+
+		void protectAppRoute();
+	});
+
+	async function handleSignOut() {
+		if (!convexClient) return;
+
+		isSigningOut = true;
+		await signOut(convexClient);
+		await goto(resolve('/'));
+	}
 </script>
 
 <svelte:head>
@@ -38,7 +90,15 @@
 	<meta name="description" content="Your ListIt workspace for saved links, notes, and retrieval." />
 </svelte:head>
 
-<Sidebar.Provider>
+{#if !authReady}
+	<div class="flex min-h-dvh items-center justify-center bg-background text-foreground">
+		<div class="flex items-center gap-2 text-sm text-muted-foreground">
+			<HugeiconsIcon icon={Loading03Icon} strokeWidth={2} class="size-4 animate-spin" />
+			Loading workspace...
+		</div>
+	</div>
+{:else}
+	<Sidebar.Provider>
 	<Sidebar.Sidebar collapsible="icon">
 		<Sidebar.SidebarHeader>
 			<Sidebar.SidebarMenu>
@@ -117,6 +177,19 @@
 		<Sidebar.SidebarFooter>
 			<Sidebar.SidebarMenu>
 				<Sidebar.SidebarMenuItem>
+					<Sidebar.SidebarMenuButton size="lg" tooltipContent={userLabel}>
+						<div
+							class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground"
+						>
+							<HugeiconsIcon icon={UserCircle02Icon} strokeWidth={2} />
+						</div>
+						<div class="grid flex-1 text-left leading-tight">
+							<span class="truncate text-xs font-medium">{userLabel}</span>
+							<span class="truncate text-[11px] text-muted-foreground">{userMeta}</span>
+						</div>
+					</Sidebar.SidebarMenuButton>
+				</Sidebar.SidebarMenuItem>
+				<Sidebar.SidebarMenuItem>
 					<Sidebar.SidebarMenuButton size="sm" tooltipContent="Help">
 						<HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} />
 						<span>Help</span>
@@ -146,10 +219,15 @@
 				Reader
 			</Button>
 			<ThemeToggle />
+			<Button variant="ghost" size="sm" onclick={handleSignOut} disabled={isSigningOut}>
+				<HugeiconsIcon icon={Logout01Icon} strokeWidth={2} data-icon="inline-start" />
+				{isSigningOut ? 'Signing out...' : 'Sign out'}
+			</Button>
 		</header>
 
 		<div class={cn('min-h-0 flex-1', page.url.pathname === '/app' && 'overflow-hidden')}>
 			{@render children()}
 		</div>
 	</Sidebar.SidebarInset>
-</Sidebar.Provider>
+	</Sidebar.Provider>
+{/if}
