@@ -5,7 +5,7 @@
 	import { page } from '$app/state';
 	import { Button } from '$lib/components/ui/button';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
-	import { applyStoredAuth } from '$lib/convex-auth';
+	import { restoreAuthSession } from '$lib/convex-auth';
 	import { cn } from '$lib/utils.js';
 
 	let { children } = $props();
@@ -13,10 +13,15 @@
 	const convexUrl = import.meta.env.VITE_CONVEX_URL;
 	const convexClient = convexUrl ? useConvexClient() : null;
 	const navItems = [{ href: '/roadmap', label: 'Roadmap' }] as const;
+	let signedIn = $state(false);
 
 	onMount(() => {
-		if (!convexClient) return;
-		applyStoredAuth(convexClient);
+		async function checkSession() {
+			if (!convexClient) return;
+			signedIn = await restoreAuthSession(convexClient);
+		}
+
+		void checkSession();
 	});
 </script>
 
@@ -63,8 +68,12 @@
 
 				<div class="flex items-center gap-2">
 					<ThemeToggle />
-					<Button href="/login" variant="ghost" size="sm" class="rounded-full">Sign In</Button>
-					<Button href="/signup" size="sm" class="rounded-full">Sign Up</Button>
+					{#if signedIn}
+						<Button href="/app" size="sm" class="rounded-full">Go to App</Button>
+					{:else}
+						<Button href="/login" variant="ghost" size="sm" class="rounded-full">Sign In</Button>
+						<Button href="/signup" size="sm" class="rounded-full">Sign Up</Button>
+					{/if}
 				</div>
 			</div>
 		</div>

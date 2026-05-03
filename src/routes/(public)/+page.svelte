@@ -6,7 +6,14 @@
 		SearchList01Icon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { onMount } from 'svelte';
+	import { useConvexClient } from 'convex-svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { restoreAuthSession } from '$lib/convex-auth';
+
+	const convexUrl = import.meta.env.VITE_CONVEX_URL;
+	const convexClient = convexUrl ? useConvexClient() : null;
+	let signedIn = $state(false);
 
 	const queue = [
 		{
@@ -43,6 +50,15 @@
 			icon: NoteEditIcon
 		}
 	];
+
+	onMount(() => {
+		async function checkSession() {
+			if (!convexClient) return;
+			signedIn = await restoreAuthSession(convexClient);
+		}
+
+		void checkSession();
+	});
 </script>
 
 <svelte:head>
@@ -78,8 +94,8 @@
 				</p>
 
 				<div class="mt-7 flex flex-wrap items-center gap-3">
-					<Button href="/signup" size="lg" class="rounded-full px-4">
-						Create account
+					<Button href={signedIn ? '/app' : '/signup'} size="lg" class="rounded-full px-4">
+						{signedIn ? 'Go to App' : 'Create account'}
 						<HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} class="size-4" />
 					</Button>
 					<Button href="/roadmap" variant="outline" size="lg" class="rounded-full px-4">
