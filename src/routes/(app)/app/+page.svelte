@@ -90,24 +90,24 @@
 </script>
 
 <div
-	class="flex h-[calc(100svh-3.5rem)] min-h-0 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_24rem]"
+	class="flex h-[calc(100svh-3rem)] min-h-0 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_23rem]"
 >
 	<section class="flex min-h-0 flex-col">
-		<div class="border-b border-border/60 px-4 py-3">
-			<div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+		<div class="border-b border-border/50 px-4 py-3">
+			<div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
 				<div>
 					<h1 class="font-heading text-xl font-semibold">Library</h1>
-					<p class="mt-1 text-sm text-muted-foreground">
+					<p class="mt-0.5 text-xs text-muted-foreground">
 						Save links, track enrichment, and keep notes close to the source.
 					</p>
 				</div>
-				<Button size="sm" class="w-fit">
+				<Button size="sm" class="h-8 w-fit">
 					<HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} data-icon="inline-start" />
 					New collection
 				</Button>
 			</div>
 
-			<form class="mt-4" onsubmit={handleSave}>
+			<form class="mt-3" onsubmit={handleSave}>
 				<InputGroup.InputGroup>
 					<InputGroup.InputGroupAddon>
 						<HugeiconsIcon icon={Link01Icon} strokeWidth={2} />
@@ -123,13 +123,13 @@
 					</InputGroup.InputGroupButton>
 				</InputGroup.InputGroup>
 				{#if saveError}
-					<p class="mt-2 text-sm text-destructive">{saveError}</p>
+					<p class="mt-2 text-xs text-destructive">{saveError}</p>
 				{/if}
 			</form>
 		</div>
 
 		<div
-			class="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-border/60 px-4 py-2 text-[11px] font-medium text-muted-foreground uppercase"
+			class="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-border/50 px-4 py-2 text-[11px] font-medium text-muted-foreground uppercase"
 		>
 			<span>Bookmark</span>
 			<span class="hidden sm:block">Status</span>
@@ -141,7 +141,7 @@
 				<div class="flex flex-col gap-2 p-2">
 					{#each Array.from({ length: 6 }) as _, index (index)}
 						<div
-							class="grid min-h-16 grid-cols-[minmax(0,1fr)] gap-2 rounded-lg px-3 py-2 sm:grid-cols-[minmax(0,1fr)_7rem] md:grid-cols-[minmax(0,1fr)_7rem_13rem]"
+							class="grid h-12 grid-cols-[minmax(0,1fr)] items-center gap-2 rounded-md px-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_6rem] md:grid-cols-[minmax(0,1fr)_6rem_12rem]"
 						>
 							<div class="space-y-2">
 								<Skeleton class="h-4 w-2/3" />
@@ -160,7 +160,7 @@
 				</div>
 			{:else if rows.length === 0}
 				<div class="flex min-h-96 p-4">
-					<Empty.Empty class="border border-border/60">
+					<Empty.Empty class="border-0">
 						<Empty.EmptyHeader>
 							<Empty.EmptyMedia>
 								<HugeiconsIcon icon={Link01Icon} strokeWidth={2} />
@@ -181,20 +181,20 @@
 							type="button"
 							onclick={() => (selectedBookmarkId = row.bookmark._id)}
 							class={cn(
-								'grid min-h-16 grid-cols-[minmax(0,1fr)] gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-accent sm:grid-cols-[minmax(0,1fr)_7rem] md:grid-cols-[minmax(0,1fr)_7rem_13rem]',
+								'grid h-12 grid-cols-[minmax(0,1fr)] items-center gap-2 rounded-md px-3 py-1.5 text-left transition-colors hover:bg-accent sm:grid-cols-[minmax(0,1fr)_6rem] md:grid-cols-[minmax(0,1fr)_6rem_12rem]',
 								selectedRow?.bookmark._id === row.bookmark._id && 'bg-accent text-accent-foreground'
 							)}
 						>
 							<span class="min-w-0">
-								<span class="block truncate text-sm font-medium">{getDisplayTitle(row.bookmark)}</span>
-								<span class="mt-1 block truncate text-xs text-muted-foreground">
+								<span class="block truncate text-xs font-medium">{getDisplayTitle(row.bookmark)}</span>
+								<span class="mt-0.5 block truncate text-[11px] text-muted-foreground">
 									{row.bookmark.siteName || getHostname(row.bookmark.url)}
 									{#if row.collection}
 										<span class="mx-1">/</span>{row.collection.name}
 									{/if}
 								</span>
 							</span>
-							<span class="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+							<span class="hidden items-center gap-1.5 text-[11px] text-muted-foreground sm:flex">
 								<HugeiconsIcon icon={status.icon} strokeWidth={2} />
 								{status.label}
 							</span>
@@ -202,13 +202,13 @@
 								{#if tags.length}
 									{#each tags.slice(0, 3) as tag (tag)}
 										<span
-											class="max-w-24 truncate rounded-md bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground"
+											class="max-w-24 truncate rounded-sm bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground"
 										>
 											{tag}
 										</span>
 									{/each}
 								{:else}
-									<span class="text-xs text-muted-foreground">No tags</span>
+									<span class="text-[11px] text-muted-foreground">No tags</span>
 								{/if}
 							</span>
 						</button>
@@ -218,12 +218,12 @@
 		</ScrollArea.ScrollArea>
 	</section>
 
-	<aside class="hidden min-h-0 border-l border-border/60 lg:flex lg:flex-col">
+	<aside class="hidden min-h-0 border-l border-border/50 lg:flex lg:flex-col">
 		{#if selectedRow}
-			<div class="border-b border-border/60 px-4 py-3">
+			<div class="border-b border-border/50 px-4 py-3">
 				<p class="text-[11px] font-medium text-muted-foreground uppercase">Selected bookmark</p>
-				<h2 class="mt-2 truncate text-base font-semibold">{getDisplayTitle(selectedRow.bookmark)}</h2>
-				<p class="mt-1 truncate text-sm text-muted-foreground">
+				<h2 class="mt-1.5 truncate text-base font-semibold">{getDisplayTitle(selectedRow.bookmark)}</h2>
+				<p class="mt-0.5 truncate text-xs text-muted-foreground">
 					{selectedRow.bookmark.siteName || getHostname(selectedRow.bookmark.url)}
 				</p>
 			</div>
@@ -235,11 +235,11 @@
 							<HugeiconsIcon
 								icon={SearchList01Icon}
 								strokeWidth={2}
-								class="size-4 text-muted-foreground"
+								class="size-3.5 text-muted-foreground"
 							/>
-							<h3 class="text-sm font-medium">Reader preview</h3>
+							<h3 class="text-xs font-medium">Reader preview</h3>
 						</div>
-						<p class="mt-3 line-clamp-6 text-sm leading-6 text-muted-foreground">
+						<p class="mt-2 line-clamp-6 text-xs leading-snug text-muted-foreground">
 							{getReaderPreview(selectedRow.bookmark)}
 						</p>
 					</section>
@@ -249,26 +249,26 @@
 							<HugeiconsIcon
 								icon={NoteEditIcon}
 								strokeWidth={2}
-								class="size-4 text-muted-foreground"
+								class="size-3.5 text-muted-foreground"
 							/>
-							<h3 class="text-sm font-medium">Note</h3>
+							<h3 class="text-xs font-medium">Note</h3>
 						</div>
 						<Textarea
-							class="mt-3 min-h-36 resize-none"
+							class="mt-2 min-h-32 resize-none text-xs"
 							value={selectedRow.bookmark.note ?? ''}
 							placeholder="No note yet."
 							readonly
 						/>
 					</section>
 
-					<section class="rounded-lg border border-border/60 p-3">
-						<p class="text-sm font-medium">Ask context</p>
-						<p class="mt-2 text-sm leading-6 text-muted-foreground">
+					<section>
+						<p class="text-xs font-medium">Ask context</p>
+						<p class="mt-2 text-xs leading-snug text-muted-foreground">
 							{selectedRow.bookmark.extractionStatus === 'enriched'
 								? 'This bookmark has extracted text ready for grounded answers.'
 								: 'This bookmark will be available as stronger context after enrichment finishes.'}
 						</p>
-						<Button variant="ghost" size="sm" class="mt-3 px-0">
+						<Button variant="ghost" size="sm" class="mt-2 h-8 px-0 text-xs">
 							Ask with this bookmark
 							<HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} data-icon="inline-end" />
 						</Button>
@@ -276,7 +276,7 @@
 				</div>
 			</ScrollArea.ScrollArea>
 		{:else}
-			<div class="flex flex-1 items-center justify-center p-4 text-sm text-muted-foreground">
+			<div class="flex flex-1 items-center justify-center p-4 text-xs text-muted-foreground">
 				Select a bookmark to preview it here.
 			</div>
 		{/if}
