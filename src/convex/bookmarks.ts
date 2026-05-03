@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 
 import { mutation, query } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
+import type { QueryCtx } from './_generated/server';
 import {
 	normalizeUrl,
 	requireOwnedBookmark,
@@ -10,6 +11,27 @@ import {
 	stableHash,
 	uniqueNames
 } from './helpers';
+
+async function withLibraryData(ctx: QueryCtx, bookmarks: Doc<'bookmarks'>[]) {
+	return await Promise.all(
+		bookmarks.map(async (bookmark) => {
+			const joins = await ctx.db
+				.query('bookmarkTags')
+				.withIndex('by_user_bookmark', (q) =>
+					q.eq('userId', bookmark.userId).eq('bookmarkId', bookmark._id)
+				)
+				.collect();
+			const tags = await Promise.all(joins.map((join) => ctx.db.get(join.tagId)));
+			const collection = bookmark.collectionId ? await ctx.db.get(bookmark.collectionId) : null;
+
+			return {
+				bookmark,
+				tags: tags.filter((tag) => tag && tag.userId === bookmark.userId),
+				collection: collection && collection.userId === bookmark.userId ? collection : null
+			};
+		})
+	);
+}
 
 export const saveUrl = mutation({
 	args: {
@@ -77,12 +99,13 @@ export const list = query({
 				.withIndex('by_tag', (q) => q.eq('tagId', args.tagId as Id<'tags'>))
 				.collect();
 			const bookmarks = await Promise.all(joins.map((join) => ctx.db.get(join.bookmarkId)));
-			return bookmarks
+			const filtered = bookmarks
 				.filter((bookmark): bookmark is Doc<'bookmarks'> =>
 					Boolean(bookmark && bookmark.userId === userId)
 				)
 				.filter((bookmark) => !args.collectionId || bookmark.collectionId === args.collectionId)
 				.sort((left, right) => right.createdAt - left.createdAt);
+			return await withLibraryData(ctx, filtered);
 		}
 
 		const base = args.collectionId
@@ -93,7 +116,7 @@ export const list = query({
 					)
 			: ctx.db.query('bookmarks').withIndex('by_user_created', (q) => q.eq('userId', userId));
 
-		return await base.order('desc').collect();
+		return await withLibraryData(ctx, await base.order('desc').collect());
 	}
 });
 

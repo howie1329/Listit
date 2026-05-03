@@ -32,7 +32,7 @@
 	></div>
 	<div
 		aria-hidden="true"
-		class="pointer-events-none fixed inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top,oklch(0.84_0.08_176_/_0.22),transparent_60%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.48_0.12_176_/_0.25),transparent_60%)]"
+		class="pointer-events-none fixed inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top,color-mix(in_oklch,var(--primary)_16%,transparent),transparent_60%)]"
 	></div>
 
 	<a
