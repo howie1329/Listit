@@ -29,6 +29,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
 	import * as Separator from '$lib/components/ui/separator';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
@@ -251,23 +252,28 @@
 									<span class="sr-only">New collection</span>
 								</Button>
 							</Dialog.DialogTrigger>
-							<Dialog.DialogContent class="sm:max-w-sm">
+							<Dialog.DialogContent class="gap-3 text-xs sm:max-w-sm">
 								<Dialog.DialogHeader>
-									<Dialog.DialogTitle>New collection</Dialog.DialogTitle>
-									<Dialog.DialogDescription>
+									<Dialog.DialogTitle class="text-base">New collection</Dialog.DialogTitle>
+									<Dialog.DialogDescription class="text-xs leading-snug">
 										Create a collection for organizing bookmarks.
 									</Dialog.DialogDescription>
 								</Dialog.DialogHeader>
 								<form class="space-y-3" onsubmit={handleCreateCollection}>
-									<Input
-										bind:value={collectionName}
-										placeholder="Collection name"
-										disabled={isSavingCollection}
-									/>
+									<div class="space-y-1.5">
+										<Label for="new-collection-name" class="text-xs">Name</Label>
+										<Input
+											id="new-collection-name"
+											bind:value={collectionName}
+											placeholder="Reading queue"
+											disabled={isSavingCollection}
+											class="text-xs"
+										/>
+									</div>
 									{#if collectionError}
 										<p class="text-xs text-destructive">{collectionError}</p>
 									{/if}
-									<Dialog.DialogFooter>
+									<Dialog.DialogFooter class="gap-2">
 										<Button
 											type="submit"
 											size="sm"
@@ -450,21 +456,28 @@
 		if (!open) editingCollection = null;
 	}}
 >
-	<Dialog.DialogContent class="sm:max-w-sm">
+	<Dialog.DialogContent class="gap-3 text-xs sm:max-w-sm">
 		<Dialog.DialogHeader>
-			<Dialog.DialogTitle>Rename collection</Dialog.DialogTitle>
-			<Dialog.DialogDescription>Update the collection name.</Dialog.DialogDescription>
+			<Dialog.DialogTitle class="text-base">Rename collection</Dialog.DialogTitle>
+			<Dialog.DialogDescription class="text-xs leading-snug">
+				Update the collection name everywhere it appears.
+			</Dialog.DialogDescription>
 		</Dialog.DialogHeader>
 		<form class="space-y-3" onsubmit={handleRenameCollection}>
-			<Input
-				bind:value={editingName}
-				placeholder="Collection name"
-				disabled={isUpdatingCollection}
-			/>
+			<div class="space-y-1.5">
+				<Label for="edit-collection-name" class="text-xs">Name</Label>
+				<Input
+					id="edit-collection-name"
+					bind:value={editingName}
+					placeholder="Collection name"
+					disabled={isUpdatingCollection}
+					class="text-xs"
+				/>
+			</div>
 			{#if editError}
 				<p class="text-xs text-destructive">{editError}</p>
 			{/if}
-			<Dialog.DialogFooter>
+			<Dialog.DialogFooter class="gap-2">
 				<Button
 					type="button"
 					variant="ghost"
@@ -491,20 +504,25 @@
 		if (!open) deletingCollection = null;
 	}}
 >
-	<Dialog.DialogContent class="sm:max-w-sm">
+	<Dialog.DialogContent class="gap-3 text-xs sm:max-w-sm">
 		<Dialog.DialogHeader>
-			<Dialog.DialogTitle>Delete collection?</Dialog.DialogTitle>
-			<Dialog.DialogDescription>
+			<Dialog.DialogTitle class="text-base">Delete collection?</Dialog.DialogTitle>
+			<Dialog.DialogDescription class="text-xs leading-snug">
 				Bookmarks in this collection will stay saved and become unassigned.
 			</Dialog.DialogDescription>
 		</Dialog.DialogHeader>
 		{#if deletingCollection}
-			<p class="text-sm font-medium">{deletingCollection.name}</p>
+			<div class="rounded-lg border border-border/50 px-3 py-2">
+				<p class="truncate text-xs font-medium">{deletingCollection.name}</p>
+				<p class="mt-1 text-[11px] leading-snug text-muted-foreground">
+					This only removes the collection, not the bookmarks inside it.
+				</p>
+			</div>
 		{/if}
 		{#if deleteError}
 			<p class="text-xs text-destructive">{deleteError}</p>
 		{/if}
-		<Dialog.DialogFooter>
+		<Dialog.DialogFooter class="gap-2">
 			<Button
 				type="button"
 				variant="ghost"
