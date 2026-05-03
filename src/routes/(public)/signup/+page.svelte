@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { useConvexClient } from 'convex-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { applyFreshAuth, hasStoredAuthSession, runPasswordAuth } from '$lib/convex-auth';
+	import { restoreAuthSession, signUpWithPassword } from '$lib/convex-auth';
 
 	const convexUrl = import.meta.env.VITE_CONVEX_URL;
 	const convexClient = convexUrl ? useConvexClient() : null;
@@ -12,12 +14,20 @@
 	let password = $state('');
 	let confirmPassword = $state('');
 	let isSubmitting = $state(false);
+	let isCheckingSession = $state(true);
 	let errorMessage = $state('');
-	let created = $state(false);
-	let signedIn = $state(false);
 
 	onMount(() => {
-		signedIn = hasStoredAuthSession();
+		async function checkSession() {
+			if (convexClient && (await restoreAuthSession(convexClient))) {
+				await goto(resolve('/app'));
+				return;
+			}
+
+			isCheckingSession = false;
+		}
+
+		void checkSession();
 	});
 
 	async function handleSubmit(event: SubmitEvent) {
@@ -47,15 +57,8 @@
 		isSubmitting = true;
 
 		try {
-			const result = await runPasswordAuth(convexClient, 'signUp', email.trim(), password);
-			if (result.tokens) {
-				applyFreshAuth(convexClient, result.tokens);
-				created = true;
-				signedIn = true;
-				return;
-			}
-
-			errorMessage = 'Account creation did not finish. Please try again.';
+			await signUpWithPassword(convexClient, email, password);
+			await goto(resolve('/app'));
 		} catch (error) {
 			errorMessage =
 				error instanceof Error ? error.message : 'Unable to create the account right now.';
@@ -73,49 +76,24 @@
 	/>
 </svelte:head>
 
-<section class="mx-auto min-h-[calc(100dvh-3.5rem)] max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-	<div class="grid gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-center">
-		<div class="max-w-md">
-			<p class="text-sm font-medium text-muted-foreground">Create account</p>
-			<h1 class="mt-4 font-heading text-4xl font-semibold text-balance sm:text-5xl">
-				Start small. Keep what matters.
-			</h1>
-			<p class="mt-4 text-base leading-7 text-pretty text-muted-foreground">
-				ListIt is for the links you mean to come back to. Save quickly, organize lightly, and let
-				the product do the remembering after that.
+<section class="mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-5xl px-4 py-10 sm:px-6">
+	<div class="grid w-full gap-10 self-center lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+		<div class="max-w-xl pt-2">
+			<p class="text-[11px] font-medium text-muted-foreground uppercase">ListIt account</p>
+			<h1 class="mt-3 font-heading text-xl font-semibold">Create your workspace</h1>
+			<p class="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+				Start with a private place for fast URL capture, light organization, and notes that stay
+				close to the source.
 			</p>
 		</div>
 
-		<div
-			class="rounded-lg border border-border/70 bg-card/88 p-5 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.35)] backdrop-blur sm:p-6"
-		>
-			{#if created}
-				<div class="space-y-4">
-					<p class="text-sm font-medium">Your account is ready.</p>
-					<p class="text-sm leading-6 text-muted-foreground">
-						This device now has an active local session. The rest of the product surface is still
-						coming together, but the auth flow is real.
-					</p>
-					<div class="flex flex-wrap gap-3">
-						<Button href="/" class="rounded-full">Return home</Button>
-						<Button href="/roadmap" variant="outline" class="rounded-full">See the roadmap</Button>
-					</div>
-				</div>
-			{:else if signedIn}
-				<div class="space-y-4">
-					<p class="text-sm font-medium">You already have an active session here.</p>
-					<p class="text-sm leading-6 text-muted-foreground">
-						You can sign in again later, but right now this browser already has a ListIt session.
-					</p>
-					<div class="flex flex-wrap gap-3">
-						<Button href="/" class="rounded-full">Return home</Button>
-						<Button href="/login" variant="outline" class="rounded-full">Go to sign in</Button>
-					</div>
-				</div>
+		<div class="border-l border-border/60 pl-0 lg:pl-8">
+			{#if isCheckingSession}
+				<p class="text-sm text-muted-foreground">Checking session...</p>
 			{:else}
 				<form class="space-y-4" onsubmit={handleSubmit}>
 					<div>
-						<label class="mb-2 block text-sm font-medium" for="signup-email">Email</label>
+						<label class="mb-1.5 block text-xs font-medium" for="signup-email">Email</label>
 						<Input
 							id="signup-email"
 							type="email"
@@ -126,7 +104,7 @@
 					</div>
 
 					<div>
-						<label class="mb-2 block text-sm font-medium" for="signup-password">Password</label>
+						<label class="mb-1.5 block text-xs font-medium" for="signup-password">Password</label>
 						<Input
 							id="signup-password"
 							type="password"
@@ -137,7 +115,7 @@
 					</div>
 
 					<div>
-						<label class="mb-2 block text-sm font-medium" for="signup-confirm"
+						<label class="mb-1.5 block text-xs font-medium" for="signup-confirm"
 							>Confirm password</label
 						>
 						<Input
@@ -150,16 +128,14 @@
 					</div>
 
 					{#if errorMessage}
-						<p class="text-sm text-destructive">{errorMessage}</p>
+						<p class="text-xs text-destructive">{errorMessage}</p>
 					{/if}
 
-					<div class="flex flex-wrap items-center gap-3 pt-2">
-						<Button type="submit" disabled={isSubmitting} class="rounded-full">
+					<div class="flex flex-wrap items-center gap-2 pt-1">
+						<Button type="submit" disabled={isSubmitting}>
 							{isSubmitting ? 'Creating account...' : 'Create account'}
 						</Button>
-						<Button href="/login" variant="outline" class="rounded-full"
-							>Already have an account</Button
-						>
+						<Button href="/login" variant="ghost">Already have an account</Button>
 					</div>
 				</form>
 			{/if}
