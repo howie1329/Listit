@@ -176,8 +176,8 @@
 				</Sidebar.SidebarGroup>
 			</Sidebar.SidebarContent>
 
-			<Sidebar.SidebarFooter>
-				<Sidebar.SidebarMenu>
+			<Sidebar.SidebarFooter class="gap-1 border-t border-border/50">
+				<Sidebar.SidebarMenu class="gap-1">
 					<Sidebar.SidebarMenuItem>
 						<ThemeToggle variant="sidebar" />
 					</Sidebar.SidebarMenuItem>
@@ -188,15 +188,16 @@
 						</Sidebar.SidebarMenuButton>
 					</Sidebar.SidebarMenuItem>
 					<Sidebar.SidebarMenuItem>
-						<Sidebar.SidebarMenuButton size="sm" tooltipContent={userLabel}>
-							<div
-								class="flex aspect-square size-6 items-center justify-center rounded-md bg-sidebar-accent text-sidebar-accent-foreground"
-							>
+						<Sidebar.SidebarMenuButton
+							tooltipContent={userLabel}
+							class="h-9 items-center gap-2 px-2 text-xs group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2!"
+						>
+							<div class="flex size-4 shrink-0 items-center justify-center">
 								<HugeiconsIcon icon={UserCircle02Icon} strokeWidth={2} class="size-4" />
 							</div>
-							<div class="grid flex-1 text-left leading-tight">
-								<span class="truncate text-xs font-medium">{userLabel}</span>
-								<span class="truncate text-[11px] text-muted-foreground">{userMeta}</span>
+							<div class="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+								<span class="truncate text-xs leading-tight font-medium">{userLabel}</span>
+								<span class="truncate text-[11px] leading-tight text-muted-foreground">{userMeta}</span>
 							</div>
 						</Sidebar.SidebarMenuButton>
 					</Sidebar.SidebarMenuItem>

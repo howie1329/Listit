@@ -36,7 +36,7 @@
 		/>
 	</span>
 	{#if variant === 'sidebar'}
-		<span class="truncate">Theme</span>
+		<span class="truncate leading-tight group-data-[collapsible=icon]:hidden">Theme</span>
 	{:else}
 		<span class="sr-only">Toggle theme</span>
 	{/if}
