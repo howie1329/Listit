@@ -2,12 +2,16 @@
 	import {
 		Archive03Icon,
 		BookOpen02Icon,
+		Delete02Icon,
+		Edit02Icon,
 		Folder01Icon,
 		HelpCircleIcon,
 		Home05Icon,
 		Loading03Icon,
 		Logout01Icon,
+		MoreHorizontalIcon,
 		NoteEditIcon,
+		PlusSignIcon,
 		Search01Icon,
 		Settings01Icon,
 		Tag01Icon,
@@ -20,7 +24,10 @@
 	import { onMount } from 'svelte';
 	import { useConvexClient, useQuery } from 'convex-svelte';
 	import { api } from '../../../convex/_generated/api.js';
+	import type { Doc } from '../../../convex/_generated/dataModel';
 	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Input } from '$lib/components/ui/input';
 	import * as Separator from '$lib/components/ui/separator';
 	import * as Sidebar from '$lib/components/ui/sidebar';
@@ -35,8 +42,24 @@
 	let authReady = $state(false);
 	let isAuthenticated = $state(false);
 	let isSigningOut = $state(false);
+	let createCollectionOpen = $state(false);
+	let collectionName = $state('');
+	let collectionError = $state('');
+	let isSavingCollection = $state(false);
+	let editCollectionOpen = $state(false);
+	let editingCollection = $state<Doc<'collections'> | null>(null);
+	let editingName = $state('');
+	let editError = $state('');
+	let isUpdatingCollection = $state(false);
+	let deleteCollectionOpen = $state(false);
+	let deletingCollection = $state<Doc<'collections'> | null>(null);
+	let deleteError = $state('');
+	let isDeletingCollection = $state(false);
 
 	const currentUserResponse = useQuery(api.auth.currentUser, () =>
+		authReady && isAuthenticated ? {} : 'skip'
+	);
+	const collectionsResponse = useQuery(api.collections.list, () =>
 		authReady && isAuthenticated ? {} : 'skip'
 	);
 	const currentUser = $derived(currentUserResponse.data);
@@ -44,6 +67,8 @@
 	const userMeta = $derived(
 		currentUser?.email && currentUser?.name ? currentUser.email : 'ListIt account'
 	);
+	const collections = $derived((collectionsResponse.data ?? []) as Doc<'collections'>[]);
+	const selectedCollectionId = $derived(page.url.searchParams.get('collection'));
 
 	const primaryItems = [
 		{ href: '/app', label: 'Library', icon: Home05Icon },
@@ -52,7 +77,6 @@
 		{ href: '/app/settings', label: 'Settings', icon: Settings01Icon }
 	];
 
-	const collections = ['Reading queue', 'Product research', 'Frontend notes'];
 	const tags = ['AI', 'Svelte', 'Convex'];
 
 	onMount(() => {
@@ -84,6 +108,80 @@
 		isSigningOut = true;
 		await signOut(convexClient);
 		await goto(resolve('/'));
+	}
+
+	async function handleCreateCollection(event: SubmitEvent) {
+		event.preventDefault();
+		if (!convexClient) return;
+
+		const name = collectionName.trim();
+		if (!name) return;
+
+		isSavingCollection = true;
+		collectionError = '';
+
+		try {
+			await convexClient.mutation(api.collections.create, { name });
+			collectionName = '';
+			createCollectionOpen = false;
+		} catch (error) {
+			collectionError = error instanceof Error ? error.message : 'Could not create collection.';
+		} finally {
+			isSavingCollection = false;
+		}
+	}
+
+	function startEditingCollection(collection: Doc<'collections'>) {
+		editingCollection = collection;
+		editingName = collection.name;
+		editError = '';
+		editCollectionOpen = true;
+	}
+
+	async function handleRenameCollection(event: SubmitEvent) {
+		event.preventDefault();
+		if (!convexClient || !editingCollection) return;
+
+		const name = editingName.trim();
+		if (!name) return;
+
+		isUpdatingCollection = true;
+		editError = '';
+
+		try {
+			await convexClient.mutation(api.collections.update, {
+				collectionId: editingCollection._id,
+				name
+			});
+			editingCollection = null;
+			editingName = '';
+			editCollectionOpen = false;
+		} catch (error) {
+			editError = error instanceof Error ? error.message : 'Could not rename collection.';
+		} finally {
+			isUpdatingCollection = false;
+		}
+	}
+
+	async function handleDeleteCollection() {
+		if (!convexClient || !deletingCollection) return;
+
+		isDeletingCollection = true;
+		deleteError = '';
+
+		try {
+			const removedId = deletingCollection._id;
+			await convexClient.mutation(api.collections.remove, { collectionId: removedId });
+			deletingCollection = null;
+			deleteCollectionOpen = false;
+			if (selectedCollectionId === removedId) {
+				await goto(resolve('/app'));
+			}
+		} catch (error) {
+			deleteError = error instanceof Error ? error.message : 'Could not delete collection.';
+		} finally {
+			isDeletingCollection = false;
+		}
 	}
 </script>
 
@@ -144,17 +242,119 @@
 				<Sidebar.SidebarSeparator />
 
 				<Sidebar.SidebarGroup>
-					<Sidebar.SidebarGroupLabel>Collections</Sidebar.SidebarGroupLabel>
+					<div class="flex items-center justify-between gap-2 px-2">
+						<Sidebar.SidebarGroupLabel class="px-0">Collections</Sidebar.SidebarGroupLabel>
+						<Dialog.Dialog bind:open={createCollectionOpen}>
+							<Dialog.DialogTrigger>
+								<Button variant="ghost" size="icon-sm" class="size-6">
+									<HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} class="size-3.5" />
+									<span class="sr-only">New collection</span>
+								</Button>
+							</Dialog.DialogTrigger>
+							<Dialog.DialogContent class="sm:max-w-sm">
+								<Dialog.DialogHeader>
+									<Dialog.DialogTitle>New collection</Dialog.DialogTitle>
+									<Dialog.DialogDescription>
+										Create a collection for organizing bookmarks.
+									</Dialog.DialogDescription>
+								</Dialog.DialogHeader>
+								<form class="space-y-3" onsubmit={handleCreateCollection}>
+									<Input
+										bind:value={collectionName}
+										placeholder="Collection name"
+										disabled={isSavingCollection}
+									/>
+									{#if collectionError}
+										<p class="text-xs text-destructive">{collectionError}</p>
+									{/if}
+									<Dialog.DialogFooter>
+										<Button
+											type="submit"
+											size="sm"
+											disabled={isSavingCollection || !collectionName.trim()}
+										>
+											{isSavingCollection ? 'Creating...' : 'Create'}
+										</Button>
+									</Dialog.DialogFooter>
+								</form>
+							</Dialog.DialogContent>
+						</Dialog.Dialog>
+					</div>
 					<Sidebar.SidebarGroupContent>
 						<Sidebar.SidebarMenu>
-							{#each collections as collection (collection)}
+							<Sidebar.SidebarMenuItem>
+								<Sidebar.SidebarMenuButton
+									size="sm"
+									isActive={!selectedCollectionId}
+									tooltipContent="All bookmarks"
+									onclick={() => goto(resolve('/app'))}
+								>
+									<HugeiconsIcon icon={Folder01Icon} strokeWidth={2} class="size-4" />
+									<span>All bookmarks</span>
+								</Sidebar.SidebarMenuButton>
+							</Sidebar.SidebarMenuItem>
+							{#if collectionsResponse.isLoading}
 								<Sidebar.SidebarMenuItem>
-									<Sidebar.SidebarMenuButton size="sm" tooltipContent={collection}>
-										<HugeiconsIcon icon={Folder01Icon} strokeWidth={2} class="size-4" />
-										<span>{collection}</span>
-									</Sidebar.SidebarMenuButton>
+									<div class="px-2 py-1.5 text-xs text-muted-foreground">
+										Loading collections...
+									</div>
 								</Sidebar.SidebarMenuItem>
-							{/each}
+							{:else if collections.length === 0}
+								<Sidebar.SidebarMenuItem>
+									<div class="px-2 py-1.5 text-xs text-muted-foreground">No collections yet</div>
+								</Sidebar.SidebarMenuItem>
+							{:else}
+								{#each collections as collection (collection._id)}
+									<Sidebar.SidebarMenuItem>
+										<div class="group/collection flex items-center gap-1">
+											<Sidebar.SidebarMenuButton
+												size="sm"
+												isActive={selectedCollectionId === collection._id}
+												tooltipContent={collection.name}
+												onclick={() => goto(resolve(`/app?collection=${collection._id}`))}
+											>
+												<HugeiconsIcon icon={Folder01Icon} strokeWidth={2} class="size-4" />
+												<span>{collection.name}</span>
+											</Sidebar.SidebarMenuButton>
+											<DropdownMenu.DropdownMenu>
+												<DropdownMenu.DropdownMenuTrigger>
+													<Button
+														variant="ghost"
+														size="icon-sm"
+														class="size-7 opacity-0 group-hover/collection:opacity-100 data-[state=open]:opacity-100"
+													>
+														<HugeiconsIcon
+															icon={MoreHorizontalIcon}
+															strokeWidth={2}
+															class="size-3.5"
+														/>
+														<span class="sr-only">Collection actions</span>
+													</Button>
+												</DropdownMenu.DropdownMenuTrigger>
+												<DropdownMenu.DropdownMenuContent class="w-36">
+													<DropdownMenu.DropdownMenuItem
+														onclick={() => startEditingCollection(collection)}
+													>
+														<HugeiconsIcon icon={Edit02Icon} strokeWidth={2} />
+														Rename
+													</DropdownMenu.DropdownMenuItem>
+													<DropdownMenu.DropdownMenuItem
+														variant="destructive"
+														onclick={() => {
+															deletingCollection = collection;
+															deleteError = '';
+															deleteCollectionOpen = true;
+														}}
+													>
+														<HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+														Delete
+													</DropdownMenu.DropdownMenuItem>
+												</DropdownMenu.DropdownMenuContent>
+											</DropdownMenu.DropdownMenu>
+										</div>
+									</Sidebar.SidebarMenuItem>
+								{/each}
+							{/if}
 						</Sidebar.SidebarMenu>
 					</Sidebar.SidebarGroupContent>
 				</Sidebar.SidebarGroup>
@@ -197,7 +397,9 @@
 							</div>
 							<div class="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
 								<span class="truncate text-xs leading-tight font-medium">{userLabel}</span>
-								<span class="truncate text-[11px] leading-tight text-muted-foreground">{userMeta}</span>
+								<span class="truncate text-[11px] leading-tight text-muted-foreground"
+									>{userMeta}</span
+								>
 							</div>
 						</Sidebar.SidebarMenuButton>
 					</Sidebar.SidebarMenuItem>
@@ -241,3 +443,89 @@
 		</Sidebar.SidebarInset>
 	</Sidebar.Provider>
 {/if}
+
+<Dialog.Dialog
+	bind:open={editCollectionOpen}
+	onOpenChange={(open) => {
+		if (!open) editingCollection = null;
+	}}
+>
+	<Dialog.DialogContent class="sm:max-w-sm">
+		<Dialog.DialogHeader>
+			<Dialog.DialogTitle>Rename collection</Dialog.DialogTitle>
+			<Dialog.DialogDescription>Update the collection name.</Dialog.DialogDescription>
+		</Dialog.DialogHeader>
+		<form class="space-y-3" onsubmit={handleRenameCollection}>
+			<Input
+				bind:value={editingName}
+				placeholder="Collection name"
+				disabled={isUpdatingCollection}
+			/>
+			{#if editError}
+				<p class="text-xs text-destructive">{editError}</p>
+			{/if}
+			<Dialog.DialogFooter>
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					onclick={() => {
+						editingCollection = null;
+						editCollectionOpen = false;
+					}}
+					disabled={isUpdatingCollection}
+				>
+					Cancel
+				</Button>
+				<Button type="submit" size="sm" disabled={isUpdatingCollection || !editingName.trim()}>
+					{isUpdatingCollection ? 'Saving...' : 'Save'}
+				</Button>
+			</Dialog.DialogFooter>
+		</form>
+	</Dialog.DialogContent>
+</Dialog.Dialog>
+
+<Dialog.Dialog
+	bind:open={deleteCollectionOpen}
+	onOpenChange={(open) => {
+		if (!open) deletingCollection = null;
+	}}
+>
+	<Dialog.DialogContent class="sm:max-w-sm">
+		<Dialog.DialogHeader>
+			<Dialog.DialogTitle>Delete collection?</Dialog.DialogTitle>
+			<Dialog.DialogDescription>
+				Bookmarks in this collection will stay saved and become unassigned.
+			</Dialog.DialogDescription>
+		</Dialog.DialogHeader>
+		{#if deletingCollection}
+			<p class="text-sm font-medium">{deletingCollection.name}</p>
+		{/if}
+		{#if deleteError}
+			<p class="text-xs text-destructive">{deleteError}</p>
+		{/if}
+		<Dialog.DialogFooter>
+			<Button
+				type="button"
+				variant="ghost"
+				size="sm"
+				onclick={() => {
+					deletingCollection = null;
+					deleteCollectionOpen = false;
+				}}
+				disabled={isDeletingCollection}
+			>
+				Cancel
+			</Button>
+			<Button
+				type="button"
+				variant="destructive"
+				size="sm"
+				onclick={handleDeleteCollection}
+				disabled={isDeletingCollection}
+			>
+				{isDeletingCollection ? 'Deleting...' : 'Delete'}
+			</Button>
+		</Dialog.DialogFooter>
+	</Dialog.DialogContent>
+</Dialog.Dialog>
