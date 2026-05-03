@@ -32,6 +32,7 @@
 	const rows = $derived((bookmarksResponse.data ?? []) as BookmarkRow[]);
 	let selectedBookmarkId = $state<string | null>(null);
 	let url = $state('');
+	let saveSuccess = $state('');
 	let saveError = $state('');
 	let isSaving = $state(false);
 
@@ -75,14 +76,23 @@
 		if (!trimmedUrl) return;
 
 		isSaving = true;
+		saveSuccess = '';
 		saveError = '';
 
 		try {
-			const bookmarkId = await convexClient.mutation(api.bookmarks.saveUrl, { url: trimmedUrl });
-			selectedBookmarkId = bookmarkId;
+			const result = await convexClient.mutation(api.bookmarks.saveUrl, { url: trimmedUrl });
+			selectedBookmarkId = result.bookmarkId;
 			url = '';
+			saveSuccess = result.created
+				? 'Saved. Extraction is pending.'
+				: 'Already saved. Moved to the top.';
 		} catch (error) {
-			saveError = error instanceof Error ? error.message : 'Could not save this URL.';
+			saveError =
+				error instanceof Error && error.message.includes('Invalid URL')
+					? 'Enter a valid URL or domain.'
+					: error instanceof Error
+						? error.message
+						: 'Could not save this URL.';
 		} finally {
 			isSaving = false;
 		}
@@ -115,7 +125,8 @@
 					<InputGroup.InputGroupInput
 						bind:value={url}
 						placeholder="Paste a URL to save it..."
-						type="url"
+						type="text"
+						inputmode="url"
 						disabled={isSaving}
 					/>
 					<InputGroup.InputGroupButton type="submit" size="sm" disabled={isSaving || !url.trim()}>
@@ -124,6 +135,8 @@
 				</InputGroup.InputGroup>
 				{#if saveError}
 					<p class="mt-2 text-xs text-destructive">{saveError}</p>
+				{:else if saveSuccess}
+					<p class="mt-2 text-xs text-muted-foreground">{saveSuccess}</p>
 				{/if}
 			</form>
 		</div>

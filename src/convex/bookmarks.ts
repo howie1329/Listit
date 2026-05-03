@@ -54,10 +54,10 @@ export const saveUrl = mutation({
 				updatedAt: now,
 				lastSavedAt: now
 			});
-			return existing._id;
+			return { bookmarkId: existing._id, created: false };
 		}
 
-		return await ctx.db.insert('bookmarks', {
+		const bookmarkId = await ctx.db.insert('bookmarks', {
 			userId,
 			url: args.url.trim(),
 			normalizedUrl,
@@ -73,6 +73,7 @@ export const saveUrl = mutation({
 			updatedAt: now,
 			lastSavedAt: now
 		});
+		return { bookmarkId, created: true };
 	}
 });
 
@@ -104,7 +105,10 @@ export const list = query({
 					Boolean(bookmark && bookmark.userId === userId)
 				)
 				.filter((bookmark) => !args.collectionId || bookmark.collectionId === args.collectionId)
-				.sort((left, right) => right.createdAt - left.createdAt);
+				.sort(
+					(left, right) =>
+						(right.lastSavedAt ?? right.createdAt) - (left.lastSavedAt ?? left.createdAt)
+				);
 			return await withLibraryData(ctx, filtered);
 		}
 
@@ -116,7 +120,11 @@ export const list = query({
 					)
 			: ctx.db.query('bookmarks').withIndex('by_user_created', (q) => q.eq('userId', userId));
 
-		return await withLibraryData(ctx, await base.order('desc').collect());
+		const bookmarks = await base.collect();
+		bookmarks.sort(
+			(left, right) => (right.lastSavedAt ?? right.createdAt) - (left.lastSavedAt ?? left.createdAt)
+		);
+		return await withLibraryData(ctx, bookmarks);
 	}
 });
 

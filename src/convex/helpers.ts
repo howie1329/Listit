@@ -56,7 +56,8 @@ export async function requireOwnedTag(ctx: AuthedCtx, tagId: Id<'tags'>) {
 }
 
 export function normalizeUrl(input: string) {
-	const parsed = new URL(input.trim());
+	const trimmed = input.trim();
+	const parsed = new URL(/^[a-z][a-z\d+\-.]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
 	parsed.protocol = parsed.protocol.toLowerCase();
 	parsed.hostname = parsed.hostname.toLowerCase();
 	parsed.hash = '';
