@@ -109,7 +109,7 @@
 							<div
 								class="flex aspect-square size-6 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"
 							>
-								<HugeiconsIcon icon={Archive03Icon} strokeWidth={2} />
+								<HugeiconsIcon icon={Archive03Icon} strokeWidth={2} class="size-4" />
 							</div>
 							<div class="grid flex-1 text-left text-xs leading-tight">
 								<span class="truncate font-semibold">ListIt</span>
@@ -132,7 +132,7 @@
 										isActive={page.url.pathname === item.href}
 										tooltipContent={item.label}
 									>
-										<HugeiconsIcon icon={item.icon} strokeWidth={2} />
+										<HugeiconsIcon icon={item.icon} strokeWidth={2} class="size-4" />
 										<span>{item.label}</span>
 									</Sidebar.SidebarMenuButton>
 								</Sidebar.SidebarMenuItem>
@@ -150,7 +150,7 @@
 							{#each collections as collection (collection)}
 								<Sidebar.SidebarMenuItem>
 									<Sidebar.SidebarMenuButton size="sm" tooltipContent={collection}>
-										<HugeiconsIcon icon={Folder01Icon} strokeWidth={2} />
+										<HugeiconsIcon icon={Folder01Icon} strokeWidth={2} class="size-4" />
 										<span>{collection}</span>
 									</Sidebar.SidebarMenuButton>
 								</Sidebar.SidebarMenuItem>
@@ -166,7 +166,7 @@
 							{#each tags as tag (tag)}
 								<Sidebar.SidebarMenuItem>
 									<Sidebar.SidebarMenuButton size="sm" tooltipContent={tag}>
-										<HugeiconsIcon icon={Tag01Icon} strokeWidth={2} />
+										<HugeiconsIcon icon={Tag01Icon} strokeWidth={2} class="size-4" />
 										<span>{tag}</span>
 									</Sidebar.SidebarMenuButton>
 								</Sidebar.SidebarMenuItem>
@@ -179,22 +179,25 @@
 			<Sidebar.SidebarFooter>
 				<Sidebar.SidebarMenu>
 					<Sidebar.SidebarMenuItem>
+						<ThemeToggle variant="sidebar" />
+					</Sidebar.SidebarMenuItem>
+					<Sidebar.SidebarMenuItem>
+						<Sidebar.SidebarMenuButton size="sm" tooltipContent="Help">
+							<HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} class="size-4" />
+							<span>Help</span>
+						</Sidebar.SidebarMenuButton>
+					</Sidebar.SidebarMenuItem>
+					<Sidebar.SidebarMenuItem>
 						<Sidebar.SidebarMenuButton size="sm" tooltipContent={userLabel}>
 							<div
 								class="flex aspect-square size-6 items-center justify-center rounded-md bg-sidebar-accent text-sidebar-accent-foreground"
 							>
-								<HugeiconsIcon icon={UserCircle02Icon} strokeWidth={2} />
+								<HugeiconsIcon icon={UserCircle02Icon} strokeWidth={2} class="size-4" />
 							</div>
 							<div class="grid flex-1 text-left leading-tight">
 								<span class="truncate text-xs font-medium">{userLabel}</span>
 								<span class="truncate text-[11px] text-muted-foreground">{userMeta}</span>
 							</div>
-						</Sidebar.SidebarMenuButton>
-					</Sidebar.SidebarMenuItem>
-					<Sidebar.SidebarMenuItem>
-						<Sidebar.SidebarMenuButton size="sm" tooltipContent="Help">
-							<HugeiconsIcon icon={HelpCircleIcon} strokeWidth={2} />
-							<span>Help</span>
 						</Sidebar.SidebarMenuButton>
 					</Sidebar.SidebarMenuItem>
 				</Sidebar.SidebarMenu>
@@ -219,7 +222,6 @@
 					<HugeiconsIcon icon={BookOpen02Icon} strokeWidth={2} data-icon="inline-start" />
 					Reader
 				</Button>
-				<ThemeToggle />
 				<Button
 					variant="ghost"
 					size="sm"

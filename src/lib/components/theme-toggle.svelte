@@ -1,58 +1,43 @@
 <script lang="ts">
-	import { ComputerIcon, Moon02Icon, Sun01Icon } from '@hugeicons/core-free-icons';
+	import { Moon02Icon, Sun01Icon } from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { mode, resetMode, setMode, userPrefersMode } from 'mode-watcher';
+	import { toggleMode } from 'mode-watcher';
+	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils.js';
 
-	const options = [
-		{
-			value: 'light',
-			label: 'Light mode',
-			icon: Sun01Icon,
-			select: () => setMode('light')
-		},
-		{
-			value: 'system',
-			label: 'System mode',
-			icon: ComputerIcon,
-			select: () => resetMode()
-		},
-		{
-			value: 'dark',
-			label: 'Dark mode',
-			icon: Moon02Icon,
-			select: () => setMode('dark')
-		}
-	] as const;
+	type Variant = 'icon' | 'sidebar';
 
-	const selected = $derived(userPrefersMode.current ?? 'system');
-	const currentLabel = $derived(
-		mode.current === 'dark'
-			? 'Dark mode active'
-			: mode.current === 'light'
-				? 'Light mode active'
-				: 'Theme mode'
-	);
+	let { variant = 'icon' }: { variant?: Variant } = $props();
 </script>
 
-<div
-	class="inline-flex h-9 items-center rounded-full border border-border/70 bg-background/80 p-1 shadow-sm backdrop-blur"
-	aria-label={currentLabel}
-	role="group"
+<Button
+	onclick={toggleMode}
+	variant="ghost"
+	size={variant === 'sidebar' ? 'sm' : 'icon'}
+	class={cn(
+		'relative overflow-hidden text-muted-foreground',
+		variant === 'icon' && 'size-8',
+		variant === 'sidebar' &&
+			'h-7 w-full justify-start gap-2 rounded-md px-2 text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2!'
+	)}
+	aria-label="Toggle theme"
+	title="Toggle theme"
 >
-	{#each options as option (option.value)}
-		<button
-			type="button"
-			class={cn(
-				'inline-flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground',
-				selected === option.value && 'bg-foreground text-background shadow-sm'
-			)}
-			aria-label={option.label}
-			aria-pressed={selected === option.value}
-			title={option.label}
-			onclick={option.select}
-		>
-			<HugeiconsIcon icon={option.icon} strokeWidth={2} class="size-3.5" />
-		</button>
-	{/each}
-</div>
+	<span class="relative flex size-4 shrink-0 items-center justify-center">
+		<HugeiconsIcon
+			icon={Sun01Icon}
+			strokeWidth={2}
+			class="absolute size-4 scale-100 rotate-0 transition-all duration-150 dark:scale-0 dark:-rotate-90"
+		/>
+		<HugeiconsIcon
+			icon={Moon02Icon}
+			strokeWidth={2}
+			class="absolute size-4 scale-0 rotate-90 transition-all duration-150 dark:scale-100 dark:rotate-0"
+		/>
+	</span>
+	{#if variant === 'sidebar'}
+		<span class="truncate">Theme</span>
+	{:else}
+		<span class="sr-only">Toggle theme</span>
+	{/if}
+</Button>
