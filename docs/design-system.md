@@ -1,6 +1,6 @@
 # Listit Design System - Linear-Inspired Foundations
 
-This design system codifies the visual and interaction principles inspired by Linear and adapts them for **Listit** (TanStack Start + React + Tailwind CSS v4).
+This design system codifies the visual and interaction principles inspired by Linear and adapts them for **Listit**.
 
 It is the default source of truth for app shell layout, navigation, lists, controls, and page chrome in this repository.
 
