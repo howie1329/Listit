@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
 
-import { internalMutation } from './_generated/server';
+import { internalMutation, internalQuery } from './_generated/server';
 
 const metadataValidator = {
 	title: v.optional(v.string()),
@@ -10,6 +10,17 @@ const metadataValidator = {
 	imageUrl: v.optional(v.string()),
 	canonicalUrl: v.optional(v.string())
 };
+
+export const getExtractionTarget = internalQuery({
+	args: {
+		bookmarkId: v.id('bookmarks')
+	},
+	handler: async (ctx, args) => {
+		const bookmark = await ctx.db.get(args.bookmarkId);
+		if (!bookmark) return null;
+		return { url: bookmark.normalizedUrl || bookmark.url };
+	}
+});
 
 export const saveExtractionSuccess = internalMutation({
 	args: {
