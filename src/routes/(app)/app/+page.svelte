@@ -8,7 +8,9 @@
 		NoteEditIcon,
 		PlusSignIcon,
 		SearchList01Icon,
-		Folder01Icon
+		Folder01Icon,
+		Tag01Icon,
+		Delete02Icon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { useConvexClient, useQuery } from 'convex-svelte';
@@ -28,17 +30,30 @@
 		tags: Doc<'tags'>[];
 		collection: Doc<'collections'> | null;
 	};
+	type TagOption = {
+		name: string;
+		type: 'existing' | 'create';
+	};
 
 	const convexClient = useConvexClient();
 	const selectedCollectionId = $derived(
 		page.url.searchParams.get('collection') as Id<'collections'> | null
 	);
+	const selectedTagId = $derived(page.url.searchParams.get('tag') as Id<'tags'> | null);
 	const bookmarksResponse = useQuery(api.bookmarks.list, () =>
-		selectedCollectionId ? { collectionId: selectedCollectionId } : {}
+		selectedCollectionId || selectedTagId
+			? {
+					...(selectedCollectionId ? { collectionId: selectedCollectionId } : {}),
+					...(selectedTagId ? { tagId: selectedTagId } : {})
+				}
+			: {}
 	);
 	const collectionsResponse = useQuery(api.collections.list, {});
+	const tagsResponse = useQuery(api.tags.list, {});
 	const rows = $derived((bookmarksResponse.data ?? []) as BookmarkRow[]);
 	const collections = $derived((collectionsResponse.data ?? []) as Doc<'collections'>[]);
+	const allTags = $derived((tagsResponse.data ?? []) as Doc<'tags'>[]);
+	const skeletonRows = [0, 1, 2, 3, 4, 5];
 	let selectedBookmarkId = $state<string | null>(null);
 	let url = $state('');
 	let saveSuccess = $state('');
@@ -46,6 +61,12 @@
 	let isSaving = $state(false);
 	let assignmentError = $state('');
 	let isAssigningCollection = $state(false);
+	let tagInput = $state('');
+	let tagDraft = $state<string[]>([]);
+	let tagError = $state('');
+	let isSavingTags = $state(false);
+	let isTagInputFocused = $state(false);
+	let highlightedTagOptionIndex = $state(0);
 
 	const selectedRow = $derived(
 		rows.find((row) => row.bookmark._id === selectedBookmarkId) ?? rows[0] ?? null
@@ -80,6 +101,52 @@
 	function getTags(row: BookmarkRow) {
 		return row.tags.map((tag) => tag.name);
 	}
+
+	function normalizeTagName(name: string) {
+		return name.trim().replace(/\s+/g, ' ');
+	}
+
+	function normalizeTagNames(names: string[]) {
+		return Array.from(new Set(names.map(normalizeTagName).filter(Boolean)));
+	}
+
+	const savedTagNames = $derived(selectedRow ? getTags(selectedRow) : []);
+	const normalizedTagInput = $derived(normalizeTagName(tagInput));
+	const selectedTagKeys = $derived(new Set(tagDraft.map((tag) => tag.toLowerCase())));
+	const existingTagKeys = $derived(new Set(allTags.map((tag) => tag.name.toLowerCase())));
+	const matchingTagOptions = $derived(
+		allTags
+			.filter((tag) => !selectedTagKeys.has(tag.name.toLowerCase()))
+			.filter(
+				(tag) =>
+					!normalizedTagInput || tag.name.toLowerCase().includes(normalizedTagInput.toLowerCase())
+			)
+			.map((tag) => ({ name: tag.name, type: 'existing' }) satisfies TagOption)
+	);
+	const canCreateTagOption = $derived(
+		Boolean(
+			normalizedTagInput &&
+			!selectedTagKeys.has(normalizedTagInput.toLowerCase()) &&
+			!existingTagKeys.has(normalizedTagInput.toLowerCase())
+		)
+	);
+	const tagOptions = $derived(
+		canCreateTagOption
+			? [...matchingTagOptions, { name: normalizedTagInput, type: 'create' } satisfies TagOption]
+			: matchingTagOptions
+	);
+	const showTagOptions = $derived(isTagInputFocused && tagOptions.length > 0);
+	const hasTagChanges = $derived(
+		normalizeTagNames(savedTagNames).join('\n') !== normalizeTagNames(tagDraft).join('\n')
+	);
+
+	$effect(() => {
+		tagDraft = savedTagNames;
+		tagInput = '';
+		tagError = '';
+		isTagInputFocused = false;
+		highlightedTagOptionIndex = 0;
+	});
 
 	async function handleSave(event: SubmitEvent) {
 		event.preventDefault();
@@ -125,6 +192,81 @@
 			assignmentError = error instanceof Error ? error.message : 'Could not update collection.';
 		} finally {
 			isAssigningCollection = false;
+		}
+	}
+
+	function addTagNames(names: string[]) {
+		const next = normalizeTagNames([...tagDraft, ...names]);
+		tagDraft = next;
+	}
+
+	function removeTagName(name: string) {
+		tagDraft = tagDraft.filter((tag) => tag !== name);
+	}
+
+	function commitTagInput() {
+		const names = tagInput.split(',').map(normalizeTagName);
+		addTagNames(names);
+		tagInput = '';
+		highlightedTagOptionIndex = 0;
+	}
+
+	function selectTagOption(option: TagOption) {
+		addTagNames([option.name]);
+		tagInput = '';
+		highlightedTagOptionIndex = 0;
+	}
+
+	function handleTagInputKeydown(event: KeyboardEvent) {
+		if (event.key === 'ArrowDown' && tagOptions.length) {
+			event.preventDefault();
+			highlightedTagOptionIndex = (highlightedTagOptionIndex + 1) % tagOptions.length;
+			return;
+		}
+
+		if (event.key === 'ArrowUp' && tagOptions.length) {
+			event.preventDefault();
+			highlightedTagOptionIndex =
+				(highlightedTagOptionIndex - 1 + tagOptions.length) % tagOptions.length;
+			return;
+		}
+
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			const option = tagOptions[highlightedTagOptionIndex] ?? tagOptions[0];
+			if (option) {
+				selectTagOption(option);
+			} else {
+				commitTagInput();
+			}
+			return;
+		}
+
+		if (event.key === ',') {
+			event.preventDefault();
+			commitTagInput();
+		}
+	}
+
+	async function handleSaveTags() {
+		if (!convexClient || !selectedRow) return;
+
+		const names = normalizeTagNames([...tagDraft, ...tagInput.split(',')]);
+		tagDraft = names;
+		tagInput = '';
+
+		isSavingTags = true;
+		tagError = '';
+
+		try {
+			await convexClient.mutation(api.bookmarks.setTags, {
+				bookmarkId: selectedRow.bookmark._id,
+				tagNames: names
+			});
+		} catch (error) {
+			tagError = error instanceof Error ? error.message : 'Could not update tags.';
+		} finally {
+			isSavingTags = false;
 		}
 	}
 </script>
@@ -180,7 +322,7 @@
 		<ScrollArea.ScrollArea class="min-h-0 flex-1">
 			{#if bookmarksResponse.isLoading}
 				<div class="flex flex-col gap-2 p-2">
-					{#each Array.from({ length: 6 }) as _, index (index)}
+					{#each skeletonRows as index (index)}
 						<div
 							class="grid h-12 grid-cols-[minmax(0,1fr)] items-center gap-2 rounded-md px-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_6rem] md:grid-cols-[minmax(0,1fr)_6rem_12rem]"
 						>
@@ -330,6 +472,96 @@
 						</select>
 						{#if assignmentError}
 							<p class="mt-2 text-xs text-destructive">{assignmentError}</p>
+						{/if}
+					</section>
+
+					<section>
+						<div class="flex items-center gap-2">
+							<HugeiconsIcon
+								icon={Tag01Icon}
+								strokeWidth={2}
+								class="size-3.5 text-muted-foreground"
+							/>
+							<h3 class="text-xs font-medium">Tags</h3>
+						</div>
+						<div
+							class="mt-2 flex min-h-20 flex-col gap-2 rounded-lg border border-input px-2.5 py-2"
+						>
+							<div class="flex flex-wrap gap-1.5">
+								{#if tagDraft.length}
+									{#each tagDraft as tag (tag)}
+										<span
+											class="inline-flex h-6 max-w-full items-center gap-1 rounded-sm bg-secondary px-1.5 text-[11px] text-secondary-foreground"
+										>
+											<span class="truncate">{tag}</span>
+											<button
+												type="button"
+												class="inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+												onclick={() => removeTagName(tag)}
+												disabled={isSavingTags}
+											>
+												<HugeiconsIcon icon={Delete02Icon} strokeWidth={2} class="size-3" />
+												<span class="sr-only">Remove {tag}</span>
+											</button>
+										</span>
+									{/each}
+								{:else}
+									<span class="text-[11px] text-muted-foreground">No tags assigned</span>
+								{/if}
+							</div>
+							<input
+								class="h-7 bg-transparent text-xs outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+								bind:value={tagInput}
+								onfocus={() => (isTagInputFocused = true)}
+								onblur={() => (isTagInputFocused = false)}
+								oninput={() => (highlightedTagOptionIndex = 0)}
+								onkeydown={handleTagInputKeydown}
+								placeholder="Add tags..."
+								disabled={isSavingTags}
+							/>
+							{#if showTagOptions}
+								<div
+									class="rounded-md border border-border/60 bg-popover p-1 text-xs text-popover-foreground shadow-sm"
+									role="listbox"
+									aria-label="Tag suggestions"
+								>
+									{#each tagOptions as option, index (`${option.type}-${option.name}`)}
+										<button
+											type="button"
+											class={cn(
+												'flex h-7 w-full items-center justify-between gap-2 rounded-sm px-2 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none',
+												index === highlightedTagOptionIndex && 'bg-accent text-accent-foreground'
+											)}
+											onmousedown={(event) => event.preventDefault()}
+											onclick={() => selectTagOption(option)}
+											role="option"
+											aria-selected={index === highlightedTagOptionIndex}
+										>
+											<span class="truncate">
+												{option.type === 'create' ? `Create "${option.name}"` : option.name}
+											</span>
+											{#if option.type === 'existing'}
+												<span class="shrink-0 text-[10px] text-muted-foreground">Existing</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+						<div class="mt-2 flex items-center justify-between gap-2">
+							<p class="text-[11px] text-muted-foreground">Press Enter or comma to add.</p>
+							<Button
+								type="button"
+								size="sm"
+								class="h-7"
+								onclick={handleSaveTags}
+								disabled={isSavingTags || (!hasTagChanges && !tagInput.trim())}
+							>
+								{isSavingTags ? 'Saving...' : 'Save tags'}
+							</Button>
+						</div>
+						{#if tagError}
+							<p class="mt-2 text-xs text-destructive">{tagError}</p>
 						{/if}
 					</section>
 
