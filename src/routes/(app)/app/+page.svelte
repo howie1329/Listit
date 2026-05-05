@@ -30,6 +30,10 @@
 		tags: Doc<'tags'>[];
 		collection: Doc<'collections'> | null;
 	};
+	type TagOption = {
+		name: string;
+		type: 'existing' | 'create';
+	};
 
 	const convexClient = useConvexClient();
 	const selectedCollectionId = $derived(
@@ -45,8 +49,10 @@
 			: {}
 	);
 	const collectionsResponse = useQuery(api.collections.list, {});
+	const tagsResponse = useQuery(api.tags.list, {});
 	const rows = $derived((bookmarksResponse.data ?? []) as BookmarkRow[]);
 	const collections = $derived((collectionsResponse.data ?? []) as Doc<'collections'>[]);
+	const allTags = $derived((tagsResponse.data ?? []) as Doc<'tags'>[]);
 	const skeletonRows = [0, 1, 2, 3, 4, 5];
 	let selectedBookmarkId = $state<string | null>(null);
 	let url = $state('');
@@ -59,6 +65,8 @@
 	let tagDraft = $state<string[]>([]);
 	let tagError = $state('');
 	let isSavingTags = $state(false);
+	let isTagInputFocused = $state(false);
+	let highlightedTagOptionIndex = $state(0);
 
 	const selectedRow = $derived(
 		rows.find((row) => row.bookmark._id === selectedBookmarkId) ?? rows[0] ?? null
@@ -103,6 +111,31 @@
 	}
 
 	const savedTagNames = $derived(selectedRow ? getTags(selectedRow) : []);
+	const normalizedTagInput = $derived(normalizeTagName(tagInput));
+	const selectedTagKeys = $derived(new Set(tagDraft.map((tag) => tag.toLowerCase())));
+	const existingTagKeys = $derived(new Set(allTags.map((tag) => tag.name.toLowerCase())));
+	const matchingTagOptions = $derived(
+		allTags
+			.filter((tag) => !selectedTagKeys.has(tag.name.toLowerCase()))
+			.filter(
+				(tag) =>
+					!normalizedTagInput || tag.name.toLowerCase().includes(normalizedTagInput.toLowerCase())
+			)
+			.map((tag) => ({ name: tag.name, type: 'existing' }) satisfies TagOption)
+	);
+	const canCreateTagOption = $derived(
+		Boolean(
+			normalizedTagInput &&
+			!selectedTagKeys.has(normalizedTagInput.toLowerCase()) &&
+			!existingTagKeys.has(normalizedTagInput.toLowerCase())
+		)
+	);
+	const tagOptions = $derived(
+		canCreateTagOption
+			? [...matchingTagOptions, { name: normalizedTagInput, type: 'create' } satisfies TagOption]
+			: matchingTagOptions
+	);
+	const showTagOptions = $derived(isTagInputFocused && tagOptions.length > 0);
 	const hasTagChanges = $derived(
 		normalizeTagNames(savedTagNames).join('\n') !== normalizeTagNames(tagDraft).join('\n')
 	);
@@ -111,6 +144,8 @@
 		tagDraft = savedTagNames;
 		tagInput = '';
 		tagError = '';
+		isTagInputFocused = false;
+		highlightedTagOptionIndex = 0;
 	});
 
 	async function handleSave(event: SubmitEvent) {
@@ -173,10 +208,41 @@
 		const names = tagInput.split(',').map(normalizeTagName);
 		addTagNames(names);
 		tagInput = '';
+		highlightedTagOptionIndex = 0;
+	}
+
+	function selectTagOption(option: TagOption) {
+		addTagNames([option.name]);
+		tagInput = '';
+		highlightedTagOptionIndex = 0;
 	}
 
 	function handleTagInputKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter' || event.key === ',') {
+		if (event.key === 'ArrowDown' && tagOptions.length) {
+			event.preventDefault();
+			highlightedTagOptionIndex = (highlightedTagOptionIndex + 1) % tagOptions.length;
+			return;
+		}
+
+		if (event.key === 'ArrowUp' && tagOptions.length) {
+			event.preventDefault();
+			highlightedTagOptionIndex =
+				(highlightedTagOptionIndex - 1 + tagOptions.length) % tagOptions.length;
+			return;
+		}
+
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			const option = tagOptions[highlightedTagOptionIndex] ?? tagOptions[0];
+			if (option) {
+				selectTagOption(option);
+			} else {
+				commitTagInput();
+			}
+			return;
+		}
+
+		if (event.key === ',') {
 			event.preventDefault();
 			commitTagInput();
 		}
@@ -446,10 +512,41 @@
 							<input
 								class="h-7 bg-transparent text-xs outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
 								bind:value={tagInput}
+								onfocus={() => (isTagInputFocused = true)}
+								onblur={() => (isTagInputFocused = false)}
+								oninput={() => (highlightedTagOptionIndex = 0)}
 								onkeydown={handleTagInputKeydown}
 								placeholder="Add tags..."
 								disabled={isSavingTags}
 							/>
+							{#if showTagOptions}
+								<div
+									class="rounded-md border border-border/60 bg-popover p-1 text-xs text-popover-foreground shadow-sm"
+									role="listbox"
+									aria-label="Tag suggestions"
+								>
+									{#each tagOptions as option, index (`${option.type}-${option.name}`)}
+										<button
+											type="button"
+											class={cn(
+												'flex h-7 w-full items-center justify-between gap-2 rounded-sm px-2 text-left hover:bg-accent focus-visible:bg-accent focus-visible:outline-none',
+												index === highlightedTagOptionIndex && 'bg-accent text-accent-foreground'
+											)}
+											onmousedown={(event) => event.preventDefault()}
+											onclick={() => selectTagOption(option)}
+											role="option"
+											aria-selected={index === highlightedTagOptionIndex}
+										>
+											<span class="truncate">
+												{option.type === 'create' ? `Create "${option.name}"` : option.name}
+											</span>
+											{#if option.type === 'existing'}
+												<span class="shrink-0 text-[10px] text-muted-foreground">Existing</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+							{/if}
 						</div>
 						<div class="mt-2 flex items-center justify-between gap-2">
 							<p class="text-[11px] text-muted-foreground">Press Enter or comma to add.</p>
