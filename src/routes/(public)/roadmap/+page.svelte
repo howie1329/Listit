@@ -2,23 +2,28 @@
 	const phases = [
 		{
 			name: 'Capture',
-			copy: 'Save a URL instantly and show it in the list before enrichment finishes.'
+			status: 'Current',
+			copy: 'Save a URL instantly and show it in the library before enrichment finishes.'
 		},
 		{
 			name: 'Organize',
-			copy: 'Use manual tags and collections without turning the app into a filing cabinet.'
+			status: 'Current',
+			copy: 'Use manual tags and one collection per bookmark for lightweight structure.'
 		},
 		{
 			name: 'Enrich',
-			copy: 'Fetch, extract, truncate, and suggest structure in the background.'
+			status: 'MVP',
+			copy: 'Extract readable text, truncate it for storage, and suggest useful organization.'
 		},
 		{
 			name: 'Ask',
-			copy: 'Retrieve the useful parts and answer with bookmark citations.'
+			status: 'MVP',
+			copy: 'Retrieve relevant bookmark context and answer with citations to saved links.'
 		},
 		{
 			name: 'Read',
-			copy: 'Keep editable notes next to extracted content so memory stays usable.'
+			status: 'MVP',
+			copy: 'Keep extracted content and one editable note close to the bookmark.'
 		}
 	];
 </script>
@@ -31,33 +36,32 @@
 	/>
 </svelte:head>
 
-<section class="mx-auto min-h-[calc(100dvh-3.5rem)] max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-	<div class="grid gap-10 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)] lg:items-start">
-		<div class="lg:sticky lg:top-24">
-			<p class="text-sm font-medium text-muted-foreground">Roadmap</p>
-			<h1 class="mt-4 font-heading text-4xl font-semibold text-balance sm:text-5xl">
-				Five moves, then stop.
-			</h1>
-			<p class="mt-4 max-w-md text-base leading-7 text-pretty text-muted-foreground">
-				ListIt is deliberately small. The roadmap is about getting from saved link to useful
-				retrieval without turning the product into a life operating system.
+<section class="mx-auto min-h-[calc(100dvh-3.5rem)] max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+	<div class="grid gap-8 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:items-start">
+		<div>
+			<p class="text-[11px] font-medium text-muted-foreground uppercase">Roadmap</p>
+			<h1 class="mt-3 font-heading text-xl font-semibold">Five MVP moves.</h1>
+			<p class="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+				ListIt stays small on purpose: capture links, add light structure, enrich content, ask
+				grounded questions, and read with notes.
 			</p>
 		</div>
 
-		<div class="space-y-3">
+		<div class="border-t border-border/60">
 			{#each phases as phase, index (phase.name)}
-				<div class="rounded-lg border border-border/70 bg-card/80 px-4 py-4 backdrop-blur sm:px-5">
-					<div class="grid gap-3 sm:grid-cols-[3rem_minmax(0,1fr)]">
-						<p class="text-sm text-muted-foreground tabular-nums">
-							{String(index + 1).padStart(2, '0')}
-						</p>
-						<div>
-							<h2 class="text-base font-semibold">{phase.name}</h2>
-							<p class="mt-1 text-sm leading-6 text-pretty text-muted-foreground">
-								{phase.copy}
-							</p>
-						</div>
+				<div
+					class="grid gap-3 border-b border-border/60 py-4 sm:grid-cols-[3rem_minmax(0,1fr)_5rem]"
+				>
+					<p class="text-[11px] text-muted-foreground tabular-nums">
+						{String(index + 1).padStart(2, '0')}
+					</p>
+					<div>
+						<h2 class="text-base font-semibold">{phase.name}</h2>
+						<p class="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{phase.copy}</p>
 					</div>
+					<p class="text-[11px] font-medium text-muted-foreground uppercase sm:text-right">
+						{phase.status}
+					</p>
 				</div>
 			{/each}
 		</div>
