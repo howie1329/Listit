@@ -7,12 +7,14 @@
 		MagicWand01Icon,
 		NoteEditIcon,
 		PlusSignIcon,
-		SearchList01Icon
+		SearchList01Icon,
+		Folder01Icon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { useConvexClient, useQuery } from 'convex-svelte';
+	import { page } from '$app/state';
 	import { api } from '../../../convex/_generated/api.js';
-	import type { Doc } from '../../../convex/_generated/dataModel';
+	import type { Doc, Id } from '../../../convex/_generated/dataModel';
 	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as InputGroup from '$lib/components/ui/input-group';
@@ -28,13 +30,22 @@
 	};
 
 	const convexClient = useConvexClient();
-	const bookmarksResponse = useQuery(api.bookmarks.list, {});
+	const selectedCollectionId = $derived(
+		page.url.searchParams.get('collection') as Id<'collections'> | null
+	);
+	const bookmarksResponse = useQuery(api.bookmarks.list, () =>
+		selectedCollectionId ? { collectionId: selectedCollectionId } : {}
+	);
+	const collectionsResponse = useQuery(api.collections.list, {});
 	const rows = $derived((bookmarksResponse.data ?? []) as BookmarkRow[]);
+	const collections = $derived((collectionsResponse.data ?? []) as Doc<'collections'>[]);
 	let selectedBookmarkId = $state<string | null>(null);
 	let url = $state('');
 	let saveSuccess = $state('');
 	let saveError = $state('');
 	let isSaving = $state(false);
+	let assignmentError = $state('');
+	let isAssigningCollection = $state(false);
 
 	const selectedRow = $derived(
 		rows.find((row) => row.bookmark._id === selectedBookmarkId) ?? rows[0] ?? null
@@ -97,11 +108,28 @@
 			isSaving = false;
 		}
 	}
+
+	async function handleCollectionAssignment(value: string) {
+		if (!convexClient || !selectedRow) return;
+
+		const collectionId = value === 'unassigned' ? null : (value as Id<'collections'>);
+		isAssigningCollection = true;
+		assignmentError = '';
+
+		try {
+			await convexClient.mutation(api.bookmarks.update, {
+				bookmarkId: selectedRow.bookmark._id,
+				collectionId
+			});
+		} catch (error) {
+			assignmentError = error instanceof Error ? error.message : 'Could not update collection.';
+		} finally {
+			isAssigningCollection = false;
+		}
+	}
 </script>
 
-<div
-	class="flex h-[calc(100svh-3rem)] min-h-0 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_23rem]"
->
+<div class="flex h-[calc(100svh-3rem)] min-h-0 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_23rem]">
 	<section class="flex min-h-0 flex-col">
 		<div class="border-b border-border/50 px-4 py-3">
 			<div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -199,7 +227,9 @@
 							)}
 						>
 							<span class="min-w-0">
-								<span class="block truncate text-xs font-medium">{getDisplayTitle(row.bookmark)}</span>
+								<span class="block truncate text-xs font-medium"
+									>{getDisplayTitle(row.bookmark)}</span
+								>
 								<span class="mt-0.5 block truncate text-[11px] text-muted-foreground">
 									{row.bookmark.siteName || getHostname(row.bookmark.url)}
 									{#if row.collection}
@@ -235,7 +265,9 @@
 		{#if selectedRow}
 			<div class="border-b border-border/50 px-4 py-3">
 				<p class="text-[11px] font-medium text-muted-foreground uppercase">Selected bookmark</p>
-				<h2 class="mt-1.5 truncate text-base font-semibold">{getDisplayTitle(selectedRow.bookmark)}</h2>
+				<h2 class="mt-1.5 truncate text-base font-semibold">
+					{getDisplayTitle(selectedRow.bookmark)}
+				</h2>
 				<p class="mt-0.5 truncate text-xs text-muted-foreground">
 					{selectedRow.bookmark.siteName || getHostname(selectedRow.bookmark.url)}
 				</p>
@@ -272,6 +304,33 @@
 							placeholder="No note yet."
 							readonly
 						/>
+					</section>
+
+					<section>
+						<div class="flex items-center gap-2">
+							<HugeiconsIcon
+								icon={Folder01Icon}
+								strokeWidth={2}
+								class="size-3.5 text-muted-foreground"
+							/>
+							<h3 class="text-xs font-medium">Collection</h3>
+						</div>
+						<select
+							class="mt-2 h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+							value={selectedRow.bookmark.collectionId ?? 'unassigned'}
+							onchange={(event) => handleCollectionAssignment(event.currentTarget.value)}
+							disabled={isAssigningCollection || collectionsResponse.isLoading}
+						>
+							<option value="unassigned">Unassigned</option>
+							{#if collections.length}
+								{#each collections as collection (collection._id)}
+									<option value={collection._id}>{collection.name}</option>
+								{/each}
+							{/if}
+						</select>
+						{#if assignmentError}
+							<p class="mt-2 text-xs text-destructive">{assignmentError}</p>
+						{/if}
 					</section>
 
 					<section>
