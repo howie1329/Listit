@@ -1,7 +1,6 @@
 <script lang="ts">
 	import {
 		Archive03Icon,
-		BookOpen02Icon,
 		Delete02Icon,
 		Edit02Icon,
 		Folder01Icon,
@@ -377,13 +376,19 @@
 							</Sidebar.SidebarMenuItem>
 							{#if collectionsResponse.isLoading}
 								<Sidebar.SidebarMenuItem>
-									<div class="px-2 py-1.5 text-xs text-muted-foreground">
+									<div
+										class="px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden"
+									>
 										Loading collections...
 									</div>
 								</Sidebar.SidebarMenuItem>
 							{:else if collections.length === 0}
 								<Sidebar.SidebarMenuItem>
-									<div class="px-2 py-1.5 text-xs text-muted-foreground">No collections yet</div>
+									<div
+										class="px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden"
+									>
+										No collections yet
+									</div>
 								</Sidebar.SidebarMenuItem>
 							{:else}
 								{#each collections as collection (collection._id)}
@@ -456,11 +461,19 @@
 						<Sidebar.SidebarMenu>
 							{#if tagsResponse.isLoading}
 								<Sidebar.SidebarMenuItem>
-									<div class="px-2 py-1.5 text-xs text-muted-foreground">Loading tags...</div>
+									<div
+										class="px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden"
+									>
+										Loading tags...
+									</div>
 								</Sidebar.SidebarMenuItem>
 							{:else if tags.length === 0}
 								<Sidebar.SidebarMenuItem>
-									<div class="px-2 py-1.5 text-xs text-muted-foreground">No tags yet</div>
+									<div
+										class="px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden"
+									>
+										No tags yet
+									</div>
 								</Sidebar.SidebarMenuItem>
 							{:else}
 								{#each tags as tag (tag._id)}
@@ -571,10 +584,6 @@
 					/>
 					<Input class="h-8 pl-8 text-xs" placeholder="Search bookmarks or run a command..." />
 				</div>
-				<Button variant="ghost" size="sm" class="hidden h-8 sm:inline-flex">
-					<HugeiconsIcon icon={BookOpen02Icon} strokeWidth={2} data-icon="inline-start" />
-					Reader
-				</Button>
 				<Button
 					variant="ghost"
 					size="sm"
