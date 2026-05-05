@@ -6,7 +6,8 @@
 		Link01Icon,
 		MagicWand01Icon,
 		NoteEditIcon,
-		PlusSignIcon,
+		PanelRightCloseIcon,
+		PanelRightOpenIcon,
 		SearchList01Icon,
 		Folder01Icon,
 		Tag01Icon,
@@ -67,6 +68,7 @@
 	let isSavingTags = $state(false);
 	let isTagInputFocused = $state(false);
 	let highlightedTagOptionIndex = $state(0);
+	let isInspectorOpen = $state(true);
 
 	const selectedRow = $derived(
 		rows.find((row) => row.bookmark._id === selectedBookmarkId) ?? rows[0] ?? null
@@ -100,6 +102,10 @@
 
 	function getTags(row: BookmarkRow) {
 		return row.tags.map((tag) => tag.name);
+	}
+
+	function getCollectionName(row: BookmarkRow) {
+		return row.collection?.name ?? 'Unassigned';
 	}
 
 	function normalizeTagName(name: string) {
@@ -271,33 +277,53 @@
 	}
 </script>
 
-<div class="flex h-[calc(100svh-3rem)] min-h-0 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_23rem]">
-	<section class="flex min-h-0 flex-col">
+<div
+	class={cn(
+		'flex h-[calc(100svh-3rem)] min-h-0 flex-col transition-[grid-template-columns] duration-200 ease-out lg:grid',
+		isInspectorOpen ? 'lg:grid-cols-[minmax(0,1fr)_24rem]' : 'lg:grid-cols-[minmax(0,1fr)_0rem]'
+	)}
+>
+	<section class="flex min-h-0 min-w-0 flex-col">
 		<div class="border-b border-border/50 px-4 py-3">
-			<div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-				<div>
-					<h1 class="font-heading text-xl font-semibold">Library</h1>
-					<p class="mt-0.5 text-xs text-muted-foreground">
-						Save links, track enrichment, and keep notes close to the source.
+			<div class="flex items-start justify-between gap-3">
+				<div class="min-w-0">
+					<div class="flex items-center gap-2">
+						<h1 class="text-xl leading-tight font-semibold">Library</h1>
+						<span class="text-[11px] text-muted-foreground">{rows.length} saved</span>
+					</div>
+					<p class="mt-0.5 text-xs leading-snug text-muted-foreground">
+						Capture links, triage metadata, and keep context ready for Ask.
 					</p>
 				</div>
-				<Button size="sm" class="h-8 w-fit">
-					<HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} data-icon="inline-start" />
-					New collection
+				<Button
+					type="button"
+					variant="ghost"
+					size="icon-sm"
+					class="hidden size-8 shrink-0 lg:inline-flex"
+					onclick={() => (isInspectorOpen = !isInspectorOpen)}
+					aria-pressed={isInspectorOpen}
+					title={isInspectorOpen ? 'Hide details' : 'Show details'}
+				>
+					<HugeiconsIcon
+						icon={isInspectorOpen ? PanelRightCloseIcon : PanelRightOpenIcon}
+						strokeWidth={2}
+					/>
+					<span class="sr-only">{isInspectorOpen ? 'Hide details' : 'Show details'}</span>
 				</Button>
 			</div>
 
 			<form class="mt-3" onsubmit={handleSave}>
-				<InputGroup.InputGroup>
+				<InputGroup.InputGroup class="h-8">
 					<InputGroup.InputGroupAddon>
 						<HugeiconsIcon icon={Link01Icon} strokeWidth={2} />
 					</InputGroup.InputGroupAddon>
 					<InputGroup.InputGroupInput
 						bind:value={url}
-						placeholder="Paste a URL to save it..."
+						placeholder="Paste a URL to save..."
 						type="text"
 						inputmode="url"
 						disabled={isSaving}
+						class="text-xs"
 					/>
 					<InputGroup.InputGroupButton type="submit" size="sm" disabled={isSaving || !url.trim()}>
 						{isSaving ? 'Saving...' : 'Save'}
@@ -312,26 +338,28 @@
 		</div>
 
 		<div
-			class="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 border-b border-border/50 px-4 py-2 text-[11px] font-medium text-muted-foreground uppercase"
+			class="grid h-9 grid-cols-[minmax(0,1fr)_6.5rem] items-center gap-3 border-b border-border/50 px-4 text-[11px] font-medium text-muted-foreground uppercase sm:grid-cols-[minmax(0,1fr)_7rem_8rem] lg:grid-cols-[minmax(0,1fr)_7rem_8rem_12rem]"
 		>
 			<span>Bookmark</span>
-			<span class="hidden sm:block">Status</span>
-			<span class="hidden md:block">Tags</span>
+			<span>Status</span>
+			<span class="hidden sm:block">Collection</span>
+			<span class="hidden lg:block">Tags</span>
 		</div>
 
 		<ScrollArea.ScrollArea class="min-h-0 flex-1">
 			{#if bookmarksResponse.isLoading}
-				<div class="flex flex-col gap-2 p-2">
+				<div class="flex flex-col gap-1 p-2">
 					{#each skeletonRows as index (index)}
 						<div
-							class="grid h-12 grid-cols-[minmax(0,1fr)] items-center gap-2 rounded-md px-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_6rem] md:grid-cols-[minmax(0,1fr)_6rem_12rem]"
+							class="grid h-11 grid-cols-[minmax(0,1fr)_6.5rem] items-center gap-3 rounded-md px-2 sm:grid-cols-[minmax(0,1fr)_7rem_8rem] lg:grid-cols-[minmax(0,1fr)_7rem_8rem_12rem]"
 						>
 							<div class="space-y-2">
-								<Skeleton class="h-4 w-2/3" />
+								<Skeleton class="h-3.5 w-2/3" />
 								<Skeleton class="h-3 w-1/3" />
 							</div>
+							<Skeleton class="h-4 w-16" />
 							<Skeleton class="hidden h-4 w-20 sm:block" />
-							<Skeleton class="hidden h-5 w-32 md:block" />
+							<Skeleton class="hidden h-5 w-28 lg:block" />
 						</div>
 					{/each}
 				</div>
@@ -364,26 +392,26 @@
 							type="button"
 							onclick={() => (selectedBookmarkId = row.bookmark._id)}
 							class={cn(
-								'grid h-12 grid-cols-[minmax(0,1fr)] items-center gap-2 rounded-md px-3 py-1.5 text-left transition-colors hover:bg-accent sm:grid-cols-[minmax(0,1fr)_6rem] md:grid-cols-[minmax(0,1fr)_6rem_12rem]',
+								'grid h-11 grid-cols-[minmax(0,1fr)_6.5rem] items-center gap-3 rounded-md px-2 text-left transition-colors hover:bg-accent sm:grid-cols-[minmax(0,1fr)_7rem_8rem] lg:grid-cols-[minmax(0,1fr)_7rem_8rem_12rem]',
 								selectedRow?.bookmark._id === row.bookmark._id && 'bg-accent text-accent-foreground'
 							)}
 						>
 							<span class="min-w-0">
-								<span class="block truncate text-xs font-medium"
-									>{getDisplayTitle(row.bookmark)}</span
-								>
-								<span class="mt-0.5 block truncate text-[11px] text-muted-foreground">
+								<span class="block truncate text-xs leading-tight font-medium">
+									{getDisplayTitle(row.bookmark)}
+								</span>
+								<span class="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">
 									{row.bookmark.siteName || getHostname(row.bookmark.url)}
-									{#if row.collection}
-										<span class="mx-1">/</span>{row.collection.name}
-									{/if}
 								</span>
 							</span>
-							<span class="hidden items-center gap-1.5 text-[11px] text-muted-foreground sm:flex">
-								<HugeiconsIcon icon={status.icon} strokeWidth={2} />
-								{status.label}
+							<span class="flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
+								<HugeiconsIcon icon={status.icon} strokeWidth={2} class="size-3.5 shrink-0" />
+								<span class="truncate">{status.label}</span>
 							</span>
-							<span class="hidden min-w-0 items-center gap-1.5 md:flex">
+							<span class="hidden truncate text-[11px] text-muted-foreground sm:block">
+								{getCollectionName(row)}
+							</span>
+							<span class="hidden min-w-0 items-center gap-1.5 lg:flex">
 								{#if tags.length}
 									{#each tags.slice(0, 3) as tag (tag)}
 										<span
@@ -403,51 +431,41 @@
 		</ScrollArea.ScrollArea>
 	</section>
 
-	<aside class="hidden min-h-0 border-l border-border/50 lg:flex lg:flex-col">
+	<aside
+		class={cn(
+			'hidden min-h-0 overflow-hidden border-l border-border/50 transition-opacity duration-200 lg:flex lg:flex-col',
+			isInspectorOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+		)}
+		aria-hidden={!isInspectorOpen}
+	>
 		{#if selectedRow}
 			<div class="border-b border-border/50 px-4 py-3">
-				<p class="text-[11px] font-medium text-muted-foreground uppercase">Selected bookmark</p>
-				<h2 class="mt-1.5 truncate text-base font-semibold">
-					{getDisplayTitle(selectedRow.bookmark)}
-				</h2>
-				<p class="mt-0.5 truncate text-xs text-muted-foreground">
-					{selectedRow.bookmark.siteName || getHostname(selectedRow.bookmark.url)}
-				</p>
+				<div class="flex items-start justify-between gap-3">
+					<div class="min-w-0">
+						<p class="text-[11px] font-medium text-muted-foreground uppercase">Selected bookmark</p>
+						<h2 class="mt-1.5 truncate text-base leading-tight font-semibold">
+							{getDisplayTitle(selectedRow.bookmark)}
+						</h2>
+						<p class="mt-0.5 truncate text-xs text-muted-foreground">
+							{selectedRow.bookmark.siteName || getHostname(selectedRow.bookmark.url)}
+						</p>
+					</div>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						class="size-8 shrink-0"
+						onclick={() => (isInspectorOpen = false)}
+						title="Hide details"
+					>
+						<HugeiconsIcon icon={PanelRightCloseIcon} strokeWidth={2} />
+						<span class="sr-only">Hide details</span>
+					</Button>
+				</div>
 			</div>
 
 			<ScrollArea.ScrollArea class="min-h-0 flex-1">
 				<div class="flex flex-col gap-5 p-4">
-					<section>
-						<div class="flex items-center gap-2">
-							<HugeiconsIcon
-								icon={SearchList01Icon}
-								strokeWidth={2}
-								class="size-3.5 text-muted-foreground"
-							/>
-							<h3 class="text-xs font-medium">Reader preview</h3>
-						</div>
-						<p class="mt-2 line-clamp-6 text-xs leading-snug text-muted-foreground">
-							{getReaderPreview(selectedRow.bookmark)}
-						</p>
-					</section>
-
-					<section>
-						<div class="flex items-center gap-2">
-							<HugeiconsIcon
-								icon={NoteEditIcon}
-								strokeWidth={2}
-								class="size-3.5 text-muted-foreground"
-							/>
-							<h3 class="text-xs font-medium">Note</h3>
-						</div>
-						<Textarea
-							class="mt-2 min-h-32 resize-none text-xs"
-							value={selectedRow.bookmark.note ?? ''}
-							placeholder="No note yet."
-							readonly
-						/>
-					</section>
-
 					<section>
 						<div class="flex items-center gap-2">
 							<HugeiconsIcon
@@ -566,16 +584,54 @@
 					</section>
 
 					<section>
-						<p class="text-xs font-medium">Ask context</p>
+						<div class="flex items-center gap-2">
+							<HugeiconsIcon
+								icon={statusMeta[selectedRow.bookmark.extractionStatus].icon}
+								strokeWidth={2}
+								class="size-3.5 text-muted-foreground"
+							/>
+							<h3 class="text-xs font-medium">Ask context</h3>
+						</div>
 						<p class="mt-2 text-xs leading-snug text-muted-foreground">
 							{selectedRow.bookmark.extractionStatus === 'enriched'
-								? 'This bookmark has extracted text ready for grounded answers.'
-								: 'This bookmark will be available as stronger context after enrichment finishes.'}
+								? 'Extracted text is ready for grounded answers.'
+								: 'This bookmark becomes stronger context after enrichment finishes.'}
 						</p>
 						<Button variant="ghost" size="sm" class="mt-2 h-8 px-0 text-xs">
 							Ask with this bookmark
 							<HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} data-icon="inline-end" />
 						</Button>
+					</section>
+
+					<section>
+						<div class="flex items-center gap-2">
+							<HugeiconsIcon
+								icon={SearchList01Icon}
+								strokeWidth={2}
+								class="size-3.5 text-muted-foreground"
+							/>
+							<h3 class="text-xs font-medium">Reader preview</h3>
+						</div>
+						<p class="mt-2 line-clamp-6 text-xs leading-snug text-muted-foreground">
+							{getReaderPreview(selectedRow.bookmark)}
+						</p>
+					</section>
+
+					<section>
+						<div class="flex items-center gap-2">
+							<HugeiconsIcon
+								icon={NoteEditIcon}
+								strokeWidth={2}
+								class="size-3.5 text-muted-foreground"
+							/>
+							<h3 class="text-xs font-medium">Note</h3>
+						</div>
+						<Textarea
+							class="mt-2 min-h-28 resize-none text-xs"
+							value={selectedRow.bookmark.note ?? ''}
+							placeholder="No note yet."
+							readonly
+						/>
 					</section>
 				</div>
 			</ScrollArea.ScrollArea>
