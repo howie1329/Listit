@@ -56,6 +56,15 @@
 	let deletingCollection = $state<Doc<'collections'> | null>(null);
 	let deleteError = $state('');
 	let isDeletingCollection = $state(false);
+	let editTagOpen = $state(false);
+	let editingTag = $state<Doc<'tags'> | null>(null);
+	let editingTagName = $state('');
+	let editTagError = $state('');
+	let isUpdatingTag = $state(false);
+	let deleteTagOpen = $state(false);
+	let deletingTag = $state<Doc<'tags'> | null>(null);
+	let deleteTagError = $state('');
+	let isDeletingTag = $state(false);
 
 	const currentUserResponse = useQuery(api.auth.currentUser, () =>
 		authReady && isAuthenticated ? {} : 'skip'
@@ -63,13 +72,16 @@
 	const collectionsResponse = useQuery(api.collections.list, () =>
 		authReady && isAuthenticated ? {} : 'skip'
 	);
+	const tagsResponse = useQuery(api.tags.list, () => (authReady && isAuthenticated ? {} : 'skip'));
 	const currentUser = $derived(currentUserResponse.data);
 	const userLabel = $derived(currentUser?.name || currentUser?.email || 'Signed in');
 	const userMeta = $derived(
 		currentUser?.email && currentUser?.name ? currentUser.email : 'ListIt account'
 	);
 	const collections = $derived((collectionsResponse.data ?? []) as Doc<'collections'>[]);
+	const tags = $derived((tagsResponse.data ?? []) as Doc<'tags'>[]);
 	const selectedCollectionId = $derived(page.url.searchParams.get('collection'));
+	const selectedTagId = $derived(page.url.searchParams.get('tag'));
 
 	const primaryItems = [
 		{ href: '/app', label: 'Library', icon: Home05Icon },
@@ -77,8 +89,7 @@
 		{ href: '/app/notes', label: 'Notes', icon: NoteEditIcon },
 		{ href: '/app/settings', label: 'Settings', icon: Settings01Icon }
 	];
-
-	const tags = ['AI', 'Svelte', 'Convex'];
+	type AppLibraryHref = '/app' | `/app?${string}`;
 
 	onMount(() => {
 		async function protectAppRoute() {
@@ -109,6 +120,14 @@
 		isSigningOut = true;
 		await signOut(convexClient);
 		await goto(resolve('/'));
+	}
+
+	function buildLibraryHref(filters: { collectionId?: string | null; tagId?: string | null }) {
+		const params = [];
+		if (filters.collectionId) params.push(`collection=${encodeURIComponent(filters.collectionId)}`);
+		if (filters.tagId) params.push(`tag=${encodeURIComponent(filters.tagId)}`);
+		const query = params.join('&');
+		return (query ? `/app?${query}` : '/app') as AppLibraryHref;
 	}
 
 	async function handleCreateCollection(event: SubmitEvent) {
@@ -182,6 +201,59 @@
 			deleteError = error instanceof Error ? error.message : 'Could not delete collection.';
 		} finally {
 			isDeletingCollection = false;
+		}
+	}
+
+	function startEditingTag(tag: Doc<'tags'>) {
+		editingTag = tag;
+		editingTagName = tag.name;
+		editTagError = '';
+		editTagOpen = true;
+	}
+
+	async function handleRenameTag(event: SubmitEvent) {
+		event.preventDefault();
+		if (!convexClient || !editingTag) return;
+
+		const name = editingTagName.trim();
+		if (!name) return;
+
+		isUpdatingTag = true;
+		editTagError = '';
+
+		try {
+			await convexClient.mutation(api.tags.update, {
+				tagId: editingTag._id,
+				name
+			});
+			editingTag = null;
+			editingTagName = '';
+			editTagOpen = false;
+		} catch (error) {
+			editTagError = error instanceof Error ? error.message : 'Could not rename tag.';
+		} finally {
+			isUpdatingTag = false;
+		}
+	}
+
+	async function handleDeleteTag() {
+		if (!convexClient || !deletingTag) return;
+
+		isDeletingTag = true;
+		deleteTagError = '';
+
+		try {
+			const removedId = deletingTag._id;
+			await convexClient.mutation(api.tags.remove, { tagId: removedId });
+			deletingTag = null;
+			deleteTagOpen = false;
+			if (selectedTagId === removedId) {
+				await goto(resolve(buildLibraryHref({ collectionId: selectedCollectionId })));
+			}
+		} catch (error) {
+			deleteTagError = error instanceof Error ? error.message : 'Could not delete tag.';
+		} finally {
+			isDeletingTag = false;
 		}
 	}
 </script>
@@ -291,7 +363,7 @@
 							<Sidebar.SidebarMenuItem>
 								<Sidebar.SidebarMenuButton
 									size="sm"
-									isActive={!selectedCollectionId}
+									isActive={!selectedCollectionId && !selectedTagId}
 									tooltipContent="All bookmarks"
 									onclick={() => goto(resolve('/app'))}
 								>
@@ -317,7 +389,16 @@
 												size="sm"
 												isActive={selectedCollectionId === collection._id}
 												tooltipContent={collection.name}
-												onclick={() => goto(resolve(`/app?collection=${collection._id}`))}
+												onclick={() => {
+													void goto(
+														resolve(
+															buildLibraryHref({
+																collectionId: collection._id,
+																tagId: selectedTagId
+															})
+														)
+													);
+												}}
 											>
 												<HugeiconsIcon icon={Folder01Icon} strokeWidth={2} class="size-4" />
 												<span>{collection.name}</span>
@@ -369,14 +450,73 @@
 					<Sidebar.SidebarGroupLabel>Tags</Sidebar.SidebarGroupLabel>
 					<Sidebar.SidebarGroupContent>
 						<Sidebar.SidebarMenu>
-							{#each tags as tag (tag)}
+							{#if tagsResponse.isLoading}
 								<Sidebar.SidebarMenuItem>
-									<Sidebar.SidebarMenuButton size="sm" tooltipContent={tag}>
-										<HugeiconsIcon icon={Tag01Icon} strokeWidth={2} class="size-4" />
-										<span>{tag}</span>
-									</Sidebar.SidebarMenuButton>
+									<div class="px-2 py-1.5 text-xs text-muted-foreground">Loading tags...</div>
 								</Sidebar.SidebarMenuItem>
-							{/each}
+							{:else if tags.length === 0}
+								<Sidebar.SidebarMenuItem>
+									<div class="px-2 py-1.5 text-xs text-muted-foreground">No tags yet</div>
+								</Sidebar.SidebarMenuItem>
+							{:else}
+								{#each tags as tag (tag._id)}
+									<Sidebar.SidebarMenuItem>
+										<div class="group/tag flex items-center gap-1">
+											<Sidebar.SidebarMenuButton
+												size="sm"
+												isActive={selectedTagId === tag._id}
+												tooltipContent={tag.name}
+												onclick={() => {
+													void goto(
+														resolve(
+															buildLibraryHref({
+																collectionId: selectedCollectionId,
+																tagId: tag._id
+															})
+														)
+													);
+												}}
+											>
+												<HugeiconsIcon icon={Tag01Icon} strokeWidth={2} class="size-4" />
+												<span>{tag.name}</span>
+											</Sidebar.SidebarMenuButton>
+											<DropdownMenu.DropdownMenu>
+												<DropdownMenu.DropdownMenuTrigger>
+													<Button
+														variant="ghost"
+														size="icon-sm"
+														class="size-7 opacity-0 group-hover/tag:opacity-100 data-[state=open]:opacity-100"
+													>
+														<HugeiconsIcon
+															icon={MoreHorizontalIcon}
+															strokeWidth={2}
+															class="size-3.5"
+														/>
+														<span class="sr-only">Tag actions</span>
+													</Button>
+												</DropdownMenu.DropdownMenuTrigger>
+												<DropdownMenu.DropdownMenuContent class="w-36">
+													<DropdownMenu.DropdownMenuItem onclick={() => startEditingTag(tag)}>
+														<HugeiconsIcon icon={Edit02Icon} strokeWidth={2} />
+														Rename
+													</DropdownMenu.DropdownMenuItem>
+													<DropdownMenu.DropdownMenuItem
+														variant="destructive"
+														onclick={() => {
+															deletingTag = tag;
+															deleteTagError = '';
+															deleteTagOpen = true;
+														}}
+													>
+														<HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+														Delete
+													</DropdownMenu.DropdownMenuItem>
+												</DropdownMenu.DropdownMenuContent>
+											</DropdownMenu.DropdownMenu>
+										</div>
+									</Sidebar.SidebarMenuItem>
+								{/each}
+							{/if}
 						</Sidebar.SidebarMenu>
 					</Sidebar.SidebarGroupContent>
 				</Sidebar.SidebarGroup>
@@ -495,6 +635,104 @@
 				</Button>
 			</Dialog.DialogFooter>
 		</form>
+	</Dialog.DialogContent>
+</Dialog.Dialog>
+
+<Dialog.Dialog
+	bind:open={editTagOpen}
+	onOpenChange={(open) => {
+		if (!open) editingTag = null;
+	}}
+>
+	<Dialog.DialogContent class="gap-3 text-xs sm:max-w-sm">
+		<Dialog.DialogHeader>
+			<Dialog.DialogTitle class="text-base">Rename tag</Dialog.DialogTitle>
+			<Dialog.DialogDescription class="text-xs leading-snug">
+				Update the tag name everywhere it appears.
+			</Dialog.DialogDescription>
+		</Dialog.DialogHeader>
+		<form class="space-y-3" onsubmit={handleRenameTag}>
+			<div class="space-y-1.5">
+				<Label for="edit-tag-name" class="text-xs">Name</Label>
+				<Input
+					id="edit-tag-name"
+					bind:value={editingTagName}
+					placeholder="Tag name"
+					disabled={isUpdatingTag}
+					class="text-xs"
+				/>
+			</div>
+			{#if editTagError}
+				<p class="text-xs text-destructive">{editTagError}</p>
+			{/if}
+			<Dialog.DialogFooter class="gap-2">
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					onclick={() => {
+						editingTag = null;
+						editTagOpen = false;
+					}}
+					disabled={isUpdatingTag}
+				>
+					Cancel
+				</Button>
+				<Button type="submit" size="sm" disabled={isUpdatingTag || !editingTagName.trim()}>
+					{isUpdatingTag ? 'Saving...' : 'Save'}
+				</Button>
+			</Dialog.DialogFooter>
+		</form>
+	</Dialog.DialogContent>
+</Dialog.Dialog>
+
+<Dialog.Dialog
+	bind:open={deleteTagOpen}
+	onOpenChange={(open) => {
+		if (!open) deletingTag = null;
+	}}
+>
+	<Dialog.DialogContent class="gap-3 text-xs sm:max-w-sm">
+		<Dialog.DialogHeader>
+			<Dialog.DialogTitle class="text-base">Delete tag?</Dialog.DialogTitle>
+			<Dialog.DialogDescription class="text-xs leading-snug">
+				Bookmarks with this tag will stay saved. Only the tag assignments will be removed.
+			</Dialog.DialogDescription>
+		</Dialog.DialogHeader>
+		{#if deletingTag}
+			<div class="rounded-lg border border-border/50 px-3 py-2">
+				<p class="truncate text-xs font-medium">{deletingTag.name}</p>
+				<p class="mt-1 text-[11px] leading-snug text-muted-foreground">
+					This removes the tag from bookmarks, not the bookmarks themselves.
+				</p>
+			</div>
+		{/if}
+		{#if deleteTagError}
+			<p class="text-xs text-destructive">{deleteTagError}</p>
+		{/if}
+		<Dialog.DialogFooter class="gap-2">
+			<Button
+				type="button"
+				variant="ghost"
+				size="sm"
+				onclick={() => {
+					deletingTag = null;
+					deleteTagOpen = false;
+				}}
+				disabled={isDeletingTag}
+			>
+				Cancel
+			</Button>
+			<Button
+				type="button"
+				variant="destructive"
+				size="sm"
+				onclick={handleDeleteTag}
+				disabled={isDeletingTag}
+			>
+				{isDeletingTag ? 'Deleting...' : 'Delete'}
+			</Button>
+		</Dialog.DialogFooter>
 	</Dialog.DialogContent>
 </Dialog.Dialog>
 

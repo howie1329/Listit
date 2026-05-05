@@ -8,7 +8,9 @@
 		NoteEditIcon,
 		PlusSignIcon,
 		SearchList01Icon,
-		Folder01Icon
+		Folder01Icon,
+		Tag01Icon,
+		Delete02Icon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { useConvexClient, useQuery } from 'convex-svelte';
@@ -33,12 +35,19 @@
 	const selectedCollectionId = $derived(
 		page.url.searchParams.get('collection') as Id<'collections'> | null
 	);
+	const selectedTagId = $derived(page.url.searchParams.get('tag') as Id<'tags'> | null);
 	const bookmarksResponse = useQuery(api.bookmarks.list, () =>
-		selectedCollectionId ? { collectionId: selectedCollectionId } : {}
+		selectedCollectionId || selectedTagId
+			? {
+					...(selectedCollectionId ? { collectionId: selectedCollectionId } : {}),
+					...(selectedTagId ? { tagId: selectedTagId } : {})
+				}
+			: {}
 	);
 	const collectionsResponse = useQuery(api.collections.list, {});
 	const rows = $derived((bookmarksResponse.data ?? []) as BookmarkRow[]);
 	const collections = $derived((collectionsResponse.data ?? []) as Doc<'collections'>[]);
+	const skeletonRows = [0, 1, 2, 3, 4, 5];
 	let selectedBookmarkId = $state<string | null>(null);
 	let url = $state('');
 	let saveSuccess = $state('');
@@ -46,6 +55,10 @@
 	let isSaving = $state(false);
 	let assignmentError = $state('');
 	let isAssigningCollection = $state(false);
+	let tagInput = $state('');
+	let tagDraft = $state<string[]>([]);
+	let tagError = $state('');
+	let isSavingTags = $state(false);
 
 	const selectedRow = $derived(
 		rows.find((row) => row.bookmark._id === selectedBookmarkId) ?? rows[0] ?? null
@@ -80,6 +93,25 @@
 	function getTags(row: BookmarkRow) {
 		return row.tags.map((tag) => tag.name);
 	}
+
+	function normalizeTagName(name: string) {
+		return name.trim().replace(/\s+/g, ' ');
+	}
+
+	function normalizeTagNames(names: string[]) {
+		return Array.from(new Set(names.map(normalizeTagName).filter(Boolean)));
+	}
+
+	const savedTagNames = $derived(selectedRow ? getTags(selectedRow) : []);
+	const hasTagChanges = $derived(
+		normalizeTagNames(savedTagNames).join('\n') !== normalizeTagNames(tagDraft).join('\n')
+	);
+
+	$effect(() => {
+		tagDraft = savedTagNames;
+		tagInput = '';
+		tagError = '';
+	});
 
 	async function handleSave(event: SubmitEvent) {
 		event.preventDefault();
@@ -125,6 +157,50 @@
 			assignmentError = error instanceof Error ? error.message : 'Could not update collection.';
 		} finally {
 			isAssigningCollection = false;
+		}
+	}
+
+	function addTagNames(names: string[]) {
+		const next = normalizeTagNames([...tagDraft, ...names]);
+		tagDraft = next;
+	}
+
+	function removeTagName(name: string) {
+		tagDraft = tagDraft.filter((tag) => tag !== name);
+	}
+
+	function commitTagInput() {
+		const names = tagInput.split(',').map(normalizeTagName);
+		addTagNames(names);
+		tagInput = '';
+	}
+
+	function handleTagInputKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter' || event.key === ',') {
+			event.preventDefault();
+			commitTagInput();
+		}
+	}
+
+	async function handleSaveTags() {
+		if (!convexClient || !selectedRow) return;
+
+		const names = normalizeTagNames([...tagDraft, ...tagInput.split(',')]);
+		tagDraft = names;
+		tagInput = '';
+
+		isSavingTags = true;
+		tagError = '';
+
+		try {
+			await convexClient.mutation(api.bookmarks.setTags, {
+				bookmarkId: selectedRow.bookmark._id,
+				tagNames: names
+			});
+		} catch (error) {
+			tagError = error instanceof Error ? error.message : 'Could not update tags.';
+		} finally {
+			isSavingTags = false;
 		}
 	}
 </script>
@@ -180,7 +256,7 @@
 		<ScrollArea.ScrollArea class="min-h-0 flex-1">
 			{#if bookmarksResponse.isLoading}
 				<div class="flex flex-col gap-2 p-2">
-					{#each Array.from({ length: 6 }) as _, index (index)}
+					{#each skeletonRows as index (index)}
 						<div
 							class="grid h-12 grid-cols-[minmax(0,1fr)] items-center gap-2 rounded-md px-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_6rem] md:grid-cols-[minmax(0,1fr)_6rem_12rem]"
 						>
@@ -330,6 +406,65 @@
 						</select>
 						{#if assignmentError}
 							<p class="mt-2 text-xs text-destructive">{assignmentError}</p>
+						{/if}
+					</section>
+
+					<section>
+						<div class="flex items-center gap-2">
+							<HugeiconsIcon
+								icon={Tag01Icon}
+								strokeWidth={2}
+								class="size-3.5 text-muted-foreground"
+							/>
+							<h3 class="text-xs font-medium">Tags</h3>
+						</div>
+						<div
+							class="mt-2 flex min-h-20 flex-col gap-2 rounded-lg border border-input px-2.5 py-2"
+						>
+							<div class="flex flex-wrap gap-1.5">
+								{#if tagDraft.length}
+									{#each tagDraft as tag (tag)}
+										<span
+											class="inline-flex h-6 max-w-full items-center gap-1 rounded-sm bg-secondary px-1.5 text-[11px] text-secondary-foreground"
+										>
+											<span class="truncate">{tag}</span>
+											<button
+												type="button"
+												class="inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+												onclick={() => removeTagName(tag)}
+												disabled={isSavingTags}
+											>
+												<HugeiconsIcon icon={Delete02Icon} strokeWidth={2} class="size-3" />
+												<span class="sr-only">Remove {tag}</span>
+											</button>
+										</span>
+									{/each}
+								{:else}
+									<span class="text-[11px] text-muted-foreground">No tags assigned</span>
+								{/if}
+							</div>
+							<input
+								class="h-7 bg-transparent text-xs outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+								bind:value={tagInput}
+								onkeydown={handleTagInputKeydown}
+								placeholder="Add tags..."
+								disabled={isSavingTags}
+							/>
+						</div>
+						<div class="mt-2 flex items-center justify-between gap-2">
+							<p class="text-[11px] text-muted-foreground">Press Enter or comma to add.</p>
+							<Button
+								type="button"
+								size="sm"
+								class="h-7"
+								onclick={handleSaveTags}
+								disabled={isSavingTags || (!hasTagChanges && !tagInput.trim())}
+							>
+								{isSavingTags ? 'Saving...' : 'Save tags'}
+							</Button>
+						</div>
+						{#if tagError}
+							<p class="mt-2 text-xs text-destructive">{tagError}</p>
 						{/if}
 					</section>
 
