@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as bookmarks from "../bookmarks.js";
 import type * as collections from "../collections.js";
 import type * as enrichment from "../enrichment.js";
+import type * as extraction from "../extraction.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as tags from "../tags.js";
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   bookmarks: typeof bookmarks;
   collections: typeof collections;
   enrichment: typeof enrichment;
+  extraction: typeof extraction;
   helpers: typeof helpers;
   http: typeof http;
   tags: typeof tags;

@@ -11,7 +11,8 @@
 		SearchList01Icon,
 		Folder01Icon,
 		Tag01Icon,
-		Delete02Icon
+		Delete02Icon,
+		RefreshIcon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import { useConvexClient, useQuery } from 'convex-svelte';
@@ -69,6 +70,8 @@
 	let isTagInputFocused = $state(false);
 	let highlightedTagOptionIndex = $state(0);
 	let isInspectorOpen = $state(true);
+	let retryError = $state('');
+	let retryingBookmarkId = $state<string | null>(null);
 
 	const selectedRow = $derived(
 		rows.find((row) => row.bookmark._id === selectedBookmarkId) ?? rows[0] ?? null
@@ -98,6 +101,16 @@
 			bookmark.extractedText?.trim().slice(0, 320) ||
 			'Extraction has not added reader text for this bookmark yet.'
 		);
+	}
+
+	function getExtractionContext(bookmark: Doc<'bookmarks'>) {
+		if (bookmark.extractionStatus === 'enriched') {
+			return 'Extracted text is ready for grounded answers.';
+		}
+		if (bookmark.extractionStatus === 'failed') {
+			return bookmark.extractionError || 'Extraction failed. Retry when you are ready.';
+		}
+		return 'This bookmark becomes stronger context after enrichment finishes.';
 	}
 
 	function getTags(row: BookmarkRow) {
@@ -273,6 +286,23 @@
 			tagError = error instanceof Error ? error.message : 'Could not update tags.';
 		} finally {
 			isSavingTags = false;
+		}
+	}
+
+	async function handleRetryExtraction() {
+		if (!convexClient || !selectedRow) return;
+
+		retryingBookmarkId = selectedRow.bookmark._id;
+		retryError = '';
+
+		try {
+			await convexClient.mutation(api.bookmarks.retryExtraction, {
+				bookmarkId: selectedRow.bookmark._id
+			});
+		} catch (error) {
+			retryError = error instanceof Error ? error.message : 'Could not retry extraction.';
+		} finally {
+			retryingBookmarkId = null;
 		}
 	}
 </script>
@@ -593,10 +623,26 @@
 							<h3 class="text-xs font-medium">Ask context</h3>
 						</div>
 						<p class="mt-2 text-xs leading-snug text-muted-foreground">
-							{selectedRow.bookmark.extractionStatus === 'enriched'
-								? 'Extracted text is ready for grounded answers.'
-								: 'This bookmark becomes stronger context after enrichment finishes.'}
+							{getExtractionContext(selectedRow.bookmark)}
 						</p>
+						{#if selectedRow.bookmark.extractionStatus === 'failed'}
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								class="mt-2 h-8 px-0 text-xs"
+								onclick={handleRetryExtraction}
+								disabled={retryingBookmarkId === selectedRow.bookmark._id}
+							>
+								{retryingBookmarkId === selectedRow.bookmark._id
+									? 'Retrying...'
+									: 'Retry extraction'}
+								<HugeiconsIcon icon={RefreshIcon} strokeWidth={2} data-icon="inline-end" />
+							</Button>
+							{#if retryError}
+								<p class="mt-2 text-xs text-destructive">{retryError}</p>
+							{/if}
+						{/if}
 						<Button variant="ghost" size="sm" class="mt-2 h-8 px-0 text-xs">
 							Ask with this bookmark
 							<HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} data-icon="inline-end" />

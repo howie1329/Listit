@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 
+import { internal } from './_generated/api';
 import { mutation, query } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import type { QueryCtx } from './_generated/server';
@@ -73,7 +74,27 @@ export const saveUrl = mutation({
 			updatedAt: now,
 			lastSavedAt: now
 		});
+		await ctx.scheduler.runAfter(0, internal.extraction.processBookmark, { bookmarkId });
 		return { bookmarkId, created: true };
+	}
+});
+
+export const retryExtraction = mutation({
+	args: {
+		bookmarkId: v.id('bookmarks')
+	},
+	handler: async (ctx, args) => {
+		await requireOwnedBookmark(ctx, args.bookmarkId);
+		const now = Date.now();
+		await ctx.db.patch(args.bookmarkId, {
+			extractionStatus: 'pending',
+			extractionError: undefined,
+			updatedAt: now
+		});
+		await ctx.scheduler.runAfter(0, internal.extraction.processBookmark, {
+			bookmarkId: args.bookmarkId
+		});
+		return args.bookmarkId;
 	}
 });
 
