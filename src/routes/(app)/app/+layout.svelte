@@ -88,7 +88,7 @@
 		{ href: '/app/ask', label: 'Ask', icon: Search01Icon },
 		{ href: '/app/notes', label: 'Notes', icon: NoteEditIcon },
 		{ href: '/app/settings', label: 'Settings', icon: Settings01Icon }
-	];
+	] as const;
 	type AppLibraryHref = '/app' | `/app?${string}`;
 
 	onMount(() => {
@@ -303,8 +303,12 @@
 										isActive={page.url.pathname === item.href}
 										tooltipContent={item.label}
 									>
-										<HugeiconsIcon icon={item.icon} strokeWidth={2} class="size-4" />
-										<span>{item.label}</span>
+										{#snippet child({ props })}
+											<a {...props} href={resolve(item.href)}>
+												<HugeiconsIcon icon={item.icon} strokeWidth={2} class="size-4" />
+												<span>{item.label}</span>
+											</a>
+										{/snippet}
 									</Sidebar.SidebarMenuButton>
 								</Sidebar.SidebarMenuItem>
 							{/each}
