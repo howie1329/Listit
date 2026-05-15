@@ -32,6 +32,10 @@
 		tags: Doc<'tags'>[];
 		collection: Doc<'collections'> | null;
 	};
+	type BookmarkDetail = {
+		bookmark: Doc<'bookmarks'>;
+		tags: Doc<'tags'>[];
+	};
 	type TagOption = {
 		name: string;
 		type: 'existing' | 'create';
@@ -56,7 +60,7 @@
 	const collections = $derived((collectionsResponse.data ?? []) as Doc<'collections'>[]);
 	const allTags = $derived((tagsResponse.data ?? []) as Doc<'tags'>[]);
 	const skeletonRows = [0, 1, 2, 3, 4, 5];
-	let selectedBookmarkId = $state<string | null>(null);
+	let selectedBookmarkId = $state<Id<'bookmarks'> | null>(null);
 	let url = $state('');
 	let saveSuccess = $state('');
 	let saveError = $state('');
@@ -71,10 +75,27 @@
 	let highlightedTagOptionIndex = $state(0);
 	let isInspectorOpen = $state(true);
 	let retryError = $state('');
-	let retryingBookmarkId = $state<string | null>(null);
+	let retryingBookmarkId = $state<Id<'bookmarks'> | null>(null);
+	let noteDraft = $state('');
+	let noteSaveError = $state('');
+	let noteSaveStatus = $state('');
+	let isSavingNote = $state(false);
+	let noteDraftBookmarkId = $state<Id<'bookmarks'> | null>(null);
+	let lastLoadedNote = $state('');
 
 	const selectedRow = $derived(
 		rows.find((row) => row.bookmark._id === selectedBookmarkId) ?? rows[0] ?? null
+	);
+	const selectedDetailResponse = useQuery(api.bookmarks.get, () =>
+		selectedRow ? { bookmarkId: selectedRow.bookmark._id } : 'skip'
+	);
+	const selectedDetail = $derived((selectedDetailResponse.data ?? null) as BookmarkDetail | null);
+	const selectedBookmark = $derived(selectedDetail?.bookmark ?? selectedRow?.bookmark ?? null);
+	const selectedTags = $derived(selectedDetail?.tags ?? selectedRow?.tags ?? []);
+	const selectedCollection = $derived(
+		selectedBookmark?.collectionId
+			? (collections.find((collection) => collection._id === selectedBookmark.collectionId) ?? null)
+			: null
 	);
 
 	const statusMeta = {
@@ -95,14 +116,6 @@
 		}
 	}
 
-	function getReaderPreview(bookmark: Doc<'bookmarks'>) {
-		return (
-			bookmark.description?.trim() ||
-			bookmark.extractedText?.trim().slice(0, 320) ||
-			'Extraction has not added reader text for this bookmark yet.'
-		);
-	}
-
 	function getExtractionContext(bookmark: Doc<'bookmarks'>) {
 		if (bookmark.extractionStatus === 'enriched') {
 			return 'Extracted text is ready for grounded answers.';
@@ -121,6 +134,19 @@
 		return row.collection?.name ?? 'Unassigned';
 	}
 
+	function formatDate(timestamp?: number) {
+		if (!timestamp) return null;
+		return new Intl.DateTimeFormat('en', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		}).format(timestamp);
+	}
+
+	function openSourceUrl(url: string) {
+		window.open(url, '_blank', 'noreferrer');
+	}
+
 	function normalizeTagName(name: string) {
 		return name.trim().replace(/\s+/g, ' ');
 	}
@@ -129,7 +155,7 @@
 		return Array.from(new Set(names.map(normalizeTagName).filter(Boolean)));
 	}
 
-	const savedTagNames = $derived(selectedRow ? getTags(selectedRow) : []);
+	const savedTagNames = $derived(selectedTags.map((tag) => tag.name));
 	const normalizedTagInput = $derived(normalizeTagName(tagInput));
 	const selectedTagKeys = $derived(new Set(tagDraft.map((tag) => tag.toLowerCase())));
 	const existingTagKeys = $derived(new Set(allTags.map((tag) => tag.name.toLowerCase())));
@@ -158,6 +184,7 @@
 	const hasTagChanges = $derived(
 		normalizeTagNames(savedTagNames).join('\n') !== normalizeTagNames(tagDraft).join('\n')
 	);
+	const hasNoteChanges = $derived(noteDraft !== lastLoadedNote);
 
 	$effect(() => {
 		tagDraft = savedTagNames;
@@ -165,6 +192,31 @@
 		tagError = '';
 		isTagInputFocused = false;
 		highlightedTagOptionIndex = 0;
+	});
+
+	$effect(() => {
+		if (!selectedBookmark) {
+			noteDraftBookmarkId = null;
+			lastLoadedNote = '';
+			noteDraft = '';
+			noteSaveError = '';
+			noteSaveStatus = '';
+			return;
+		}
+
+		const selectedId = selectedBookmark._id;
+		const latestNote = selectedBookmark.note ?? '';
+		const changedBookmark = noteDraftBookmarkId !== selectedId;
+		const serverNoteChanged = latestNote !== lastLoadedNote;
+		const hasUnsavedDraft = noteDraft !== lastLoadedNote;
+
+		if (changedBookmark || (serverNoteChanged && !hasUnsavedDraft)) {
+			noteDraftBookmarkId = selectedId;
+			lastLoadedNote = latestNote;
+			noteDraft = latestNote;
+			noteSaveError = '';
+			noteSaveStatus = '';
+		}
 	});
 
 	async function handleSave(event: SubmitEvent) {
@@ -196,7 +248,7 @@
 	}
 
 	async function handleCollectionAssignment(value: string) {
-		if (!convexClient || !selectedRow) return;
+		if (!convexClient || !selectedBookmark) return;
 
 		const collectionId = value === 'unassigned' ? null : (value as Id<'collections'>);
 		isAssigningCollection = true;
@@ -204,7 +256,7 @@
 
 		try {
 			await convexClient.mutation(api.bookmarks.update, {
-				bookmarkId: selectedRow.bookmark._id,
+				bookmarkId: selectedBookmark._id,
 				collectionId
 			});
 		} catch (error) {
@@ -268,7 +320,7 @@
 	}
 
 	async function handleSaveTags() {
-		if (!convexClient || !selectedRow) return;
+		if (!convexClient || !selectedBookmark) return;
 
 		const names = normalizeTagNames([...tagDraft, ...tagInput.split(',')]);
 		tagDraft = names;
@@ -279,7 +331,7 @@
 
 		try {
 			await convexClient.mutation(api.bookmarks.setTags, {
-				bookmarkId: selectedRow.bookmark._id,
+				bookmarkId: selectedBookmark._id,
 				tagNames: names
 			});
 		} catch (error) {
@@ -290,19 +342,40 @@
 	}
 
 	async function handleRetryExtraction() {
-		if (!convexClient || !selectedRow) return;
+		if (!convexClient || !selectedBookmark) return;
 
-		retryingBookmarkId = selectedRow.bookmark._id;
+		retryingBookmarkId = selectedBookmark._id;
 		retryError = '';
 
 		try {
 			await convexClient.mutation(api.bookmarks.retryExtraction, {
-				bookmarkId: selectedRow.bookmark._id
+				bookmarkId: selectedBookmark._id
 			});
 		} catch (error) {
 			retryError = error instanceof Error ? error.message : 'Could not retry extraction.';
 		} finally {
 			retryingBookmarkId = null;
+		}
+	}
+
+	async function handleSaveNote() {
+		if (!convexClient || !selectedBookmark || !hasNoteChanges) return;
+
+		isSavingNote = true;
+		noteSaveError = '';
+		noteSaveStatus = '';
+
+		try {
+			await convexClient.mutation(api.bookmarks.updateNote, {
+				bookmarkId: selectedBookmark._id,
+				note: noteDraft
+			});
+			lastLoadedNote = noteDraft;
+			noteSaveStatus = 'Saved';
+		} catch (error) {
+			noteSaveError = error instanceof Error ? error.message : 'Could not save note.';
+		} finally {
+			isSavingNote = false;
 		}
 	}
 </script>
@@ -468,16 +541,16 @@
 		)}
 		aria-hidden={!isInspectorOpen}
 	>
-		{#if selectedRow}
+		{#if selectedBookmark}
 			<div class="border-b border-border/50 px-4 py-3">
 				<div class="flex items-start justify-between gap-3">
 					<div class="min-w-0">
 						<p class="text-[11px] font-medium text-muted-foreground uppercase">Selected bookmark</p>
 						<h2 class="mt-1.5 truncate text-base leading-tight font-semibold">
-							{getDisplayTitle(selectedRow.bookmark)}
+							{getDisplayTitle(selectedBookmark)}
 						</h2>
 						<p class="mt-0.5 truncate text-xs text-muted-foreground">
-							{selectedRow.bookmark.siteName || getHostname(selectedRow.bookmark.url)}
+							{selectedBookmark.siteName || getHostname(selectedBookmark.url)}
 						</p>
 					</div>
 					<Button
@@ -496,6 +569,58 @@
 
 			<ScrollArea.ScrollArea class="min-h-0 flex-1">
 				<div class="flex flex-col gap-5 p-4">
+					{#if selectedDetailResponse.isLoading}
+						<div class="space-y-2">
+							<Skeleton class="h-3 w-32" />
+							<Skeleton class="h-3 w-full" />
+							<Skeleton class="h-3 w-2/3" />
+						</div>
+					{:else if selectedDetailResponse.error}
+						<p class="text-xs text-destructive">
+							Bookmark detail could not load. {selectedDetailResponse.error.message}
+						</p>
+					{/if}
+
+					<section>
+						<div class="flex items-center gap-2">
+							<HugeiconsIcon
+								icon={Link01Icon}
+								strokeWidth={2}
+								class="size-3.5 text-muted-foreground"
+							/>
+							<h3 class="text-xs font-medium">Source</h3>
+						</div>
+						<div class="mt-2 space-y-2 text-xs leading-snug">
+							<button
+								type="button"
+								class="block max-w-full truncate text-left text-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+								onclick={() => openSourceUrl(selectedBookmark.url)}
+							>
+								{selectedBookmark.url}
+							</button>
+							{#if selectedBookmark.description}
+								<p class="text-muted-foreground">{selectedBookmark.description}</p>
+							{/if}
+							<div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+								<span class="truncate">Host: {getHostname(selectedBookmark.url)}</span>
+								<span class="truncate">Collection: {selectedCollection?.name ?? 'Unassigned'}</span>
+								{#if selectedBookmark.canonicalUrl}
+									<span class="col-span-2 truncate">
+										Canonical: {selectedBookmark.canonicalUrl}
+									</span>
+								{/if}
+								{#if selectedBookmark.extractedAt}
+									<span class="truncate">
+										Extracted: {formatDate(selectedBookmark.extractedAt)}
+									</span>
+								{/if}
+								<span class="truncate">
+									Saved: {formatDate(selectedBookmark.lastSavedAt ?? selectedBookmark.createdAt)}
+								</span>
+							</div>
+						</div>
+					</section>
+
 					<section>
 						<div class="flex items-center gap-2">
 							<HugeiconsIcon
@@ -507,7 +632,7 @@
 						</div>
 						<select
 							class="mt-2 h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
-							value={selectedRow.bookmark.collectionId ?? 'unassigned'}
+							value={selectedBookmark.collectionId ?? 'unassigned'}
 							onchange={(event) => handleCollectionAssignment(event.currentTarget.value)}
 							disabled={isAssigningCollection || collectionsResponse.isLoading}
 						>
@@ -616,27 +741,25 @@
 					<section>
 						<div class="flex items-center gap-2">
 							<HugeiconsIcon
-								icon={statusMeta[selectedRow.bookmark.extractionStatus].icon}
+								icon={statusMeta[selectedBookmark.extractionStatus].icon}
 								strokeWidth={2}
 								class="size-3.5 text-muted-foreground"
 							/>
 							<h3 class="text-xs font-medium">Ask context</h3>
 						</div>
 						<p class="mt-2 text-xs leading-snug text-muted-foreground">
-							{getExtractionContext(selectedRow.bookmark)}
+							{getExtractionContext(selectedBookmark)}
 						</p>
-						{#if selectedRow.bookmark.extractionStatus === 'failed'}
+						{#if selectedBookmark.extractionStatus === 'failed'}
 							<Button
 								type="button"
 								variant="ghost"
 								size="sm"
 								class="mt-2 h-8 px-0 text-xs"
 								onclick={handleRetryExtraction}
-								disabled={retryingBookmarkId === selectedRow.bookmark._id}
+								disabled={retryingBookmarkId === selectedBookmark._id}
 							>
-								{retryingBookmarkId === selectedRow.bookmark._id
-									? 'Retrying...'
-									: 'Retry extraction'}
+								{retryingBookmarkId === selectedBookmark._id ? 'Retrying...' : 'Retry extraction'}
 								<HugeiconsIcon icon={RefreshIcon} strokeWidth={2} data-icon="inline-end" />
 							</Button>
 							{#if retryError}
@@ -656,28 +779,75 @@
 								strokeWidth={2}
 								class="size-3.5 text-muted-foreground"
 							/>
-							<h3 class="text-xs font-medium">Reader preview</h3>
+							<h3 class="text-xs font-medium">Extracted content</h3>
 						</div>
-						<p class="mt-2 line-clamp-6 text-xs leading-snug text-muted-foreground">
-							{getReaderPreview(selectedRow.bookmark)}
-						</p>
+						{#if selectedBookmark.extractedText?.trim()}
+							<div
+								class="mt-2 max-h-80 overflow-auto rounded-lg border border-border/60 px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground"
+							>
+								{selectedBookmark.extractedText}
+							</div>
+						{:else if selectedBookmark.extractionStatus === 'failed'}
+							<p class="mt-2 text-xs leading-snug text-muted-foreground">
+								Extraction failed before reader text was saved.
+							</p>
+						{:else if selectedBookmark.extractionStatus === 'pending'}
+							<p class="mt-2 text-xs leading-snug text-muted-foreground">
+								Reader text will appear here after extraction finishes.
+							</p>
+						{:else}
+							<p class="mt-2 text-xs leading-snug text-muted-foreground">
+								No extracted reader text is available for this bookmark.
+							</p>
+						{/if}
 					</section>
 
 					<section>
-						<div class="flex items-center gap-2">
-							<HugeiconsIcon
-								icon={NoteEditIcon}
-								strokeWidth={2}
-								class="size-3.5 text-muted-foreground"
-							/>
-							<h3 class="text-xs font-medium">Note</h3>
+						<div class="flex items-center justify-between gap-3">
+							<div class="flex items-center gap-2">
+								<HugeiconsIcon
+									icon={NoteEditIcon}
+									strokeWidth={2}
+									class="size-3.5 text-muted-foreground"
+								/>
+								<h3 class="text-xs font-medium">Note</h3>
+							</div>
+							{#if selectedBookmark.noteUpdatedAt}
+								<span class="shrink-0 text-[11px] text-muted-foreground">
+									Updated {formatDate(selectedBookmark.noteUpdatedAt)}
+								</span>
+							{/if}
 						</div>
 						<Textarea
 							class="mt-2 min-h-28 resize-none text-xs"
-							value={selectedRow.bookmark.note ?? ''}
-							placeholder="No note yet."
-							readonly
+							bind:value={noteDraft}
+							placeholder="Add a note for this bookmark..."
+							disabled={isSavingNote}
 						/>
+						<div class="mt-2 flex items-center justify-between gap-2">
+							<p class="min-w-0 text-[11px] text-muted-foreground">
+								{#if noteSaveError}
+									<span class="text-destructive">{noteSaveError}</span>
+								{:else if noteSaveStatus}
+									{noteSaveStatus}
+								{:else if hasNoteChanges}
+									Unsaved changes
+								{:else if !noteDraft}
+									No note yet
+								{:else}
+									Note saved
+								{/if}
+							</p>
+							<Button
+								type="button"
+								size="sm"
+								class="h-7"
+								onclick={handleSaveNote}
+								disabled={isSavingNote || !hasNoteChanges}
+							>
+								{isSavingNote ? 'Saving...' : 'Save note'}
+							</Button>
+						</div>
 					</section>
 				</div>
 			</ScrollArea.ScrollArea>
