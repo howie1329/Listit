@@ -80,6 +80,8 @@
 	let isTagInputFocused = $state(false);
 	let highlightedTagOptionIndex = $state(0);
 	let isInspectorOpen = $state(true);
+	const hasBookmarks = $derived(rows.length > 0);
+	const showInspector = $derived(isInspectorOpen && hasBookmarks);
 	let retryError = $state('');
 	let retryingBookmarkId = $state<Id<'bookmarks'> | null>(null);
 	let noteDraft = $state('');
@@ -342,7 +344,7 @@
 <div
 	class={cn(
 		'flex h-[calc(100svh-3rem)] min-h-0 flex-col transition-[grid-template-columns] duration-200 ease-out lg:grid',
-		isInspectorOpen ? 'lg:grid-cols-[minmax(0,1fr)_24rem]' : 'lg:grid-cols-[minmax(0,1fr)_0rem]'
+		showInspector ? 'lg:grid-cols-[minmax(0,1fr)_24rem]' : 'lg:grid-cols-[minmax(0,1fr)_0rem]'
 	)}
 >
 	<section class="flex min-h-0 min-w-0 flex-col">
@@ -369,21 +371,34 @@
 	<aside
 		class={cn(
 			'hidden min-h-0 overflow-hidden border-l border-border/50 transition-opacity duration-200 lg:flex lg:flex-col',
-			isInspectorOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+			showInspector ? 'opacity-100' : 'pointer-events-none opacity-0'
 		)}
-		aria-hidden={!isInspectorOpen}
+		aria-hidden={!showInspector}
 	>
 		{#if selectedBookmark}
-			<div class="border-b border-border/50 px-4 py-3">
+			<div class="border-b border-border/50 px-4 py-3.5">
 				<div class="flex items-start justify-between gap-3">
-					<div class="min-w-0">
-						<p class="text-[11px] font-medium text-muted-foreground uppercase">Selected bookmark</p>
-						<h2 class="mt-1.5 truncate text-base leading-tight font-semibold">
-							{getDisplayTitle(selectedBookmark)}
-						</h2>
-						<p class="mt-0.5 truncate text-xs text-muted-foreground">
-							{selectedBookmark.siteName || getHostname(selectedBookmark.url)}
-						</p>
+					<div class="flex min-w-0 items-start gap-2.5">
+						<span
+							class="mt-0.5 flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background text-muted-foreground"
+						>
+							{#if selectedBookmark.faviconUrl}
+								<img src={selectedBookmark.faviconUrl} alt="" class="size-4" loading="lazy" />
+							{:else}
+								<HugeiconsIcon icon={Link01Icon} strokeWidth={2} class="size-4" />
+							{/if}
+						</span>
+						<div class="min-w-0">
+							<p class="text-[11px] font-medium text-muted-foreground uppercase">
+								Selected bookmark
+							</p>
+							<h2 class="mt-1 truncate text-base leading-tight font-semibold">
+								{getDisplayTitle(selectedBookmark)}
+							</h2>
+							<p class="mt-0.5 truncate text-xs text-muted-foreground">
+								{selectedBookmark.siteName || getHostname(selectedBookmark.url)}
+							</p>
+						</div>
 					</div>
 					<Button
 						type="button"
@@ -400,7 +415,7 @@
 			</div>
 
 			<ScrollArea.ScrollArea class="min-h-0 flex-1">
-				<div class="flex flex-col gap-5 p-4">
+				<div class="flex flex-col gap-4 p-4">
 					{#if selectedDetailResponse.isLoading}
 						<div class="space-y-2">
 							<Skeleton class="h-3 w-32" />
@@ -413,7 +428,7 @@
 						</p>
 					{/if}
 
-					<section>
+					<section class="border-b border-border/40 pb-4">
 						<div class="flex items-center gap-2">
 							<HugeiconsIcon
 								icon={Link01Icon}
@@ -453,7 +468,7 @@
 						</div>
 					</section>
 
-					<section>
+					<section class="border-b border-border/40 pb-4">
 						<div class="flex items-center gap-2">
 							<HugeiconsIcon
 								icon={Folder01Icon}
@@ -480,7 +495,7 @@
 						{/if}
 					</section>
 
-					<section>
+					<section class="border-b border-border/40 pb-4">
 						<div class="flex items-center gap-2">
 							<HugeiconsIcon
 								icon={Tag01Icon}
@@ -570,7 +585,7 @@
 						{/if}
 					</section>
 
-					<section>
+					<section class="border-b border-border/40 pb-4">
 						<div class="flex items-center gap-2">
 							<HugeiconsIcon
 								icon={extractionStatusIcons[selectedBookmark.extractionStatus]}
@@ -604,7 +619,7 @@
 						</Button>
 					</section>
 
-					<section>
+					<section class="border-b border-border/40 pb-4">
 						<div class="flex items-center gap-2">
 							<HugeiconsIcon
 								icon={SearchList01Icon}
