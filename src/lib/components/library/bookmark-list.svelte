@@ -3,13 +3,14 @@
 		CheckmarkCircle02Icon,
 		Clock01Icon,
 		Link01Icon,
-		MagicWand01Icon
+		MagicWand01Icon,
+		SearchList01Icon
 	} from '@hugeicons/core-free-icons';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { getDisplayTitle, getHostname } from '$lib/bookmark-utils';
+	import { getBookmarkReadiness, getDisplayTitle, getHostname } from '$lib/bookmark-utils';
 	import { cn } from '$lib/utils';
 	import type { Doc, Id } from '../../../convex/_generated/dataModel';
 
@@ -30,10 +31,23 @@
 	let { rows, isLoading, error = null, selectedBookmarkId = null, onselect }: Props = $props();
 
 	const skeletonRows = [0, 1, 2, 3, 4, 5];
-	const statusMeta = {
-		pending: { label: 'Pending', icon: Clock01Icon },
-		enriched: { label: 'Enriched', icon: CheckmarkCircle02Icon },
-		failed: { label: 'Failed', icon: MagicWand01Icon }
+	const readinessMeta = {
+		extracting: {
+			icon: Clock01Icon,
+			class: 'border-border/60 text-muted-foreground'
+		},
+		ready: {
+			icon: CheckmarkCircle02Icon,
+			class: 'border-primary/30 text-foreground'
+		},
+		no_text: {
+			icon: SearchList01Icon,
+			class: 'border-border/60 text-muted-foreground'
+		},
+		failed: {
+			icon: MagicWand01Icon,
+			class: 'border-destructive/35 text-destructive'
+		}
 	};
 
 	function getTags(row: BookmarkRow) {
@@ -94,7 +108,8 @@
 	{:else}
 		<div class="flex flex-col gap-1 p-2">
 			{#each rows as row (row.bookmark._id)}
-				{@const status = statusMeta[row.bookmark.extractionStatus]}
+				{@const readiness = getBookmarkReadiness(row.bookmark)}
+				{@const status = readinessMeta[readiness.state]}
 				{@const tags = getTags(row)}
 				{@const host = row.bookmark.siteName || getHostname(row.bookmark.url)}
 				<button
@@ -130,10 +145,13 @@
 					</span>
 					<span class="flex min-w-0 items-center">
 						<span
-							class="inline-flex h-6 max-w-full items-center gap-1.5 rounded-full border border-border/60 px-2 text-[11px] text-muted-foreground"
+							class={cn(
+								'inline-flex h-6 max-w-full items-center gap-1.5 rounded-full border px-2 text-[11px]',
+								status.class
+							)}
 						>
 							<HugeiconsIcon icon={status.icon} strokeWidth={2} class="size-3.5 shrink-0" />
-							<span class="truncate">{status.label}</span>
+							<span class="truncate">{readiness.label}</span>
 						</span>
 					</span>
 					<span class="hidden truncate text-[11px] text-muted-foreground sm:block">
