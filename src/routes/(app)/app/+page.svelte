@@ -26,8 +26,8 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import {
 		formatDate,
+		getBookmarkReadiness,
 		getDisplayTitle,
-		getExtractionContext,
 		getHostname,
 		normalizeTagName,
 		normalizeTagNames
@@ -106,9 +106,10 @@
 			: null
 	);
 
-	const extractionStatusIcons = {
-		pending: Clock01Icon,
-		enriched: CheckmarkCircle02Icon,
+	const readinessIcons = {
+		extracting: Clock01Icon,
+		ready: CheckmarkCircle02Icon,
+		no_text: SearchList01Icon,
 		failed: MagicWand01Icon
 	};
 
@@ -376,6 +377,7 @@
 		aria-hidden={!showInspector}
 	>
 		{#if selectedBookmark}
+			{@const readiness = getBookmarkReadiness(selectedBookmark)}
 			<div class="border-b border-border/50 px-4 py-3.5">
 				<div class="flex items-start justify-between gap-3">
 					<div class="flex min-w-0 items-start gap-2.5">
@@ -588,16 +590,22 @@
 					<section class="border-b border-border/40 pb-4">
 						<div class="flex items-center gap-2">
 							<HugeiconsIcon
-								icon={extractionStatusIcons[selectedBookmark.extractionStatus]}
+								icon={readinessIcons[readiness.state]}
 								strokeWidth={2}
-								class="size-3.5 text-muted-foreground"
+								class={cn(
+									'size-3.5 text-muted-foreground',
+									readiness.state === 'failed' && 'text-destructive'
+								)}
 							/>
 							<h3 class="text-xs font-medium">Ask context</h3>
 						</div>
 						<p class="mt-2 text-xs leading-snug text-muted-foreground">
-							{getExtractionContext(selectedBookmark)}
+							{readiness.context}
 						</p>
-						{#if selectedBookmark.extractionStatus === 'failed'}
+						{#if readiness.errorDetail}
+							<p class="mt-1 text-xs leading-snug text-destructive">{readiness.errorDetail}</p>
+						{/if}
+						{#if readiness.state === 'failed'}
 							<Button
 								type="button"
 								variant="ghost"
@@ -634,17 +642,9 @@
 							>
 								{selectedBookmark.extractedText}
 							</div>
-						{:else if selectedBookmark.extractionStatus === 'failed'}
+						{:else if readiness.contentUnavailableMessage}
 							<p class="mt-2 text-xs leading-snug text-muted-foreground">
-								Extraction failed before reader text was saved.
-							</p>
-						{:else if selectedBookmark.extractionStatus === 'pending'}
-							<p class="mt-2 text-xs leading-snug text-muted-foreground">
-								Reader text will appear here after extraction finishes.
-							</p>
-						{:else}
-							<p class="mt-2 text-xs leading-snug text-muted-foreground">
-								No extracted reader text is available for this bookmark.
+								{readiness.contentUnavailableMessage}
 							</p>
 						{/if}
 					</section>
